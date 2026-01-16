@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#f2f2f7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Smart Life Pro - Gestor Inteligente">
+    <title>Smart Life Pro</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+</head>
+<body>
+
+    <div id="bg-layer"></div>
+
+    <div id="app-root">
+        
+        <div id="view-home" class="view active">
+            <header class="home-header">
+                <div style="display:flex; align-items:center;">
+                    <img src="logo.png" class="app-logo-small" alt="Logo">
+                    <span class="app-title-text" data-i18n="app_name">Smart Life</span>
+                </div>
+                <button class="icon-btn glass-btn-small" onclick="UI.toggleGuide()">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                </button>
+            </header>
+
+            <div class="scroll-content">
+                <div class="mascot-container">
+                    <div class="mascot-bubble" id="mascot-bubble" data-i18n="greeting">Hola Master, &iquest;todo bien?</div>
+                    
+                    <img src="idle.png" id="mascot-img" class="mascot-img" alt="Asistente" 
+                         onclick="if(typeof Assistant !== 'undefined') { event.stopPropagation(); Assistant.giveTip(); }"
+                         onerror="this.style.display='none'">
+                    
+                    <div class="xp-bar-container" onclick="if(typeof Main !== 'undefined') { event.stopPropagation(); Main.openProfile(); }">
+                        <div id="xp-fill" class="xp-fill"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card summary-card">
+                    <div class="chart-donut-wrap" onclick="Main.router('finance'); Finance.setTab('history');">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" id="budget-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="donut-text">
+                            <span class="donut-label" data-i18n="remaining_label">Restante</span>
+                            <span class="donut-value" id="budget-remaining">$0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-details" onclick="Finance.openBudgetModal()" style="cursor:pointer; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+                        <div>
+                            <div style="display:flex; align-items:center; margin-bottom:2px;">
+                                <span class="dot-label dot-green"></span> 
+                                <span id="budget-limit-lbl" style="font-size:12px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="budget_label">Presupuesto</span>
+                            </div> 
+                            <div id="budget-limit" style="font-size:18px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
+                        </div>
+                        <div>
+                            <div style="display:flex; align-items:center; margin-bottom:2px;">
+                                <span class="dot-label dot-red"></span> 
+                                <span id="budget-spent-lbl" style="font-size:12px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="spent_label">Gastado</span>
+                            </div>
+                            <div id="budget-spent" style="font-size:18px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
+                        </div>
+                        <div id="touch-budget-txt" style="font-size:11px; color:var(--primary); margin-top:5px;" data-i18n="touch_budget">
+                            Toca para a&ntilde;adir presupuesto
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header" style="margin-top:10px;">
+                    <span class="section-label" data-i18n="active_lists_title">Listas Activas</span>
+                    <button class="text-btn-small" onclick="Main.router('lists')" data-i18n="see_all">Ver todas</button>
+                </div>
+                <div id="home-mini-lists"></div>
+            </div>
+        </div>
+
+        <div id="view-lists" class="view">
+            <div class="top-bar glass-pill">
+                <button class="icon-btn" onclick="Main.openAddMenu()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <span class="view-title" data-i18n="title_lists">Mis Listas</span>
+                <button class="icon-btn" onclick="Main.router('history')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </button>
+            </div>
+            <div class="scroll-content" id="lists-container"></div>
+        </div>
+
+        <div id="view-history" class="view">
+            <div class="top-bar glass-pill" style="flex-direction: column; align-items: stretch; gap:10px; padding-bottom:15px; border-radius: 28px;">
+                <div style="display:flex; justify-content: space-between; align-items:center;">
+                    <button class="icon-btn" onclick="Main.router('lists')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <span class="view-title" data-i18n="title_history">Historial</span>
+                    <div style="width:24px"></div>
+                </div>
+                <div class="segment-control">
+                    <button class="segment-btn active" id="seg-lists" onclick="Shopping.setHistoryMode('lists')">Listas</button>
+                    <button class="segment-btn" id="seg-summary" onclick="Shopping.setHistoryMode('summary')">Resumen</button>
+                    <button class="segment-btn" id="seg-products" onclick="Shopping.setHistoryMode('products')">Prod.</button>
+                </div>
+            </div>
+            <div class="scroll-content">
+                <div id="history-chart-container" class="chart-container hidden"></div>
+                <div id="history-box"></div>
+            </div>
+        </div>
+
+        <div id="view-finance" class="view">
+            <div class="top-bar glass-pill" style="justify-content: center;">
+                <span class="view-title" data-i18n="title_finance">Finanzas</span>
+            </div>
+            <div class="scroll-content">
+                <div class="segment-control" style="margin-bottom:15px;">
+                    <button class="segment-btn active" id="fin-tab-subs" onclick="Finance.setTab('subs')" data-i18n="tab_subs">Suscrip.</button>
+                    <button class="segment-btn" id="fin-tab-installments" onclick="Finance.setTab('installments')" data-i18n="tab_inst">Parcelas</button>
+                    <button class="segment-btn" id="fin-tab-history" onclick="Finance.setTab('history')" data-i18n="tab_hist">Historial</button>
+                </div>
+                
+                <div id="finance-content-subs" class="finance-tab-content">
+                    <button class="btn-full" style="width:100%; margin-bottom:15px;" onclick="Finance.addSubscription()" data-i18n="btn_add_sub">
+                        + Nueva Suscripci&oacute;n
+                    </button>
+                    <div id="subs-list"></div>
+                </div>
+                
+                <div id="finance-content-installments" class="finance-tab-content hidden">
+                    <div id="installments-list"></div>
+                </div>
+
+                <div id="finance-content-history" class="finance-tab-content hidden">
+                    <div id="expenses-history-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="view">
+            <div class="top-bar glass-pill">
+                <span class="view-title" data-i18n="title_settings">Ajustes</span>
+            </div>
+            <div class="scroll-content">
+                <div class="settings-card full-width">
+                    <div id="settings-inject"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-shopping-detail" class="view">
+            <div id="shopping-ui-container" style="height:100%; display:flex; flex-direction:column;"></div>
+        </div>
+
+        <div class="bottom-dock">
+            <button onclick="Main.router('home')" class="dock-btn active" id="nav-home">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <span>Inicio</span>
+            </button>
+            <button onclick="Main.router('lists')" class="dock-btn" id="nav-lists">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span data-i18n="title_lists">Listas</span>
+            </button>
+            <button onclick="Main.openAddMenu()" class="dock-main-btn">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <button onclick="Main.router('finance')" class="dock-btn" id="nav-finance">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span data-i18n="title_finance">Finanzas</span>
+            </button>
+            <button onclick="Main.router('settings')" class="dock-btn" id="nav-settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span data-i18n="title_settings">Ajustes</span>
+            </button>
+        </div>
+
+        <div id="modal-profile" class="modal-overlay" onclick="Main.closeProfile()">
+            <div class="settings-card" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <h2 style="color:var(--primary); margin:0;">Mi Perfil</h2>
+                    <button class="icon-btn" onclick="Main.closeProfile()">&#10005;</button>
+                </div>
+
+                <div class="profile-header">
+                    <div class="level-ring" id="profile-level-ring">
+                        <div style="background:var(--glass-bg); width:100px; height:100px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2;">
+                            <span class="level-label">NIVEL</span>
+                            <span class="level-number" id="profile-lvl-num">1</span>
+                        </div>
+                    </div>
+                    <div style="font-size:14px; font-weight:600; color:var(--text-sec);" id="profile-xp-txt">0 / 100 XP</div>
+                </div>
+
+                <div class="section-label" style="text-align:center;">Medallas Desbloqueadas</div>
+                <div class="badges-grid" id="profile-badges-grid"></div>
+            </div>
+        </div>
+
+        <div id="modal-expense" class="modal-overlay" onclick="Main.closeModal('expense')">
+            <div class="settings-card" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="color:var(--primary); margin:0;" data-i18n="mod_exp_title">Registrar Gasto</h2>
+                    <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
+                </div>
+                <div class="input-area glass-card" style="margin:0 0 15px 0; justify-content: center;">
+                    <span style="font-size:24px; font-weight:700; color:var(--primary);">$</span>
+                    <input type="number" id="exp-amount" class="big-input" placeholder="0.00" step="0.01" data-i18n-ph="ph_amount">
+                </div>
+                <input type="text" id="exp-desc" class="setting-input" placeholder="&iquest;En qu&eacute; gastaste?" data-i18n-ph="ph_desc">
+                <div class="chips-container" id="cat-chips"></div>
+                <div class="setting-item" style="margin-top:10px;">
+                    <span data-i18n="lbl_is_inst">&iquest;Es Parcelado?</span>
+                    <label class="switch-wrap"><input type="checkbox" id="exp-is-install" onchange="Finance.toggleInstallmentInputs()"><span class="slider"></span></label>
+                </div>
+                <div id="installment-inputs" class="hidden" style="margin-top:10px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="number" id="exp-inst-count" class="setting-input" placeholder="Cuotas" data-i18n-ph="ph_cuotas">
+                        <input type="number" id="exp-inst-paid" class="setting-input" placeholder="Pagadas" data-i18n-ph="ph_paid">
+                    </div>
+                </div>
+                <button class="btn-full" onclick="Finance.saveExpense()" data-i18n="save">Guardar Gasto</button>
+            </div>
+        </div>
+
+        <div id="modal-sub" class="modal-overlay" onclick="Main.closeModal('sub')">
+            <div class="settings-card" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="color:var(--primary); margin:0;" data-i18n="mod_sub_title">Nueva Suscripci&oacute;n</h2>
+                    <button class="icon-btn" onclick="Main.closeModal('sub')">&#10005;</button>
+                </div>
+                <input type="text" id="sub-name" class="setting-input" placeholder="Nombre (Ej: Netflix)" data-i18n-ph="ph_sub_name">
+                <input type="number" id="sub-cost" class="setting-input" placeholder="Costo Mensual" data-i18n-ph="ph_amount">
+                <input type="number" id="sub-day" class="setting-input" placeholder="D&iacute;a de cobro (1-31)" data-i18n-ph="ph_sub_day">
+                <button class="btn-full" onclick="Finance.saveSubscription()" data-i18n="save">Guardar</button>
+            </div>
+        </div>
+
+        <div id="modal-budget" class="modal-overlay" onclick="Main.closeModal('budget')">
+            <div class="settings-card" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="margin:0;" data-i18n="mod_bud_title">Presupuesto Mensual</h2>
+                    <button class="icon-btn" onclick="Main.closeModal('budget')">&#10005;</button>
+                </div>
+                <p style="color:var(--text-sec); font-size:14px; margin-bottom:10px;" data-i18n="touch_budget">&iquest;Cu&aacute;nto puedes gastar este mes?</p>
+                <input type="number" id="budget-input" class="big-input" placeholder="0.00" data-i18n-ph="ph_amount">
+                <button class="btn-full" onclick="Finance.saveBudget()" data-i18n="update">Actualizar</button>
+            </div>
+        </div>
+
+        <div id="modal-finish-list" class="modal-overlay">
+            <div class="settings-card" onclick="event.stopPropagation()" style="max-height: 90vh; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="margin:0;">Resumen</h2>
+                    <button class="icon-btn" onclick="Shopping.closeFinishModal()">&#10005;</button>
+                </div>
+                <div id="finish-items-list" style="flex:1; overflow-y:auto; padding-right:5px; margin-bottom:10px;">
+                    </div>
+                <div class="receipt-total">
+                    <span data-i18n="receipt_est">TOTAL</span> <b id="finish-total-val">$0.00</b>
+                </div>
+                <button class="btn-full" onclick="Shopping.confirmFinish()" data-i18n="btn_finish">Confirmar y Guardar</button>
+            </div>
+        </div>
+
+        <div id="modal-list-detail" class="modal-overlay">
+            <div class="settings-card" onclick="event.stopPropagation()" style="max-height: 90vh; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="margin:0;" id="detail-list-title">Detalle</h2>
+                    <button class="icon-btn" onclick="Shopping.closeDetailModal()">&#10005;</button>
+                </div>
+                <div id="detail-items-list" style="flex:1; overflow-y:auto; padding-right:5px; margin-bottom:10px;">
+                    </div>
+                <div class="receipt-total">
+                    <span data-i18n="receipt_real">TOTAL REAL</span> <b id="detail-total-val">$0.00</b>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button class="btn-danger-outline" style="margin:0; flex:1;" onclick="Shopping.deleteHistoryList()" data-i18n="delete">Borrar</button>
+                    <button class="btn-full" style="margin:0; flex:2;" onclick="Shopping.updateHistoryList()" data-i18n="save">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="creation-sheet" class="modal-overlay" style="align-items: flex-end;" onclick="Main.closeAddMenu()">
+            <div class="action-sheet-card" onclick="event.stopPropagation()">
+                <div class="sheet-header-line"></div>
+                <div id="menu-level-1">
+                    <button class="sheet-btn" onclick="Main.openExpenseModalFromMenu()">
+                        <div class="sheet-icon-wrap bg-orange">&#128184;</div>
+                        <div class="sheet-text"><span class="sheet-title" data-i18n="menu_exp_title">Registrar Gasto</span><span class="sheet-sub" data-i18n="menu_exp_desc">Pagos individuales</span></div>
+                    </button>
+                    <button class="sheet-btn" onclick="Main.showListOptions()">
+                        <div class="sheet-icon-wrap bg-blue">&#128221;</div>
+                        <div class="sheet-text"><span class="sheet-title" data-i18n="menu_list_title">Nueva Lista</span><span class="sheet-sub" data-i18n="menu_list_desc">Organizar compra</span></div>
+                    </button>
+                </div>
+                <div id="menu-level-2" class="hidden">
+                    <button class="text-btn-small" onclick="Main.resetMenu()" style="margin-bottom:15px;" data-i18n="back">&#8592; Volver</button>
+                    <button class="sheet-btn" onclick="Shopping.createList()">
+                        <div class="sheet-icon-wrap bg-blue">&#128196;</div>
+                        <div class="sheet-text"><span class="sheet-title">Lista Vac&iacute;a</span><span class="sheet-sub">Desde cero</span></div>
+                    </button>
+                    <button class="sheet-btn" onclick="Shopping.toggleImport()">
+                        <div class="sheet-icon-wrap bg-green">&#128203;</div>
+                        <div class="sheet-text"><span class="sheet-title" data-i18n="import_title">Pegar Lista</span><span class="sheet-sub">Desde portapapeles</span></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="import-modal" class="modal-overlay" onclick="Shopping.toggleImport()">
+            <div class="settings-card" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="margin:0;" data-i18n="import_title">Importar Lista</h2>
+                    <button class="icon-btn" onclick="Shopping.toggleImport()">&#10005;</button>
+                </div>
+                <textarea id="import-input" class="import-textarea" placeholder="Ej: - Pan\n- Leche..." data-i18n-ph="import_ph"></textarea>
+                <button class="btn-full" onclick="Shopping.processImport()" data-i18n="save">Procesar</button>
+            </div>
+        </div>
+        
+        <div id="product-modal" class="modal-overlay" onclick="Shopping.closeProductHistory()">
+            <div class="settings-card" onclick="event.stopPropagation()" style="height: 60vh; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--glass-border); padding-bottom:10px;">
+                    <div>
+                        <h2 id="ph-title" style="margin:0; font-size:20px; color:var(--primary);">Producto</h2>
+                        <span id="ph-stats" style="font-size:12px; color:var(--text-sec);" data-i18n="price_evol">Evoluci&oacute;n</span>
+                    </div>
+                    <button class="icon-btn" onclick="Shopping.closeProductHistory()">&#10005;</button>
+                </div>
+                <div id="ph-list" style="flex:1; overflow-y:auto;"></div>
+            </div>
+        </div>
+
+        <div id="guide-modal" class="modal-overlay" onclick="UI.toggleGuide()">
+            <div class="settings-card guide-card" onclick="event.stopPropagation()">
+                <div class="guide-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="margin:0; color:var(--primary);">Ayuda</h2>
+                    <button class="icon-btn" onclick="UI.toggleGuide()">&#10005;</button>
+                </div>
+                <div id="guide-content" class="guide-content"></div>
+            </div>
+        </div>
+
+        <div id="custom-confirm" class="modal-overlay" style="z-index: 3000;">
+            <div class="confirm-box">
+                <div class="confirm-title" id="confirm-title" data-i18n="confirm">Confirmar</div>
+                <div class="confirm-text" id="confirm-text">&iquest;Est&aacute;s seguro?</div>
+                <div class="confirm-actions">
+                    <button class="confirm-btn c-cancel" id="confirm-cancel" data-i18n="cancel">Cancelar</button>
+                    <button class="confirm-btn c-ok" id="confirm-ok" data-i18n="confirm">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="snackbar"><span id="snackbar-text"></span></div>
+        
+        <div id="update-toast" class="update-toast hidden">
+            <div style="flex:1;">
+                <div style="font-weight:700;">Actualizaci&oacute;n</div>
+                <div style="font-size:12px; opacity:0.8;">Nueva versi&oacute;n lista.</div>
+            </div>
+            <button id="refresh-btn" class="btn-update">ACTUALIZAR</button>
+        </div>
+
+    </div>
+
+    <datalist id="suggestions"></datalist>
+
+    <script src="data.js"></script>
+    <script src="ui.js"></script>
+    <script src="assistant.js"></script>
+    <script src="finance.js"></script>
+    <script src="shopping.js"></script>
+    <script src="main.js"></script>
+    
+    <script>
+    let newWorker;
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            if(typeof Main !== 'undefined') Main.init();
+            
+            navigator.serviceWorker.register('service-worker.js').then(reg => {
+                if (reg.waiting) {
+                    newWorker = reg.waiting;
+                    showUpdateToast();
+                    return;
+                }
+                reg.addEventListener('updatefound', () => {
+                    newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateToast();
+                        }
+                    });
+                });
+            });
+
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        });
+    } else {
+        window.addEventListener('load', () => {
+            if(typeof Main !== 'undefined') Main.init();
+        });
+    }
+
+    function showUpdateToast() {
+        const toast = document.getElementById('update-toast');
+        if(toast) toast.classList.remove('hidden');
+        if(toast) toast.classList.add('show');
+    }
+
+    const refreshBtn = document.getElementById('refresh-btn');
+    if(refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const toast = document.getElementById('update-toast');
+            if(toast) toast.classList.remove('show');
+            if (newWorker) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+            } else {
+                window.location.reload();
+            }
+        });
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "Smart Life Pro",
+  "short_name": "SmartLife",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007AFF",
+  "description": "Tu asistente financiero y gestor de compras inteligente.",
+  "lang": "es",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}cuando anado presupuesto, entonces ese texto, se sale de la tarjeta, ademas d q las listas de compras siguen sin aparecer e
