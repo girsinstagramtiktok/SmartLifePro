@@ -1,9 +1,9 @@
 /* =========================================
-   SMART LIFE PRO - SERVICE WORKER (V6.6 - FIX & UPDATE)
-   Estrategia: Network First (Prioriza red para ver cambios)
+   SMART LIFE PRO - SERVICE WORKER (V6.8 - STRICT NETWORK FIRST)
+   Estrategia: Network First con Validación Forzada
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v6.7-fix'; // <--- CAMBIO CRÍTICO: Nueva versión para invalidar la anterior
+const CACHE_NAME = 'smart-life-pro-v6.8-update'; // Versión actualizada
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -34,56 +34,70 @@ const ASSETS_TO_CACHE = [
   './thinking.png'
 ];
 
-// 1. INSTALACIÓN: Cachear archivos críticos
+// 1. INSTALACIÓN: Pre-carga inicial
 self.addEventListener('install', (e) => {
-  // Forzar activación inmediata (sin esperar a cerrar pestañas)
-  self.skipWaiting();
-
+  self.skipWaiting(); // Activar inmediatamente
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Cacheando archivos V6.6...');
+      console.log('[SW] Instalando v6.8 y cacheando assets...');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
 });
 
-// 2. ACTIVACIÓN: Limpieza agresiva de cachés viejas
+// 2. ACTIVACIÓN: Limpieza de versiones previas
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
         if (key !== CACHE_NAME) {
-          console.log('[Service Worker] Borrando caché antigua:', key);
+          console.log('[SW] Eliminando caché antigua:', key);
           return caches.delete(key);
         }
       }));
     }).then(() => {
-      // Tomar control inmediato de la página
-      console.log('[Service Worker] V6.6 Activo y controlando.');
+      console.log('[SW] v6.8 Activo y controlando clientes.');
       return self.clients.claim();
     })
   );
 });
 
-// 3. INTERCEPTOR (Estrategia: Network First)
-// Intenta bajar de internet siempre. Si falla (offline), usa caché.
+// 3. INTERCEPTOR (Estrategia: Network First Estricta)
 self.addEventListener('fetch', (e) => {
+  // Solo interceptamos peticiones GET (evita errores con POST/PUT en APIs externas si las hubiera)
+  if (e.request.method !== 'GET') return;
+
   e.respondWith(
-    fetch(e.request)
-      .then((response) => {
-        // Si la red responde, actualizamos la copia en caché y devolvemos el archivo fresco
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+    (async () => {
+      try {
+        // A. INTENTO DE RED (Prioridad Máxima)
+        // Usamos { cache: 'reload' } para forzar la verificación en el servidor 
+        // y evitar que el navegador nos devuelva un 304 desde su caché de memoria/disco.
+        const networkResponse = await fetch(e.request, { cache: 'reload' });
+
+        // Si la respuesta es válida, actualizamos la caché del SW
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const cache = await caches.open(CACHE_NAME);
+          // Clonamos la respuesta porque el stream solo se puede consumir una vez
+          cache.put(e.request, networkResponse.clone());
         }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, responseToCache);
-        });
-        return response;
-      })
-      .catch(() => {
-        // Si no hay internet, devolvemos lo que haya en caché
-        return caches.match(e.request);
-      })
+
+        return networkResponse;
+
+      } catch (error) {
+        // B. FALLBACK A CACHÉ (Si no hay internet)
+        console.log('[SW] Offline o error de red. Usando caché para:', e.request.url);
+        
+        const cachedResponse = await caches.match(e.request);
+        
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        // C. SI NO HAY RED NI CACHÉ (Opcional: Página de error offline)
+        // Aquí podrías retornar una página offline.html genérica si quisieras.
+        // Por ahora retornamos nada (el navegador mostrará error de conexión estándar).
+      }
+    })()
   );
 });

@@ -193,6 +193,7 @@ const Main = {
             const lock = document.getElementById('lock-screen');
             if(lock) {
                 lock.classList.remove('hidden');
+                // Intentamos autenticar automáticamente tras un breve delay para que cargue la UI
                 setTimeout(() => this.authenticate(), 500);
             }
             return true;
@@ -200,16 +201,41 @@ const Main = {
         return false;
     },
 
+    // --- CORRECCIÓN APLICADA AQUÍ ---
     async authenticate() {
         try {
+            // Verificar si el navegador soporta WebAuthn
             if (window.PublicKeyCredential) {
+                
+                // Generar desafío aleatorio (necesario por protocolo)
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                // ESTA ES LA CLAVE: Pedir al sistema operativo que verifique al usuario
+                // Esto levantará el popup de huella/FaceID/Patrón
+                await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        timeout: 60000,
+                        userVerification: "required" 
+                    }
+                });
+
+                // Si la promesa se resuelve, es que la biometría fue correcta
                 if(navigator.vibrate) navigator.vibrate(20);
                 this.unlockApp();
             } else {
-                this.unlockApp(); // Fallback
+                // Fallback si no hay soporte (poco probable en móviles modernos)
+                console.warn("WebAuthn no soportado en este dispositivo.");
+                this.unlockApp(); 
             }
         } catch (e) {
-            this.unlockApp();
+            console.error("Autenticación fallida o cancelada por el usuario", e);
+            // IMPORTANTE: No desbloquear aquí. 
+            // Mostrar mensaje para que el usuario sepa que falló.
+            if(typeof UI !== 'undefined') {
+                UI.showSnackbar("Autenticación fallida. Toca 'Desbloquear' para reintentar.");
+            }
         }
     },
 
@@ -235,7 +261,7 @@ const Main = {
             
             <div class="glass-card">
                 <div class="setting-item">
-                    <span>${UI.t('dark_mode')} </span>
+                    <span>${UI.t('dark_mode')}  </span>
                     <label class="switch-wrap">
                         <input type="checkbox" ${isDark} onchange="Main.toggleDarkMode()">
                         <span class="slider"></span>
@@ -243,7 +269,7 @@ const Main = {
                 </div>
 
                 <div class="setting-item" style="display:block; padding-top:10px; border-top:1px solid rgba(120,120,120,0.1); margin-top:10px;">
-                    <div style="margin-bottom:12px; font-size:14px; opacity:0.8;">Tema de Color </div>
+                    <div style="margin-bottom:12px; font-size:14px; opacity:0.8;">Tema de Color  </div>
                     <div class="theme-selector-grid">
                         <div class="theme-btn t-blue ${currentTheme === 'blue' ? 'active' : ''}" onclick="Main.setTheme('blue')"></div>
                         <div class="theme-btn t-green ${currentTheme === 'green' ? 'active' : ''}" onclick="Main.setTheme('green')"></div>
@@ -293,15 +319,15 @@ const Main = {
             <div class="glass-card">
                 <div class="btn-data-row">
                     <button class="btn-data" onclick="Main.downloadBackup()">
-                         ${UI.t('btn_export')}
+                          ${UI.t('btn_export')}
                     </button>
                     <button class="btn-data" onclick="document.getElementById('import-file').click()">
-                         ${UI.t('btn_import')}
+                          ${UI.t('btn_import')}
                     </button>
                     <input type="file" id="import-file" hidden accept=".json" onchange="Main.handleImport(this)">
                 </div>
                 <button class="btn-danger-outline" onclick="Main.factoryReset()">
-                     ${UI.t('btn_reset')}
+                       ${UI.t('btn_reset')}
                 </button>
             </div>
             
