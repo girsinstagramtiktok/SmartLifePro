@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - MAIN CONTROLLER (V7.5 - THEMES & FIXES)
+   SMART LIFE PRO - MAIN CONTROLLER (V7.6 - BIO AUTH FIX)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -7,7 +7,7 @@ const Main = {
     sessionAuthenticated: false,
 
     init() {
-        console.log("Iniciando Smart Life Pro v7.5...");
+        console.log("Iniciando Smart Life Pro v7.6...");
         
         // 1. Cargar datos
         if (typeof Data !== 'undefined') Data.init();
@@ -193,7 +193,6 @@ const Main = {
             const lock = document.getElementById('lock-screen');
             if(lock) {
                 lock.classList.remove('hidden');
-                // Intentamos autenticar automáticamente tras un breve delay para que cargue la UI
                 setTimeout(() => this.authenticate(), 500);
             }
             return true;
@@ -201,40 +200,52 @@ const Main = {
         return false;
     },
 
-    // --- CORRECCIÓN APLICADA AQUÍ ---
+    // --- [CORREGIDO] AUTENTICACIÓN QUE USA LA CREDENCIAL GUARDADA ---
     async authenticate() {
         try {
-            // Verificar si el navegador soporta WebAuthn
-            if (window.PublicKeyCredential) {
+            if (window.PublicKeyCredential && Data.store.settings.bioCredentialId) {
                 
-                // Generar desafío aleatorio (necesario por protocolo)
+                // 1. Recuperar el ID guardado y convertirlo de Base64 a Buffer
+                const savedId = Data.store.settings.bioCredentialId;
+                const binaryId = Uint8Array.from(atob(savedId), c => c.charCodeAt(0));
+
+                // 2. Desafío
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
 
-                // ESTA ES LA CLAVE: Pedir al sistema operativo que verifique al usuario
-                // Esto levantará el popup de huella/FaceID/Patrón
+                // 3. Pedir autenticación SOLO para esa credencial
                 await navigator.credentials.get({
                     publicKey: {
                         challenge: challenge,
                         timeout: 60000,
-                        userVerification: "required" 
+                        userVerification: "required",
+                        allowCredentials: [{
+                            id: binaryId,
+                            type: "public-key",
+                            transports: ["internal"] // Prioriza sensor interno
+                        }]
                     }
                 });
 
-                // Si la promesa se resuelve, es que la biometría fue correcta
+                // Éxito
                 if(navigator.vibrate) navigator.vibrate(20);
                 this.unlockApp();
+
             } else {
-                // Fallback si no hay soporte (poco probable en móviles modernos)
-                console.warn("WebAuthn no soportado en este dispositivo.");
+                // Si no hay credencial guardada o no hay soporte
+                console.warn("No hay credencial biométrica guardada.");
+                
+                // Si estaba activado por error pero sin ID, lo desactivamos para no bloquear al user
+                if(Data.store.settings.biometrics) {
+                    Data.store.settings.biometrics = false;
+                    Data.save();
+                }
                 this.unlockApp(); 
             }
         } catch (e) {
-            console.error("Autenticación fallida o cancelada por el usuario", e);
-            // IMPORTANTE: No desbloquear aquí. 
-            // Mostrar mensaje para que el usuario sepa que falló.
+            console.error("Auth fallida", e);
             if(typeof UI !== 'undefined') {
-                UI.showSnackbar("Autenticación fallida. Toca 'Desbloquear' para reintentar.");
+                UI.showSnackbar("Huella no reconocida. Intenta de nuevo.");
             }
         }
     },
@@ -332,7 +343,7 @@ const Main = {
             </div>
             
             <div style="text-align:center; margin-top:30px; margin-bottom:50px; opacity:0.3; font-size:12px;">
-                ID: ${Data.KEY}<br>v7.5 Themes
+                ID: ${Data.KEY}<br>v7.6 BioFix
             </div>
         `;
     },
@@ -344,11 +355,63 @@ const Main = {
         UI.refreshDOM(); 
     },
 
-    toggleBiometrics() {
-        Data.store.settings.biometrics = !Data.store.settings.biometrics;
-        Data.save();
-        this.renderSettingsView(); 
-        UI.showSnackbar(Data.store.settings.biometrics ? UI.t('msg_bio_active') : UI.t('msg_bio_inactive'));
+    // --- [CORREGIDO] REGISTRO DE CREDENCIAL AL ACTIVAR ---
+    async toggleBiometrics() {
+        const currentState = Data.store.settings.biometrics;
+        
+        if (!currentState) {
+            // --- ACTIVANDO: CREAMOS LA LLAVE ---
+            try {
+                if (!window.PublicKeyCredential) throw new Error("No soportado");
+
+                // Opciones de registro
+                const publicKeyCredentialCreationOptions = {
+                    challenge: Uint8Array.from("SmartLifeProChallenge", c => c.charCodeAt(0)),
+                    rp: { name: "Smart Life Pro", id: window.location.hostname },
+                    user: {
+                        id: Uint8Array.from("MasterUserID", c => c.charCodeAt(0)),
+                        name: "master@smartlife.pro",
+                        displayName: "Master"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform", // Fuerza lector del dispositivo
+                        userVerification: "required"
+                    },
+                    timeout: 60000,
+                    attestation: "none"
+                };
+
+                // Pedir huella para CREAR la llave
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+
+                // Guardar el ID de la credencial (convertido a Base64)
+                const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                
+                Data.store.settings.biometrics = true;
+                Data.store.settings.bioCredentialId = credId; // <--- GUARDAMOS ID
+                Data.save();
+                
+                this.renderSettingsView();
+                UI.showSnackbar(UI.t('msg_bio_active'));
+
+            } catch (e) {
+                console.error("Error creando credencial:", e);
+                UI.showSnackbar("Error: No se pudo registrar la huella.");
+                // Revertir
+                Data.store.settings.biometrics = false;
+                this.renderSettingsView(); 
+            }
+        } else {
+            // --- DESACTIVANDO ---
+            Data.store.settings.biometrics = false;
+            Data.store.settings.bioCredentialId = null; // Borrar ID
+            Data.save();
+            this.renderSettingsView(); 
+            UI.showSnackbar(UI.t('msg_bio_inactive'));
+        }
     },
 
     setCurrency(curr) {

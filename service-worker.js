@@ -1,9 +1,9 @@
 /* =========================================
-   SMART LIFE PRO - SERVICE WORKER (V6.8 - STRICT NETWORK FIRST)
+   SMART LIFE PRO - SERVICE WORKER (V7.5 - STRICT NETWORK FIRST)
    Estrategia: Network First con Validación Forzada
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v6.8-update'; // Versión actualizada
+const CACHE_NAME = 'smart-life-pro-v7.5-update'; // Versión actualizada
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
