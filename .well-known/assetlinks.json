@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.smart_life_pro.twa",
+        "sha256_cert_fingerprints": ["AF:14:0B:16:B4:6E:34:1D:88:43:24:C2:57:38:88:6D:BD:A7:55:51:78:76:22:3D:5D:24:0E:7F:44:84:74:F4"]
+      }
+    }]
