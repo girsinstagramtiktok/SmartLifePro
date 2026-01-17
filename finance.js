@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - FINANCE MODULE (V7.6 - NAV FIX)
+   SMART LIFE PRO - FINANCE MODULE (V8.2 - TOP CATEGORIES FIX)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -149,6 +149,119 @@ const Finance = {
 
     calculateProgress(startDateTimestamp, totalInstallments) {
         return this.calculateProgressAtDate(startDateTimestamp, totalInstallments, new Date());
+    },
+
+    // --- RENDERIZADO HOME (WIDGETS) ---
+    renderHomeWidgets() {
+        // 1. RENDERIZAR GASTOS RECIENTES (ÚLTIMOS 3)
+        const recentContainer = document.getElementById('home-recent-expenses');
+        if (recentContainer) {
+            recentContainer.innerHTML = '';
+            // Clonar y revertir para ver los últimos primero, tomar 3
+            const last3 = [...Data.store.expenses].reverse().slice(0, 3);
+            
+            if (last3.length === 0) {
+                 recentContainer.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">Sin gastos recientes.</div>`;
+            } else {
+                last3.forEach(exp => {
+                    const row = document.createElement('div');
+                    row.className = 'home-expense-row';
+                    const icon = this.getCategoryIcon(exp.category); 
+                    
+                    row.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                            <span style="font-size:18px;">${icon}</span>
+                            <div style="display:flex; flex-direction:column; overflow:hidden;">
+                                <span style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${exp.desc}</span>
+                                <span style="font-size:10px; opacity:0.6;">${new Date(exp.date).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div style="font-weight:700; font-size:13px; color:var(--text-color);">${UI.formatMoney(exp.amount)}</div>
+                    `;
+                    recentContainer.appendChild(row);
+                });
+            }
+        }
+
+        // 2. RENDERIZAR TOP 3 CATEGORÍAS (MES ACTUAL) - [CORREGIDO]
+        const catContainer = document.getElementById('home-top-categories');
+        if (catContainer) {
+            catContainer.innerHTML = '';
+            
+            const now = new Date();
+            const curM = now.getMonth();
+            const curY = now.getFullYear();
+            const currentDay = now.getDate();
+            const groups = {};
+            let totalM = 0;
+
+            // A. Sumar GASTOS
+            Data.store.expenses.forEach(e => {
+                const d = new Date(e.date);
+                if (!e.isInstallment && d.getMonth() === curM && d.getFullYear() === curY) {
+                    const cat = e.category || 'Otros';
+                    if(!groups[cat]) groups[cat] = 0;
+                    groups[cat] += parseFloat(e.amount);
+                    totalM += parseFloat(e.amount);
+                }
+            });
+
+            // B. Sumar SUSCRIPCIONES (Si ya pasó el día de cobro)
+            if (Data.store.subscriptions) {
+                Data.store.subscriptions.forEach(sub => {
+                    if (currentDay >= sub.day) {
+                        const cat = UI.t('tab_subs'); // "Suscrip."
+                        if(!groups[cat]) groups[cat] = 0;
+                        groups[cat] += parseFloat(sub.cost);
+                        totalM += parseFloat(sub.cost);
+                    }
+                });
+            }
+
+            // C. Sumar LISTAS (Si están completadas este mes)
+            if (Data.store.lists) {
+                Data.store.lists.forEach(l => {
+                    const d = new Date(l.date);
+                    if (l.status === 'completed' && d.getMonth() === curM && d.getFullYear() === curY) {
+                        const cat = UI.t('cat_market'); // "Supermercado"
+                        if(!groups[cat]) groups[cat] = 0;
+                        groups[cat] += parseFloat(l.total);
+                        totalM += parseFloat(l.total);
+                    }
+                });
+            }
+
+            const sorted = Object.entries(groups).sort((a,b) => b[1] - a[1]).slice(0, 3);
+            
+            if (sorted.length === 0) {
+                catContainer.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">Sin datos este mes.</div>`;
+            } else {
+                const colors = ['var(--primary)', 'var(--purple)', 'var(--warning)'];
+                
+                sorted.forEach(([cat, amount], i) => {
+                    const pct = (amount / totalM) * 100;
+                    
+                    // Icono dinámico: Si es suscripción o mercado tiene icono propio, si no busca en categorías
+                    let icon = '';
+                    if (cat === UI.t('tab_subs')) icon = '\uD83D\uDCC5';
+                    else if (cat === UI.t('cat_market')) icon = '\uD83D\uDED2';
+                    else icon = this.getCategoryIcon(cat);
+
+                    const row = document.createElement('div');
+                    row.className = 'home-cat-row';
+                    row.innerHTML = `
+                        <div style="width:35%; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${icon} ${cat}
+                        </div>
+                        <div class="cat-bar-bg">
+                            <div class="cat-bar-fill" style="width:${pct}%; background:${colors[i]}"></div>
+                        </div>
+                        <div style="font-size:11px; font-weight:700; width:15%; text-align:right;">${Math.round(pct)}%</div>
+                    `;
+                    catContainer.appendChild(row);
+                });
+            }
+        }
     },
 
     // --- GRÁFICO DE CATEGORÍAS (DONUT) ---
@@ -332,7 +445,7 @@ const Finance = {
                         date: l.date, 
                         amount: l.total, 
                         name: l.name, 
-                        icon: '\uD83D\uDED2' //  Carrito Unicode
+                        icon: '\uD83D\uDED2' //   Carrito Unicode
                     });
                 }
             });
@@ -461,6 +574,7 @@ const Finance = {
             Data.save();
             Main.closeModal('budget');
             UI.renderBudgetChart();
+            Finance.renderHomeWidgets(); 
             
             if (typeof Assistant !== 'undefined') {
                 Assistant.addXP(20, "Presupuesto Definido"); 
@@ -547,6 +661,7 @@ const Finance = {
         Main.closeModal('expense');
         UI.showSnackbar(UI.t('msg_saved'));
         UI.renderBudgetChart();
+        Finance.renderHomeWidgets();
         
         if (typeof Assistant !== 'undefined') {
             Assistant.addXP(10, "Gasto Registrado");
@@ -566,6 +681,7 @@ const Finance = {
             Data.save(); 
             this.setTab('history'); 
             UI.renderBudgetChart();
+            Finance.renderHomeWidgets();
             if (typeof Assistant !== 'undefined') Assistant.updateMood();
         }
     },

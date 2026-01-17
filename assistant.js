@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - ASSISTANT (V7.4 - ICON FIX)
+   SMART LIFE PRO - ASSISTANT (V7.8 - VERTICAL XP)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -45,7 +45,6 @@ const Assistant = {
 
         // --- COMPRAS PARCELADAS (CUOTAS) ---
         { id: 'cred_1', icon: '\uD83D\uDCB3', name: 'A Plazos', desc: '1ª Parcela', condition: (d) => d.expenses && d.expenses.some(e => e.isInstallment) },
-        // CORREGIDO: Icono de 'Crédito' cambiado a Página/Factura (\uD83D\uDCC3) para máxima compatibilidad
         { id: 'cred_5', icon: '\uD83D\uDCC3', name: 'Crédito', desc: '5 Parcelas', condition: (d) => d.expenses && d.expenses.filter(e => e.isInstallment).length >= 5 },
         { id: 'cred_10', icon: '\uD83D\uDCC8', name: 'Estratega', desc: '10 Parcelas', condition: (d) => d.expenses && d.expenses.filter(e => e.isInstallment).length >= 10 },
         { id: 'cred_20', icon: '\uD83D\uDCBC', name: 'Banquero', desc: '20 Parcelas', condition: (d) => d.expenses && d.expenses.filter(e => e.isInstallment).length >= 20 },
@@ -209,7 +208,10 @@ const Assistant = {
             const g = Data.store.gamification;
             const required = this.getRequiredXP(g.level);
             const pct = Math.min(100, (g.xp / required) * 100);
-            bar.style.width = `${pct}%`;
+            
+            // --- CAMBIO PARA BARRA VERTICAL ---
+            bar.style.height = `${pct}%`;
+            bar.style.width = '100%'; 
         }
     },
 

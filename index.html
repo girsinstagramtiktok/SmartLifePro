@@ -32,56 +32,64 @@
             </header>
 
             <div class="scroll-content">
-                <div class="mascot-container">
-                    <div class="mascot-bubble" id="mascot-bubble" data-i18n="greeting">Hola Master, &iquest;todo bien?</div>
-                    
-                    <img src="idle.png" id="mascot-img" class="mascot-img" alt="Asistente" 
+                
+                <div class="mascot-compact-row">
+                    <div class="xp-vertical-track" onclick="if(typeof Main !== 'undefined') { event.stopPropagation(); Main.openProfile(); }">
+                        <div id="xp-fill" class="xp-fill-vertical"></div>
+                    </div>
+
+                    <img src="idle.png" id="mascot-img" class="mascot-img-compact" alt="Asistente" 
                          onclick="if(typeof Assistant !== 'undefined') { event.stopPropagation(); Assistant.giveTip(); }"
                          onerror="this.style.display='none'">
-                    
-                    <div class="xp-bar-container" onclick="if(typeof Main !== 'undefined') { event.stopPropagation(); Main.openProfile(); }">
-                        <div id="xp-fill" class="xp-fill"></div>
+
+                    <div class="mascot-bubble-side" id="mascot-bubble" data-i18n="greeting">
+                        Hola Master.
                     </div>
                 </div>
 
-                <div class="glass-card summary-card">
-                    <div class="chart-donut-wrap" onclick="Main.router('finance'); Finance.setTab('history');">
+                <div class="glass-card summary-card compact-budget">
+                    <div class="chart-donut-wrap small-donut" onclick="Main.router('finance'); Finance.setTab('history');">
                         <svg viewBox="0 0 36 36" class="circular-chart">
                             <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <path class="circle" id="budget-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         </svg>
                         <div class="donut-text">
                             <span class="donut-label" data-i18n="remaining_label">Restante</span>
-                            <span class="donut-value" id="budget-remaining">$0</span>
+                            <span class="donut-value small-val" id="budget-remaining">$0</span>
                         </div>
                     </div>
                     
-                    <div class="summary-details" onclick="Finance.openBudgetModal()" style="cursor:pointer; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+                    <div class="summary-details" onclick="Finance.openBudgetModal()" style="cursor:pointer; display:flex; flex-direction:column; justify-content:center; gap:5px;">
                         <div>
                             <div style="display:flex; align-items:center; margin-bottom:2px;">
                                 <span class="dot-label dot-green"></span> 
-                                <span id="budget-limit-lbl" style="font-size:12px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="budget_label">Presupuesto</span>
+                                <span id="budget-limit-lbl" style="font-size:11px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="budget_label">Presupuesto</span>
                             </div> 
-                            <div id="budget-limit" style="font-size:18px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
+                            <div id="budget-limit" style="font-size:16px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
                         </div>
                         <div>
                             <div style="display:flex; align-items:center; margin-bottom:2px;">
                                 <span class="dot-label dot-red"></span> 
-                                <span id="budget-spent-lbl" style="font-size:12px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="spent_label">Gastado</span>
+                                <span id="budget-spent-lbl" style="font-size:11px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="spent_label">Gastado</span>
                             </div>
-                            <div id="budget-spent" style="font-size:18px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
+                            <div id="budget-spent" style="font-size:16px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
                         </div>
                         <div id="touch-budget-txt" style="font-size:11px; color:var(--primary); margin-top:5px;" data-i18n="touch_budget">
-                            Toca para a&ntilde;adir presupuesto
+                            Toca para a&ntilde;adir
                         </div>
                     </div>
                 </div>
 
-                <div class="section-header" style="margin-top:10px;">
-                    <span class="section-label" data-i18n="active_lists_title">Listas Activas</span>
-                    <button class="text-btn-small" onclick="Main.router('lists')" data-i18n="see_all">Ver todas</button>
+                <div class="section-header" style="padding-bottom: 5px; margin-top:0;">
+                    <span class="section-label" data-i18n="recent_expenses_title">Gastos Recientes</span>
                 </div>
-                <div id="home-mini-lists"></div>
+                <div id="home-recent-expenses"></div>
+
+                <div class="section-header" style="padding-bottom: 5px;">
+                    <span class="section-label" data-i18n="top_categories_title">Top Categorías</span>
+                </div>
+                <div id="home-top-categories"></div>
+
             </div>
         </div>
 

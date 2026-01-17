@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - UI MANAGER (V6.5 - FULL DICTIONARY & LOGIC)
+   SMART LIFE PRO - UI MANAGER (V8.1 - CHIPS & DICT FIXED)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -17,10 +17,12 @@ const UI = {
             month_names: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
             
             // HOME & BUDGET
-            budget_label: "Presupuesto:",
-            spent_label: "Gastado:",
+            budget_label: "Presupuesto",
+            spent_label: "Gastado",
             remaining_label: "Restante",
             active_lists_title: "Listas Activas",
+            recent_expenses_title: "Gastos Recientes",
+            top_categories_title: "Top Categorías Mes",
             see_all: "Ver todas",
             touch_budget: "Toca para definir presupuesto \u270D\uFE0F",
             greeting: "Hola Master, \u00BFtodo bien?",
@@ -108,7 +110,7 @@ const UI = {
             import_success_title: "\u00A1\u00C9xito!",
             import_success_msg: "Datos importados correctamente.",
             
-            // CATEGORÍAS (CRÍTICO PARA GRÁFICOS)
+            // CATEGORÍAS (ID MAP)
             cat_market: "Supermercado", 
             cat_leisure: "Ocio",
             cat_transport: "Transporte",
@@ -116,30 +118,44 @@ const UI = {
             cat_health: "Salud",
             cat_bills: "Hogar",
             cat_travel: "Viaje",
-            cat_tech: "Tech",
+            cat_beauty: "Belleza",
             cat_other: "Otros",
+            
+            cat_food: "Comida",
+            cat_home: "Hogar",
+            cat_ent: "Entretenimiento",
+            cat_shop: "Compras",
             
             // GRÁFICAS
             cat_distribution: "Distribuci\u00F3n de Gastos",
             
             // AJUSTES
             sec_general: "General",
+            sec_app: "Aplicación",
+            sec_data: "Datos y Seguridad",
+            lang_label: "Idioma",
+            curr_label: "Moneda",
+            theme_label: "Tema Visual",
             dark_mode: "Modo Oscuro",
             bio_lock: "Bloqueo Biom\u00E9trico",
+            biometrics: "Bloqueo Biom\u00E9trico",
             currency: "Moneda",
-            sec_data: "Datos",
             btn_export: "Exportar Copia",
             btn_import: "Restaurar Copia",
+            btn_backup: "Crear Copia de Seguridad",
+            btn_restore: "Restaurar Copia",
             btn_reset: "Borrar Todo",
+            reset_confirm: "¿Borrar TODOS los datos?",
+            import_confirm: "Esto sobrescribirá tus datos actuales.",
             
             // GUÍA
-            guide_intro: "Bienvenido a Smart Life Pro. Aqu\u00ED tienes algunos consejos r\u00E1pidos:",
+            guide_intro: "Bienvenido a Smart Life Pro.",
             guide_home: "\uD83C\uDFE0 <b>Inicio:</b> El c\u00EDrculo es tu saldo. Toca el centro para ver historial.",
             guide_lists: "\uD83D\uDED2 <b>Listas:</b> Organiza tu s\u00FAper. Finalizar descuenta del presupuesto.",
             guide_fin: "\uD83D\uDCB0 <b>Finanzas:</b> Gestiona suscripciones y cuotas.",
             guide_mascot: "\uD83E\uDD16 <b>Smarty:</b> Toca la mascota para consejos.",
 
-            // CONFIRM
+            // CONFIRM (CLAVES RECUPERADAS)
             confirm_title: "Confirmar",
             confirm_text: "\u00BFEst\u00E1s seguro?",
             confirm_del_list: "\u00BFBorrar esta lista?",
@@ -163,6 +179,8 @@ const UI = {
             spent_label: "Gasto:",
             remaining_label: "Restante",
             active_lists_title: "Listas Ativas",
+            recent_expenses_title: "Despesas Recentes",
+            top_categories_title: "Top Categorias",
             see_all: "Ver todas",
             touch_budget: "Toque para definir or\u00E7amento \u270D\uFE0F",
             greeting: "Ol\u00E1 Master, tudo bem?",
@@ -258,24 +276,38 @@ const UI = {
             cat_health: "Sa\u00FAde",
             cat_bills: "Casa",
             cat_travel: "Viagem",
-            cat_tech: "Tech",
+            cat_beauty: "Beleza",
             cat_other: "Outro",
+            
+            cat_food: "Comida",
+            cat_home: "Casa",
+            cat_ent: "Lazer",
+            cat_shop: "Compras",
             
             // GRÁFICAS
             cat_distribution: "Distribui\u00E7\u00E3o de Despesas",
             
             // AJUSTES
             sec_general: "Geral",
+            sec_app: "Aplicação",
+            sec_data: "Dados e Segurança",
+            lang_label: "Idioma",
+            curr_label: "Moeda",
+            theme_label: "Tema Visual",
             dark_mode: "Modo Escuro",
             bio_lock: "Bloqueio Biom\u00E9trico",
+            biometrics: "Bloqueio Biom\u00E9trico",
             currency: "Moeda",
-            sec_data: "Dados",
             btn_export: "Exportar Backup",
             btn_import: "Restaurar Backup",
+            btn_backup: "Criar Backup",
+            btn_restore: "Restaurar Backup",
             btn_reset: "Apagar Tudo",
+            reset_confirm: "Apagar TODOS os dados?",
+            import_confirm: "Isso substituirá os dados atuais.",
             
             // GUÍA
-            guide_intro: "Bem-vindo ao Smart Life Pro. Aqui est\u00E3o algumas dicas:",
+            guide_intro: "Bem-vindo ao Smart Life Pro.",
             guide_home: "\uD83C\uDFE0 <b>In\u00EDcio:</b> O c\u00EDrculo mostra seu saldo. Toque no centro para ver o hist\u00F3rico.",
             guide_lists: "\uD83D\uDED2 <b>Listas:</b> Crie listas de compras. 'Finalizar' desconta do or\u00E7amento.",
             guide_fin: "\uD83D\uDCB0 <b>Finan\u00E7as:</b> Gerencie assinaturas e parcelas aqui.",
@@ -305,6 +337,8 @@ const UI = {
             spent_label: "Spent:",
             remaining_label: "Remaining",
             active_lists_title: "Active Lists",
+            recent_expenses_title: "Recent Expenses",
+            top_categories_title: "Top Categories",
             see_all: "See all",
             touch_budget: "Tap to set budget \u270D\uFE0F",
             greeting: "Hello Master, all good?",
@@ -400,21 +434,35 @@ const UI = {
             cat_health: "Health",
             cat_bills: "Bills",
             cat_travel: "Travel",
-            cat_tech: "Tech",
+            cat_beauty: "Beauty",
             cat_other: "Other",
+            
+            cat_food: "Food",
+            cat_home: "Home",
+            cat_ent: "Entertainment",
+            cat_shop: "Shopping",
             
             // GRÁFICAS
             cat_distribution: "Expense Distribution",
             
             // AJUSTES
             sec_general: "General",
+            sec_app: "Application",
+            sec_data: "Data & Security",
+            lang_label: "Language",
+            curr_label: "Currency",
+            theme_label: "Visual Theme",
             dark_mode: "Dark Mode",
             bio_lock: "Biometric Lock",
+            biometrics: "Biometric Lock",
             currency: "Currency",
-            sec_data: "Data",
             btn_export: "Export Backup",
             btn_import: "Restore Backup",
+            btn_backup: "Create Backup",
+            btn_restore: "Restore Backup",
             btn_reset: "Reset All",
+            reset_confirm: "Erase ALL data?",
+            import_confirm: "This will overwrite current data.",
             
             // GUÍA
             guide_intro: "Welcome to Smart Life Pro. Here are some quick tips:",
@@ -433,7 +481,7 @@ const UI = {
         }
     },
 
-    // --- CATEGORÍAS DISPONIBLES (PARA CHIPS) ---
+    // --- CATEGORÍAS DISPONIBLES ---
     categories: [
         { id: 'cat_market', icon: '\uD83D\uDED2' }, 
         { id: 'cat_leisure', icon: '\uD83C\uDF54' },
@@ -442,11 +490,11 @@ const UI = {
         { id: 'cat_health', icon: '\uD83D\uDC8A' },
         { id: 'cat_bills', icon: '\uD83C\uDFE0' },
         { id: 'cat_travel', icon: '\u2708\uFE0F' },
-        { id: 'cat_tech', icon: '\uD83D\uDCF1' },
+        { id: 'cat_beauty', icon: '\u2702\uFE0F \uD83D\uDC85' },
         { id: 'cat_other', icon: '\uD83D\uDCE6' }
     ],
 
-    // --- HELPER DE TRADUCCIÓN SEGURO ---
+    // --- UTILS ---
     t(key) {
         let lang = 'es';
         if (typeof Data !== 'undefined' && Data.store && Data.store.settings && Data.store.settings.lang) {
@@ -458,55 +506,63 @@ const UI = {
     },
 
     getMonthName(monthIndex) {
-        const lang = (typeof Data !== 'undefined' && Data.store && Data.store.settings) ? Data.store.settings.lang : 'es';
+        const lang = (typeof Data !== 'undefined' && Data.store.settings) ? Data.store.settings.lang : 'es';
         const dict = this.dictionary[lang] || this.dictionary['es'];
         return dict.month_names ? dict.month_names[monthIndex] : "Mes";
     },
 
     formatMoney(amount) {
-        const currency = (typeof Data !== 'undefined' && Data.store && Data.store.settings && Data.store.settings.currency) ? Data.store.settings.currency : '$';
+        const currency = (typeof Data !== 'undefined' && Data.store.settings && Data.store.settings.currency) ? Data.store.settings.currency : '$';
         return currency + parseFloat(amount).toFixed(2);
     },
 
     // --- RENDERIZADO GLOBAL (DOM REFRESH) ---
     refreshDOM() {
-        const lang = (typeof Data !== 'undefined' && Data.store && Data.store.settings) ? Data.store.settings.lang : 'es';
+        const lang = (typeof Data !== 'undefined' && Data.store.settings) ? Data.store.settings.lang : 'es';
         document.documentElement.lang = lang;
 
+        // 1. Traducir textos estáticos
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
-            if (key) {
-                el.innerHTML = this.t(key);
-            }
+            if (key) el.innerHTML = this.t(key);
         });
-
         document.querySelectorAll('[data-i18n-ph]').forEach(el => {
             const key = el.getAttribute('data-i18n-ph');
-            if (key) {
-                el.placeholder = this.t(key);
-            }
+            if (key) el.placeholder = this.t(key);
         });
 
-        if (typeof Data !== 'undefined' && Data.store && Data.store.settings && Data.store.settings.darkMode) {
+        // 2. Modo Oscuro
+        if (typeof Data !== 'undefined' && Data.store.settings && Data.store.settings.darkMode) {
             document.body.classList.add('dark-mode');
         } else {
             document.body.classList.remove('dark-mode');
         }
 
+        // 3. Renderizar componentes básicos
         this.renderCategoryChips();
         this.renderBudgetChart();
         
-        if (typeof Shopping !== 'undefined') {
-            Shopping.renderMiniLists();
+        // --- WIDGETS DEL HOME (V7.9) ---
+        if (typeof Finance !== 'undefined') {
+            Finance.renderHomeWidgets(); 
         }
         
+        // 4. Renderizar Listas (Compatibilidad V6.5)
+        if (typeof Shopping !== 'undefined') {
+            Shopping.renderMiniLists(); 
+        }
+        
+        // 5. Renderizar Pestaña Finanzas Activa
         if (typeof Finance !== 'undefined') {
             const activeTab = document.querySelector('.segment-btn.active');
-            if (activeTab) {
+            if (activeTab && activeTab.id.startsWith('fin-tab-')) {
                 const tabId = activeTab.id.replace('fin-tab-', '');
                 Finance.setTab(tabId);
             }
         }
+
+        // 6. Renderizar Ajustes (si estamos en la vista)
+        this.renderSettingsView();
     },
 
     // --- CHART DEL HOME (CÍRCULO DE PRESUPUESTO) ---
@@ -519,7 +575,6 @@ const UI = {
         }
 
         const remaining = limit - spent;
-        
         let percent = limit > 0 ? (spent / limit) * 100 : 0;
         const visualPercent = Math.min(percent, 100);
         
@@ -567,29 +622,171 @@ const UI = {
         }
     },
 
-    // --- RENDERIZADO DE CHIPS (CATEGORÍAS) ---
+    // --- RENDERIZADO DE CHIPS (CATEGORÍAS) [REPARADO] ---
     renderCategoryChips() {
         const container = document.getElementById('cat-chips');
         if (!container) return;
+
+        // Forzar clase layout correcta y wrap para que no sea una lista infinita
+        container.className = 'quick-chips'; 
+        container.style.flexWrap = 'wrap'; 
+        container.style.height = 'auto'; 
+        container.style.justifyContent = 'center';
 
         container.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
         this.categories.forEach(cat => {
             const chip = document.createElement('div');
-            chip.className = 'cat-chip';
+            // AQUÍ ESTABA EL ERROR: Faltaba la clase 'chip'
+            chip.className = 'chip cat-chip'; 
             chip.innerText = `${cat.icon} ${this.t(cat.id)}`;
             chip.dataset.id = cat.id;
             
             chip.onclick = () => {
-                document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('selected'));
+                document.querySelectorAll('.cat-chip').forEach(c => {
+                    c.classList.remove('selected');
+                    c.style.background = 'var(--glass-bg)';
+                    c.style.color = 'var(--text-color)';
+                });
                 chip.classList.add('selected');
+                chip.classList.add('cat-chip'); 
+                chip.style.background = 'var(--primary)';
+                chip.style.color = 'white';
                 if(navigator.vibrate) navigator.vibrate(10);
             };
             fragment.appendChild(chip);
         });
 
         container.appendChild(fragment);
+    },
+
+    // --- RENDERIZADO DE AJUSTES (V7.9) ---
+    renderSettingsView() {
+        const container = document.getElementById('settings-inject');
+        if (!container || typeof Data === 'undefined') return;
+        
+        const s = Data.store.settings;
+
+        container.innerHTML = `
+            <div class="section-label" style="margin-top:0;">${this.t('sec_general')}</div>
+            
+            <div class="setting-item">
+                <span>${this.t('lang_label')}</span>
+            </div>
+            <div class="lang-grid">
+                <div class="lang-btn-opt ${s.lang === 'es' ? 'selected' : ''}" onclick="UI.changeLang('es')">
+                    <div class="flag-icon flag-es"></div>
+                    <span>Español</span>
+                </div>
+                <div class="lang-btn-opt ${s.lang === 'en' ? 'selected' : ''}" onclick="UI.changeLang('en')">
+                    <div class="flag-icon flag-en"></div>
+                    <span>English</span>
+                </div>
+                <div class="lang-btn-opt ${s.lang === 'pt' ? 'selected' : ''}" onclick="UI.changeLang('pt')">
+                    <div class="flag-icon flag-pt"></div>
+                    <span>Português</span>
+                </div>
+            </div>
+
+            <div class="setting-item" style="margin-top:15px;">
+                <span>${this.t('curr_label')}</span>
+                <select class="setting-select" id="curr-select" onchange="UI.saveSettings()">
+                    <option value="$" ${s.currency === '$' ? 'selected' : ''}>$ (USD/Peso)</option>
+                    <option value="€" ${s.currency === '€' ? 'selected' : ''}>€ (Euro)</option>
+                    <option value="R$" ${s.currency === 'R$' ? 'selected' : ''}>R$ (Real)</option>
+                    <option value="S/." ${s.currency === 'S/.' ? 'selected' : ''}>S/. (Sol)</option>
+                </select>
+            </div>
+
+            <div class="section-label">${this.t('sec_app')}</div>
+            
+            <div class="setting-item">
+                <span>${this.t('theme_label')}</span>
+            </div>
+            <div class="theme-selector-grid">
+                <div class="theme-btn t-blue ${s.theme === 'blue' ? 'active' : ''}" onclick="UI.changeTheme('blue')"></div>
+                <div class="theme-btn t-pink ${s.theme === 'pink' ? 'active' : ''}" onclick="UI.changeTheme('pink')"></div>
+                <div class="theme-btn t-green ${s.theme === 'green' ? 'active' : ''}" onclick="UI.changeTheme('green')"></div>
+                <div class="theme-btn t-orange ${s.theme === 'orange' ? 'active' : ''}" onclick="UI.changeTheme('orange')"></div>
+                <div class="theme-btn t-red ${s.theme === 'red' ? 'active' : ''}" onclick="UI.changeTheme('red')"></div>
+                <div class="theme-btn t-purple ${s.theme === 'purple' ? 'active' : ''}" onclick="UI.changeTheme('purple')"></div>
+            </div>
+
+            <div class="setting-item" style="margin-top:15px;">
+                <span>${this.t('dark_mode')}</span>
+                <label class="switch-wrap">
+                    <input type="checkbox" id="dark-mode-toggle" ${s.darkMode ? 'checked' : ''} onchange="UI.toggleDarkMode()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="setting-item">
+                <span>${this.t('biometrics')}</span>
+                <label class="switch-wrap">
+                    <input type="checkbox" id="bio-toggle" ${s.biometrics ? 'checked' : ''} onchange="UI.toggleBiometrics()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="section-label">${this.t('sec_data')}</div>
+            
+            <div class="btn-data-row">
+                <button class="btn-data" onclick="Data.exportBackup()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>${this.t('btn_backup')}</span>
+                </button>
+                <div class="btn-data" style="position:relative;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>${this.t('btn_restore')}</span>
+                    <input type="file" id="restore-input" style="position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer;" onchange="Main.handleImport(this)">
+                </div>
+            </div>
+
+            <button class="btn-danger-outline" onclick="Main.factoryReset()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                ${this.t('btn_reset')}
+            </button>
+            
+            <div style="text-align:center; margin-top:20px; color:var(--text-sec); font-size:12px;">
+                Smart Life Pro v8.1<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
+            </div>
+            <div style="height:50px;"></div>
+        `;
+    },
+
+    // --- ACCIONES DE AJUSTES ---
+    saveSettings() {
+        const s = Data.store.settings;
+        s.currency = document.getElementById('curr-select').value;
+        Data.save();
+        this.refreshDOM();
+    },
+
+    changeLang(lang) {
+        Data.store.settings.lang = lang;
+        Data.save();
+        this.refreshDOM();
+        this.showSnackbar(this.t('msg_updated'));
+    },
+
+    changeTheme(theme) {
+        Data.store.settings.theme = theme;
+        Data.save();
+        if(typeof Main !== 'undefined') Main.applyThemeToBody(theme);
+        this.renderSettingsView();
+    },
+
+    toggleDarkMode() {
+        Data.store.settings.darkMode = document.getElementById('dark-mode-toggle').checked;
+        Data.save();
+        this.refreshDOM();
+    },
+
+    toggleBiometrics() {
+        Data.store.settings.biometrics = document.getElementById('bio-toggle').checked;
+        Data.save();
+        this.showSnackbar(this.t('msg_updated'));
     },
 
     // --- MODALES Y DIÁLOGOS (PROMISE BASED) ---
@@ -603,6 +800,7 @@ const UI = {
 
             if (titleEl) titleEl.innerText = this.t(titleKey);
             if (textEl) textEl.innerText = this.t(textKey);
+            
             if (btnOk) btnOk.innerText = this.t('confirm');
             if (btnCancel) btnCancel.innerText = this.t('cancel');
 
@@ -641,7 +839,7 @@ const UI = {
         } else {
             content.innerHTML = `
                 <div style="text-align:center; margin-bottom:25px;">
-                    <img src="happy.png" style="width:80px; height:auto; margin-bottom:15px; filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
+                    <img src="logo.png" style="width:80px; height:auto; margin-bottom:15px; filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
                     <p style="color:var(--text-sec); font-size:15px; line-height:1.5;">${this.t('guide_intro')}</p>
                 </div>
                 
@@ -663,10 +861,6 @@ const UI = {
                 <div class="glass-card" style="padding:15px;">
                     <div style="color:var(--purple); font-weight:bold; margin-bottom:5px;">Bot</div>
                     <div style="font-size:13px; color:var(--text-sec);">${this.t('guide_mascot')}</div>
-                </div>
-                
-                <div style="text-align:center; margin-top:25px; font-size:11px; opacity:0.4;">
-                    Smart Life Pro v7.0
                 </div>
             `;
             modal.classList.add('open');

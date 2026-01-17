@@ -162,30 +162,54 @@ const Shopping = {
 
         const fragment = document.createDocumentFragment();
 
-        activeLists.forEach(l => {
-            const card = document.createElement('div');
-            card.className = 'item-row'; 
-            card.style.justifyContent = 'space-between';
-            card.innerHTML = `
-                <div class="swipe-bg">${UI.t('swipe_delete')}</div>
-                <div class="item-content-wrap" style="width:100%; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="font-weight:700; font-size:16px; color:var(--text-color);">${l.name}</div>
-                        <div style="font-size:12px; opacity:0.7; color:var(--text-sec);">${l.items.length} items</div>
-                    </div>
-                    <div style="color:var(--primary); font-size:20px;">\u279C</div>
-                </div>
-            `;
-            
-            card.querySelector('.item-content-wrap').onclick = () => {
-                Data.store.currentId = l.id;
-                Data.save();
-                this.openShoppingView();
-            };
+// En shopping.js -> renderLists()
 
-            this.addSwipeLogic(card, () => this.deleteList(l.id));
-            fragment.appendChild(card);
-        });
+activeLists.forEach(l => {
+    const card = document.createElement('div');
+    card.className = 'item-row'; 
+    card.style.justifyContent = 'space-between';
+    
+    // CAMBIO 1: Estructura HTML separando Texto (Info) y Botón (Borrar)
+    card.innerHTML = `
+        <div class="swipe-bg">${UI.t('swipe_delete')}</div>
+        <div class="item-content-wrap" style="width:100%; display:flex; justify-content:space-between; align-items:center;">
+            
+            <div class="list-info-area" style="flex:1; cursor:pointer;">
+                <div style="font-weight:700; font-size:16px; color:var(--text-color);">${l.name}</div>
+                <div style="font-size:12px; opacity:0.7; color:var(--text-sec);">${l.items.length} items</div>
+            </div>
+
+            <button class="icon-btn delete-btn-list" style="color:var(--danger); width:40px; height:40px; margin-left:10px; z-index:10;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    // CAMBIO 2: Evento SOLO en el área de texto para ABRIR
+    const infoArea = card.querySelector('.list-info-area');
+    infoArea.onclick = (e) => {
+        e.stopPropagation(); // Evita conflictos
+        Data.store.currentId = l.id;
+        Data.save();
+        this.openShoppingView();
+    };
+
+    // CAMBIO 3: Evento en el botón para BORRAR
+    const delBtn = card.querySelector('.delete-btn-list');
+    delBtn.onclick = (e) => {
+        e.stopPropagation(); // Evita que se abra la lista al borrar
+        this.deleteList(l.id);
+    };
+
+    // Mantenemos la lógica de deslizar
+    this.addSwipeLogic(card, () => this.deleteList(l.id));
+    
+    fragment.appendChild(card);
+});
+
 
         container.innerHTML = '';
         container.appendChild(fragment);
@@ -379,34 +403,57 @@ const Shopping = {
         else btnFinish.classList.add('hidden');
     },
 
-    addSwipeLogic(element, actionCallback) {
+        addSwipeLogic(element, actionCallback) {
         let startX = 0;
-        let currentX = 0;
+        let currentX = null; // IMPORTANTE: Iniciamos en null para saber si hubo movimiento real
         const content = element.querySelector('.item-content-wrap');
 
-        element.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive: true});
+        // Al tocar, guardamos el inicio y reseteamos currentX
+        element.addEventListener('touchstart', (e) => { 
+            startX = e.touches[0].clientX;
+            currentX = startX; 
+        }, {passive: true});
 
+        // Al mover, actualizamos currentX
         element.addEventListener('touchmove', (e) => {
             currentX = e.touches[0].clientX;
             const diff = currentX - startX;
+            // Solo animamos si se desliza a la izquierda (diff negativo)
             if (diff < 0) {
                 content.style.transform = `translateX(${diff}px)`;
                 element.classList.add('swiping');
             }
         }, {passive: true});
 
+        // Al soltar
         element.addEventListener('touchend', () => {
+            // VERIFICACIÓN CLAVE: 
+            // Si currentX es null (nunca se movió) o la distancia es menor a 10px (temblor de dedo)
+            // entonces es un CLICK, no un SWIPE.
+            if (currentX === null || Math.abs(currentX - startX) < 10) {
+                content.style.transform = `translateX(0)`;
+                element.classList.remove('swiping');
+                return; // Salimos sin ejecutar borrar, permitiendo que ocurra el 'onclick'
+            }
+
             const diff = currentX - startX;
+            
+            // Solo si deslizó más de 100px a la izquierda activamos el borrado
             if (diff < -100) {
                 content.style.transform = `translateX(-100%)`;
                 actionCallback();
             } else {
+                // Si no llegó al tope, rebota
                 content.style.transform = `translateX(0)`;
                 element.classList.remove('swiping');
             }
-            startX = 0; currentX = 0;
+            
+            // Limpieza final
+            startX = 0; 
+            currentX = null;
         });
     },
+
 
     addItem(val) {
         const input = document.getElementById('shop-input');
