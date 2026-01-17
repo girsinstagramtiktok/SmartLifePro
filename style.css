@@ -904,3 +904,20 @@ body.dark-mode.theme-purple {
     padding: 6px 11px !important;
 }
 
+/* --- FIX FINAL: ELIMINAR RECTÁNGULO INTERNO (DOBLE FONDO) --- */
+
+/* 1. Hacemos transparente el envoltorio del contenido para evitar el "doble cristal" */
+.item-content-wrap {
+    background: transparent !important;
+}
+
+/* 2. Aseguramos que el área de texto tampoco tenga fondo ni bordes de enfoque */
+.list-info-area {
+    background: transparent !important;
+    outline: none !important;
+}
+
+/* 3. (Opcional) Elimina cualquier destello nativo residual en móviles */
+.item-row, .item-content-wrap, .list-info-area {
+    -webkit-tap-highlight-color: transparent;
+}

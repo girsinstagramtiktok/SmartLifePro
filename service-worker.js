@@ -1,10 +1,10 @@
 /* =========================================
-   SMART LIFE PRO - SERVICE WORKER (V8.2 - INSTANT LOAD)
+   SMART LIFE PRO - SERVICE WORKER (V8.3 - INSTANT LOAD)
    Estrategia: Stale-While-Revalidate (Carga Rápida + Update Background)
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v8.2-performance'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v8.3-performance'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
