@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - SHOPPING MODULE (V7.0 - FINAL NAMING FIX)
+   SMART LIFE PRO - SHOPPING MODULE (V7.7 - UI & LOGIC FIX)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -9,6 +9,7 @@ const Shopping = {
     currentDetailListId: null,
     selectedSummaryMonth: null, 
     isListening: false,
+    originalDetailValues: null, // Para comparar cambios en historial
 
     // --- DICCIONARIO DE EMOJIS (BASE DE DATOS) ---
     emojiMap: {
@@ -236,18 +237,23 @@ const Shopping = {
         const container = document.getElementById('shopping-ui-container');
         if(!container || !list) return;
 
+        // FIXED: Usando SVGs para Back, Sort y Micrófono
         container.innerHTML = `
             <div class="top-bar glass-pill">
                 <div class="progress-track"><div id="shop-progress-bar" class="progress-fill"></div></div>
-                <button class="icon-btn" onclick="Main.router('home')">\uD83D\uDD19</button>
+                <button class="icon-btn" onclick="Main.router('home')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
                 <h2 style="flex:1; text-align:center; font-size:16px; margin:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${list.name}</h2>
-                <button class="icon-btn" onclick="Shopping.sortList()">\uD83D\uDD03</button>
+                <button class="icon-btn" onclick="Shopping.sortList()">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                </button>
             </div>
             
             <div class="input-area" style="position: relative;">
                 <input type="text" id="shop-input" placeholder="${UI.t('shop_placeholder')}" autocomplete="off" list="suggestions">
                 <button id="mic-btn" class="mic-btn" onclick="Shopping.startVoiceRecognition()">
-                    \uD83C\uDF99\uFE0F
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                 </button>
                 <button id="add-btn" onclick="Shopping.addItem()" class="send-btn">\u2795</button>
             </div>
@@ -562,22 +568,21 @@ const Shopping = {
             total += (price * qty); 
         });
 
-  // --- CORRECCIÓN AQUÍ: NOMBRE DE LA LISTA FINALIZADA ---
-list.total = total;
-list.status = 'completed';
-list.date = Date.now(); 
+        list.total = total;
+        list.status = 'completed';
+        list.date = Date.now(); 
 
-// Lógica de nombres por idioma
-const d = new Date();
-const lang = (Data.store.settings && Data.store.settings.lang) ? Data.store.settings.lang : 'es';
-let namePrefix = "Compra"; 
+        // Lógica de nombres por idioma
+        const d = new Date();
+        const lang = (Data.store.settings && Data.store.settings.lang) ? Data.store.settings.lang : 'es';
+        let namePrefix = "Compra"; 
 
-if (lang === 'es') namePrefix = "Compra del d\u00EDa"; // Compra del día
-if (lang === 'en') namePrefix = "Shopping list";
-if (lang === 'pt') namePrefix = "Compra do dia";
+        if (lang === 'es') namePrefix = "Compra del d\u00EDa"; // Compra del día
+        if (lang === 'en') namePrefix = "Shopping list";
+        if (lang === 'pt') namePrefix = "Compra do dia";
 
-const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
-list.name = `${namePrefix} ${dateStr}`;
+        const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+        list.name = `${namePrefix} ${dateStr}`;
 
         Data.save();
 
@@ -623,6 +628,9 @@ list.name = `${namePrefix} ${dateStr}`;
     },
 
     renderHistoryLists(container) {
+        // FIXED: Limpiar contenedor antes de pintar para evitar duplicados visuales
+        container.innerHTML = '';
+
         const allCompleted = Data.store.lists.filter(l => l.status === 'completed').sort((a, b) => b.date - a.date);
         
         const now = new Date();
@@ -813,8 +821,15 @@ list.name = `${namePrefix} ${dateStr}`;
 
         const items = list.items.filter(i => i.checked);
         const fragment = document.createDocumentFragment();
+        
+        // GUARDAR ESTADO ORIGINAL (Deep Copy)
+        this.originalDetailValues = JSON.parse(JSON.stringify(items));
+        
+        // Desactivar botón guardar al abrir
+        const saveBtn = document.getElementById('hist-save-btn');
+        if(saveBtn) saveBtn.disabled = true;
 
-        items.forEach(item => {
+        items.forEach((item, index) => {
             const row = document.createElement('div');
             row.className = 'receipt-row';
             const qtyVal = this.parseQtyValue(item.qty);
@@ -825,11 +840,13 @@ list.name = `${namePrefix} ${dateStr}`;
                     ${item.qty ? `<small style="color:var(--text-sec)">(${item.qty})</small>` : ''}
                 </div>
                 <input type="number" class="receipt-input detail-input" 
+                       id="hist-input-${index}"
                        data-name="${item.name}" 
+                       data-index="${index}"
                        data-qty="${qtyVal}"
                        value="${item.price}" 
                        step="0.01"
-                       oninput="Shopping.updateDetailTotal()">
+                       oninput="Shopping.checkDetailChanges()">
             `;
             fragment.appendChild(row);
         });
@@ -839,9 +856,32 @@ list.name = `${namePrefix} ${dateStr}`;
         document.getElementById('modal-list-detail').classList.add('open');
     },
 
+    checkDetailChanges() {
+        if(!this.originalDetailValues) return;
+        
+        let hasChanges = false;
+        const inputs = document.querySelectorAll('.detail-input');
+        
+        inputs.forEach(inp => {
+            const idx = inp.getAttribute('data-index');
+            const currentVal = parseFloat(inp.value) || 0;
+            const originalVal = parseFloat(this.originalDetailValues[idx].price) || 0;
+            
+            if(currentVal !== originalVal) hasChanges = true;
+        });
+        
+        // Actualizar total visualmente
+        this.updateDetailTotal();
+        
+        // Activar/Desactivar botón
+        const saveBtn = document.getElementById('hist-save-btn');
+        if(saveBtn) saveBtn.disabled = !hasChanges;
+    },
+
     closeDetailModal() {
         document.getElementById('modal-list-detail').classList.remove('open');
         this.currentDetailListId = null;
+        this.originalDetailValues = null;
     },
 
     updateDetailTotal() {
@@ -877,7 +917,10 @@ list.name = `${namePrefix} ${dateStr}`;
         list.total = total;
         Data.save();
         this.closeDetailModal();
+        
+        // Renderizar correctamente (ya limpiamos contenedor en la función render)
         this.renderHistoryLists(document.getElementById('history-box'));
+        
         if(typeof UI.renderBudgetChart === 'function') UI.renderBudgetChart();
         UI.showSnackbar(UI.t('msg_updated'));
     },

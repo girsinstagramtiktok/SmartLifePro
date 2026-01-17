@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - MASTER STYLESHEET (V7.6 - LAYOUT FIX)
+   SMART LIFE PRO - MASTER STYLESHEET (V7.7 - SCROLL & UI FIX)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -200,6 +200,8 @@ body.dark-mode #bg-layer::after {
     transition: transform 0.2s, background 0.2s;
 }
 .icon-btn:active { transform: scale(0.9); background: var(--primary); color: white; }
+.icon-btn svg { width: 22px; height: 22px; stroke-width: 2.5; } /* Fix iconos SVG */
+.icon-btn:disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
 
 .glass-btn-small { background: var(--glass-bg); border: 1px solid var(--glass-border); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
@@ -216,6 +218,7 @@ body.dark-mode #bg-layer::after {
     box-shadow: 0 8px 20px rgba(0,122,255,0.3); margin-top: 15px; transition: transform 0.1s;
 }
 .btn-full:active { transform: scale(0.97); }
+.btn-full:disabled { background: var(--text-sec); opacity: 0.3; cursor: not-allowed; box-shadow: none; pointer-events: none; }
 
 .btn-danger-outline {
     margin-top: 15px; padding: 16px; background: rgba(255, 59, 48, 0.1); 
@@ -270,7 +273,11 @@ input, textarea {
     flex: 1; overflow-y: auto; padding: 15px 0 140px 0;
     overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
 }
-.scroll-content-shop { padding: 15px 20px 140px 20px; }
+/* CORRECCIÓN: Flex + Overflow para permitir scroll en listas largas */
+.scroll-content-shop { 
+    flex: 1; overflow-y: auto; padding: 15px 20px 140px 20px;
+    overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
+}
 
 /* --- LISTAS DE ITEMS --- */
 .item-row {
@@ -319,7 +326,6 @@ body.dark-mode .checkbox { border-color: #555; }
     transition: transform 0.1s;
 }
 .chip:active { background: var(--primary); color: white; transform: scale(0.95); border-color: transparent; }
-
 /* --- DOCK INFERIOR --- */
 .bottom-dock {
     position: absolute; bottom: var(--dock-bottom); left: 20px; right: 20px; height: 75px; 
@@ -391,6 +397,8 @@ body.dark-mode .checkbox { border-color: #555; }
     transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.3s;
     color: var(--text-color); width: 88% !important; max-width: 360px; 
     max-height: 85vh; overflow-y: auto; position: relative;
+    /* Corrección para scroll interno en ajustes largos */
+    display: flex; flex-direction: column;
 }
 .modal-overlay.open .settings-card { transform: scale(1); opacity: 1; }
 .settings-card.full-width {
@@ -415,25 +423,6 @@ body.dark-mode .checkbox { border-color: #555; }
     border-radius: 0; outline: none; color: var(--text-color);
 }
 .setting-item { padding: 16px 0; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 600; }
-
-/* --- CHIPS DE CATEGORÍA --- */
-.chips-container {
-    display: flex !important; flex-direction: row !important; gap: 10px;
-    overflow-x: auto; padding: 10px 5px 15px 5px; width: 100%;
-    scrollbar-width: none; margin-bottom: 10px;
-}
-.chips-container::-webkit-scrollbar { display: none; }
-.cat-chip {
-    background: rgba(120, 120, 120, 0.1); border: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700;
-    color: var(--text-color); cursor: pointer; white-space: nowrap; flex-shrink: 0;
-    transition: all 0.2s ease;
-}
-.cat-chip.selected {
-    background: var(--primary); color: white;
-    box-shadow: 0 4px 10px rgba(0, 122, 255, 0.4); transform: scale(1.05); border-color: transparent;
-}
-.cat-chip:active { transform: scale(0.95); }
 
 /* --- SWITCH --- */
 .switch-wrap { position: relative; display: inline-block; width: 50px; height: 30px; }
