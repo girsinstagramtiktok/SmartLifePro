@@ -152,38 +152,90 @@ const Finance = {
     },
 
     // --- RENDERIZADO HOME (WIDGETS) ---
+        // --- RENDERIZADO HOME (WIDGETS) ---
     renderHomeWidgets() {
-        // 1. RENDERIZAR GASTOS RECIENTES (ÚLTIMOS 3)
+        // 1. RENDERIZAR GASTOS RECIENTES (UNIFICADO: GASTOS + LISTAS + SUBS)
         const recentContainer = document.getElementById('home-recent-expenses');
         if (recentContainer) {
             recentContainer.innerHTML = '';
-            // Clonar y revertir para ver los últimos primero, tomar 3
-            const last3 = [...Data.store.expenses].reverse().slice(0, 3);
+            
+            let allMovements = [];
+
+            // A. Agregar Gastos Manuales
+            if (Data.store.expenses) {
+                Data.store.expenses.forEach(exp => {
+                    allMovements.push({
+                        type: 'expense',
+                        name: exp.desc,
+                        amount: parseFloat(exp.amount),
+                        date: new Date(exp.date).getTime(),
+                        icon: this.getCategoryIcon(exp.category)
+                    });
+                });
+            }
+
+            // B. Agregar Listas Completadas
+            if (Data.store.lists) {
+                Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
+                    allMovements.push({
+                        type: 'list',
+                        name: l.name, 
+                        amount: parseFloat(l.total),
+                        date: new Date(l.date).getTime(),
+                        icon: '\uD83D\uDED2' // Icono Carrito
+                    });
+                });
+            }
+
+            // C. Agregar Suscripciones (Calculando el cobro más reciente)
+            const now = new Date();
+            if (Data.store.subscriptions) {
+                Data.store.subscriptions.forEach(sub => {
+                    // Calculamos la fecha de cobro teórica de este mes
+                    let lastChargeDate = new Date(now.getFullYear(), now.getMonth(), sub.day);
+                    
+                    // Si el día de cobro de este mes aún no ha llegado, el "reciente" fue el mes pasado
+                    if (lastChargeDate > now) {
+                        lastChargeDate.setMonth(lastChargeDate.getMonth() - 1);
+                    }
+
+                    allMovements.push({
+                        type: 'sub',
+                        name: sub.name,
+                        amount: parseFloat(sub.cost),
+                        date: lastChargeDate.getTime(),
+                        icon: '\uD83D\uDCC5' // Icono Calendario
+                    });
+                });
+            }
+
+            // D. Ordenar por fecha (El más nuevo primero) y tomar los 3 últimos
+            allMovements.sort((a, b) => b.date - a.date);
+            const last3 = allMovements.slice(0, 3);
             
             if (last3.length === 0) {
                  recentContainer.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">Sin gastos recientes.</div>`;
             } else {
-                last3.forEach(exp => {
+                last3.forEach(item => {
                     const row = document.createElement('div');
                     row.className = 'home-expense-row';
-                    const icon = this.getCategoryIcon(exp.category); 
                     
                     row.innerHTML = `
                         <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-                            <span style="font-size:18px;">${icon}</span>
+                            <span style="font-size:18px;">${item.icon}</span>
                             <div style="display:flex; flex-direction:column; overflow:hidden;">
-                                <span style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${exp.desc}</span>
-                                <span style="font-size:10px; opacity:0.6;">${new Date(exp.date).toLocaleDateString()}</span>
+                                <span style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</span>
+                                <span style="font-size:10px; opacity:0.6;">${new Date(item.date).toLocaleDateString()}</span>
                             </div>
                         </div>
-                        <div style="font-weight:700; font-size:13px; color:var(--text-color);">${UI.formatMoney(exp.amount)}</div>
+                        <div style="font-weight:700; font-size:13px; color:var(--text-color);">${UI.formatMoney(item.amount)}</div>
                     `;
                     recentContainer.appendChild(row);
                 });
             }
         }
 
-        // 2. RENDERIZAR TOP 3 CATEGORÍAS (MES ACTUAL) - [CORREGIDO]
+        // 2. RENDERIZAR TOP 3 CATEGORÍAS (MES ACTUAL)
         const catContainer = document.getElementById('home-top-categories');
         if (catContainer) {
             catContainer.innerHTML = '';
@@ -241,7 +293,7 @@ const Finance = {
                 sorted.forEach(([cat, amount], i) => {
                     const pct = (amount / totalM) * 100;
                     
-                    // Icono dinámico: Si es suscripción o mercado tiene icono propio, si no busca en categorías
+                    // Icono dinámico
                     let icon = '';
                     if (cat === UI.t('tab_subs')) icon = '\uD83D\uDCC5';
                     else if (cat === UI.t('cat_market')) icon = '\uD83D\uDED2';
@@ -263,6 +315,7 @@ const Finance = {
             }
         }
     },
+
 
     // --- GRÁFICO DE CATEGORÍAS (DONUT) ---
     renderCategoryChart(container) {
