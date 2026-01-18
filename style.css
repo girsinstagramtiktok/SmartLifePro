@@ -40,23 +40,35 @@
 }
 
 /* --- MODO OSCURO (OVERRIDE) --- */
+/* --- MODO OSCURO (PREMIUM DARK) --- */
 body.dark-mode {
-    --bg-body: #000000;
-    --text-color: #FFFFFF;
-    --text-sec: #98989D;
+    /* Fondo: Un gris casi negro, más suave a la vista que el #000 */
+    --bg-body: #09090b;
     
-    --glass-bg: rgba(28, 28, 30, 0.92);
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    /* Texto: Un blanco 'roto' (#f4f4f5) reduce la fatiga visual vs el blanco puro */
+    --text-color: #f4f4f5;
+    --text-sec: #a1a1aa;
     
-    --item-bg: rgba(44, 44, 46, 0.9);
-    --input-bg: #1C1C1E;
-    --dock-bg: rgba(28, 28, 30, 0.96);
-    --segment-bg: rgba(118, 118, 128, 0.24);
+    /* Cristal Oscuro: Más translúcido, permitiendo ver el fondo desenfocado */
+    --glass-bg: rgba(30, 30, 35, 0.75);
     
-    --modal-overlay-bg: rgba(0, 0, 0, 0.75);
-    --sheet-bg: #1c1c1e;
+    /* Bordes: Muy sutiles, apenas para definir límites */
+    --glass-border: rgba(255, 255, 255, 0.08);
+    
+    /* Sombras: Más intensas para generar profundidad en la oscuridad */
+    --glass-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.6);
+    
+    /* Elementos UI */
+    --item-bg: rgba(255, 255, 255, 0.03); /* Items sutilmente iluminados */
+    --input-bg: rgba(0, 0, 0, 0.3);      /* Inputs más oscuros ("hundidos") */
+    --dock-bg: rgba(20, 20, 23, 0.95);
+    --segment-bg: rgba(255, 255, 255, 0.1);
+    
+    /* Modales */
+    --modal-overlay-bg: rgba(0, 0, 0, 0.85);
+    --sheet-bg: #18181b;
 }
+
 
 /* --- RESET & BASES --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -77,21 +89,34 @@ html, body {
 }
 
 /* --- FONDO DINÁMICO --- */
+/* --- FONDO DINÁMICO --- */
 #bg-layer {
     position: absolute; inset: 0; z-index: 0;
+    /* Gradiente original para modo CLARO (no lo tocamos) */
     background: linear-gradient(to bottom right, #e0eafc, #cfdef3);
     background-size: cover; background-position: center;
     transition: background-image 0.5s ease-in-out; pointer-events: none;
 }
+
 #bg-layer::after {
     content: ''; position: absolute; inset: 0;
+    /* Capa de brillo original para modo CLARO */
     background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.7));
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     transition: background 0.4s;
 }
-body.dark-mode #bg-layer::after {
-    background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.8));
+
+/* --- NUEVO FONDO DARK DEPTH (Sustituye la configuración antigua) --- */
+body.dark-mode #bg-layer {
+    /* Este es el gradiente "Deep Charcoal" que da el toque premium */
+    background: radial-gradient(circle at 50% -20%, #2a2a35 0%, #09090b 70%) !important;
 }
+
+body.dark-mode #bg-layer::after {
+    /* Hacemos transparente la capa superior para que se luzca el gradiente de arriba */
+    background: transparent !important;
+}
+
 
 #app-root { 
     position: relative; z-index: 1; height: 100%; 
@@ -920,4 +945,72 @@ body.dark-mode.theme-purple {
 /* 3. (Opcional) Elimina cualquier destello nativo residual en móviles */
 .item-row, .item-content-wrap, .list-info-area {
     -webkit-tap-highlight-color: transparent;
+}
+/* --- REFINAMIENTOS DARK MODE --- */
+
+/* Inputs con borde sutil al enfocar en modo oscuro */
+body.dark-mode input, 
+body.dark-mode textarea,
+body.dark-mode .setting-select {
+    color: #fff;
+}
+body.dark-mode .input-area,
+body.dark-mode .setting-input {
+    border: 1px solid rgba(255,255,255,0.05);
+}
+body.dark-mode .input-area:focus-within {
+    border-color: var(--primary);
+    background: rgba(0,0,0,0.5); /* Más oscuro al escribir */
+}
+
+/* Tarjetas con un hover sutil para dar vida */
+body.dark-mode .glass-card {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4); /* Sombra base más suave */
+}
+
+/* --- NUEVO ANILLO DE PERFIL (SVG PREMIUM) --- */
+.profile-chart-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 15px auto;
+}
+
+.profile-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: rotate(0deg); /* Inicio arriba */
+}
+
+.profile-circle-bg {
+    fill: none;
+    stroke: var(--glass-border);
+    stroke-width: 2.5;
+}
+
+.profile-circle-fill {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1.5s cubic-bezier(0.4, 0.0, 0.2, 1); /* Animación suave */
+    filter: drop-shadow(0 0 4px var(--primary)); /* Brillo neon sutil */
+}
+
+.profile-inner-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Animación de entrada para medallas */
+.badge-card {
+    transition: transform 0.2s, filter 0.2s;
+}
+.badge-card:active {
+    transform: scale(0.95);
 }
