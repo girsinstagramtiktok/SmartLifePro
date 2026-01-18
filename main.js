@@ -365,22 +365,27 @@ const Main = {
                 if (!window.PublicKeyCredential) throw new Error("No soportado");
 
                 // Opciones de registro
-                const publicKeyCredentialCreationOptions = {
-                    challenge: Uint8Array.from("SmartLifeProChallenge", c => c.charCodeAt(0)),
-                    rp: { name: "Smart Life Pro", id: window.location.hostname },
-                    user: {
-                        id: Uint8Array.from("MasterUserID", c => c.charCodeAt(0)),
-                        name: "master@smartlife.pro",
-                        displayName: "Master"
-                    },
-                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                    authenticatorSelection: {
-                        authenticatorAttachment: "platform", // Fuerza lector del dispositivo
-                        userVerification: "required"
-                    },
-                    timeout: 60000,
-                    attestation: "none"
-                };
+                // En main.js -> toggleBiometrics
+const publicKeyCredentialCreationOptions = {
+    challenge: Uint8Array.from("SmartLifeProChallenge", c => c.charCodeAt(0)),
+    // CAMBIO AQUÍ: Eliminamos 'id' para evitar errores con IPs o localhost
+    rp: { 
+        name: "Smart Life Pro" 
+    },
+    user: {
+        id: Uint8Array.from("MasterUserID", c => c.charCodeAt(0)),
+        name: "master@smartlife.pro",
+        displayName: "Master"
+    },
+    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+    authenticatorSelection: {
+        authenticatorAttachment: "platform", 
+        userVerification: "required"
+    },
+    timeout: 60000,
+    attestation: "none"
+};
+
 
                 // Pedir huella para CREAR la llave
                 const credential = await navigator.credentials.create({
