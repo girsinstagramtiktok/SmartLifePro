@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - UI MANAGER (V8.1 - CHIPS & DICT FIXED)
+   SMART LIFE PRO - UI MANAGER (V8.2 - BACKUP FIX)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -542,12 +542,12 @@ const UI = {
         this.renderCategoryChips();
         this.renderBudgetChart();
         
-        // --- WIDGETS DEL HOME (V7.9) ---
+        // --- WIDGETS DEL HOME ---
         if (typeof Finance !== 'undefined') {
             Finance.renderHomeWidgets(); 
         }
         
-        // 4. Renderizar Listas (Compatibilidad V6.5)
+        // 4. Renderizar Listas
         if (typeof Shopping !== 'undefined') {
             Shopping.renderMiniLists(); 
         }
@@ -561,7 +561,7 @@ const UI = {
             }
         }
 
-        // 6. Renderizar Ajustes (si estamos en la vista)
+        // 6. Renderizar Ajustes
         this.renderSettingsView();
     },
 
@@ -622,12 +622,12 @@ const UI = {
         }
     },
 
-    // --- RENDERIZADO DE CHIPS (CATEGORÍAS) [REPARADO] ---
+    // --- RENDERIZADO DE CHIPS (CATEGORÍAS) ---
     renderCategoryChips() {
         const container = document.getElementById('cat-chips');
         if (!container) return;
 
-        // Forzar clase layout correcta y wrap para que no sea una lista infinita
+        // Forzar clase layout correcta y wrap
         container.className = 'quick-chips'; 
         container.style.flexWrap = 'wrap'; 
         container.style.height = 'auto'; 
@@ -638,7 +638,6 @@ const UI = {
 
         this.categories.forEach(cat => {
             const chip = document.createElement('div');
-            // AQUÍ ESTABA EL ERROR: Faltaba la clase 'chip'
             chip.className = 'chip cat-chip'; 
             chip.innerText = `${cat.icon} ${this.t(cat.id)}`;
             chip.dataset.id = cat.id;
@@ -650,7 +649,6 @@ const UI = {
                     c.style.color = 'var(--text-color)';
                 });
                 chip.classList.add('selected');
-                chip.classList.add('cat-chip'); 
                 chip.style.background = 'var(--primary)';
                 chip.style.color = 'white';
                 if(navigator.vibrate) navigator.vibrate(10);
@@ -661,7 +659,7 @@ const UI = {
         container.appendChild(fragment);
     },
 
-    // --- RENDERIZADO DE AJUSTES (V7.9) ---
+    // --- RENDERIZADO DE AJUSTES ---
     renderSettingsView() {
         const container = document.getElementById('settings-inject');
         if (!container || typeof Data === 'undefined') return;
@@ -732,7 +730,7 @@ const UI = {
             <div class="section-label">${this.t('sec_data')}</div>
             
             <div class="btn-data-row">
-                <button class="btn-data" onclick="Data.exportBackup()">
+                <button class="btn-data" onclick="Main.downloadBackup()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     <span>${this.t('btn_backup')}</span>
                 </button>
@@ -749,7 +747,7 @@ const UI = {
             </button>
             
             <div style="text-align:center; margin-top:20px; color:var(--text-sec); font-size:12px;">
-                Smart Life Pro v8.1<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
+                Smart Life Pro v8.2<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
             </div>
             <div style="height:50px;"></div>
         `;
