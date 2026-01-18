@@ -12,46 +12,178 @@ const Shopping = {
     originalDetailValues: null, // Para comparar cambios en historial
 
     // --- DICCIONARIO DE EMOJIS (BASE DE DATOS) ---
-    emojiMap: {
-        'agua': '💧', 'refresco': '🥤', 'coca': '🥤', 'soda': '🥤', 'gaseosa': '🥤',
-        'cerveza': '🍺', 'vino': '🍷', 'cafe': '☕', 'leche': '🥛', 'te': '🍵', 
-        'jugo': '🧃', 'licor': '🥃', 'alcohol': '🍾', 'mate': '🧉',
-        'manzana': '🍎', 'banana': '🍌', 'platano': '🍌', 'guineo': '🍌', 'uva': '🍇', 
-        'limon': '🍋', 'naranja': '🍊', 'pina': '🍍', 'anana': '🍍', 'fresa': '🍓', 'frutilla': '🍓',
-        'palta': '🥑', 'aguacate': '🥑', 'tomate': '🍅', 'cereza': '🍒', 'durazno': '🍑', 
-        'mango': '🥭', 'pera': '🍐', 'sandia': '🍉', 'melon': '🍈', 'kiwi': '🥝', 'coco': '🥥',
-        'papa': '🥔', 'patata': '🥔', 'cebolla': '🧅', 'ajo': '🧄', 'zanahoria': '🥕', 
-        'lechuga': '🥬', 'brocoli': '🥦', 'choclo': '🌽', 'maiz': '🌽', 'elote': '🌽',
-        'aji': '🌶️', 'chile': '🌶️', 'pimiento': '🫑', 'pepino': '🥒', 'berenjena': '🍆',
-        'calabaza': '🎃', 'zapallo': '🎃', 'hongo': '🍄', 'champinon': '🍄', 'setas': '🍄',
-        'mani': '🥜', 'cacahuate': '🥜', 'aceituna': '🫒',
-        'carne': '🥩', 'bistec': '🥩', 'res': '🥩', 'asado': '🥩',
-        'pollo': '🍗', 'pechuga': '🍗', 'muslo': '🍗', 'pavo': '🦃',
-        'huevo': '🥚', 'pescado': '🐟', 'atun': '🐟', 'salmon': '🐟', 'marisco': '🦐', 'camaron': '🦐',
-        'jamon': '🥓', 'tocino': '🥓', 'panceta': '🥓', 
-        'queso': '🧀', 'salchicha': '🌭', 'chorizo': '🌭', 'longaniza': '🌭', 'yogur': '🥛',
-        'pan': '🍞', 'tostada': '🍞', 'bolillo': '🥖', 'baguette': '🥖',
-        'arroz': '🍚', 'frijol': '🫘', 'poroto': '🫘', 'lenteja': '🥘',
-        'fideos': '🍝', 'pasta': '🍝', 'espagueti': '🍝', 'tallarin': '🍝', 'macarrones': '🍝',
-        'aceite': '🌻', 'manteca': '🧈', 'mantequilla': '🧈',
-        'sal': '🧂', 'pimienta': '🧂', 'condimento': '🧂', 'azucar': '🍬', 'miel': '🍯',
-        'harina': '🌾', 'cereal': '🥣', 'avena': '🥣',
-        'galleta': '🍪', 'chocolate': '🍫', 'dulce': '🍬', 'caramelo': '🍬',
-        'helado': '🍦', 'torta': '🍰', 'pastel': '🎂', 
-        'pizza': '🍕', 'hamburguesa': '🍔', 'sandwich': '🥪', 'sushi': '🍣', 
-        'taco': '🌮', 'burrito': '🌯', 'empanada': '🥟', 'sopa': '🍲', 'caldo': '🍲',
-        'jabon': '🧼', 'shampoo': '🧴', 'acondicionador': '🧴', 'crema': '🧴',
-        'papel': '🧻', 'higienico': '🧻', 'servilleta': '🧻',
-        'detergente': '🫧', 'lavandina': '🧴', 'suavizante': '🧴', 'limpiador': '🪣',
-        'esponja': '🧽', 'trapo': '🧽', 'escoba': '🧹', 'basura': '🗑️',
-        'bolsa': '🛍️', 'pila': '🔋', 'bateria': '🔋', 'foco': '💡', 'bombilla': '💡',
-        'pasta dental': '🪥', 'dentifrico': '🪥', 'cepillo': '🪥', 'hilo dental': '🦷',
-        'toalla': '🧖', 'panal': '👶', 'toallita': '👶',
-        'mascotas': '🐶', 'perro': '🐶', 'gato': '🐱', 'alimento': '🥣', 'croquetas': '🥣',
-        'medicina': '💊', 'pastilla': '💊', 'jarabe': '🥄', 'curita': '🩹',
-        'cigarro': '🚬', 'fuego': '🔥', 'fosforo': '🔥', 'encendedor': '🔥',
-        'herramienta': '🔧', 'clavo': '🔩', 'tornillo': '🔩', 'cinta': '🩹'
+     emojiMap: {
+        // --- BEBIDAS / DRINKS ---
+        'agua': '💧', 'water': '💧', 'agua mineral': '💧',
+        'refresco': '🥤', 'soda': '🥤', 'gaseosa': '🥤', 'coca': '🥤', 'refrigerante': '🥤', 'soft drink': '🥤',
+        'cerveza': '🍺', 'beer': '🍺', 'cerveja': '🍺', 'birra': '🍺',
+        'vino': '🍷', 'wine': '🍷', 'vinho': '🍷',
+        'cafe': '☕', 'coffee': '☕',
+        'leche': '🥛', 'milk': '🥛', 'leite': '🥛',
+        'te': '🍵', 'tea': '🍵', 'cha': '🍵',
+        'jugo': '🧃', 'zumo': '🧃', 'juice': '🧃', 'suco': '🧃',
+        'licor': '🥃', 'liquor': '🥃', 'whisky': '🥃', 'vodka': '🥃', 'ron': '🥃', 'rum': '🥃',
+        'alcohol': '🍾', 'champagne': '🍾', 'espumante': '🍾',
+        'mate': '🧉', 'chimarrao': '🧉', 'yerba': '🧉',
+        'hielo': '🧊', 'ice': '🧊', 'gelo': '🧊',
+
+        // --- FRUTAS / FRUITS ---
+        'manzana': '🍎', 'apple': '🍎', 'maca': '🍎',
+        'banana': '🍌', 'platano': '🍌', 'guineo': '🍌', 'cambur': '🍌',
+        'uva': '🍇', 'grape': '🍇',
+        'limon': '🍋', 'lemon': '🍋', 'limao': '🍋', 'lima': '🍋',
+        'naranja': '🍊', 'orange': '🍊', 'laranja': '🍊',
+        'pina': '🍍', 'anana': '🍍', 'pineapple': '🍍', 'abacaxi': '🍍',
+        'fresa': '🍓', 'frutilla': '🍓', 'strawberry': '🍓', 'morango': '🍓',
+        'palta': '🥑', 'aguacate': '🥑', 'avocado': '🥑', 'abacate': '🥑',
+        'tomate': '🍅', 'tomato': '🍅',
+        'cereza': '🍒', 'cherry': '🍒', 'cereja': '🍒',
+        'durazno': '🍑', 'peach': '🍑', 'pessego': '🍑', 'melocoton': '🍑',
+        'mango': '🥭', 'manga': '🥭',
+        'pera': '🍐', 'pear': '🍐',
+        'sandia': '🍉', 'watermelon': '🍉', 'melancia': '🍉',
+        'melon': '🍈', 'cantaloupe': '🍈', 'melao': '🍈',
+        'kiwi': '🥝',
+        'coco': '🥥', 'coconut': '🥥',
+        'arandano': '🫐', 'blueberry': '🫐', 'mirtilo': '🫐',
+        'frambuesa': '🍇', 'raspberry': '🍇', 'framboesa': '🍇',
+        'aceituna': '🫒', 'olive': '🫒', 'azeitona': '🫒',
+
+        // --- VERDURAS / VEGETABLES ---
+        'papa': '🥔', 'patata': '🥔', 'potato': '🥔', 'batata': '🥔',
+        'cebolla': '🧅', 'onion': '🧅', 'cebola': '🧅',
+        'ajo': '🧄', 'garlic': '🧄', 'alho': '🧄',
+        'zanahoria': '🥕', 'carrot': '🥕', 'cenoura': '🥕',
+        'lechuga': '🥬', 'lettuce': '🥬', 'alface': '🥬',
+        'brocoli': '🥦', 'broccoli': '🥦', 'brocolis': '🥦',
+        'choclo': '🌽', 'maiz': '🌽', 'elote': '🌽', 'corn': '🌽', 'milho': '🌽',
+        'aji': '🌶️', 'chile': '🌶️', 'picante': '🌶️', 'pepper': '🌶️', 'pimenta': '🌶️',
+        'pimiento': '🫑', 'bell pepper': '🫑', 'pimentao': '🫑', 'morron': '🫑',
+        'pepino': '🥒', 'cucumber': '🥒',
+        'berenjena': '🍆', 'eggplant': '🍆', 'berinjela': '🍆',
+        'calabaza': '🎃', 'zapallo': '🎃', 'pumpkin': '🎃', 'abobora': '🎃',
+        'hongo': '🍄', 'champinon': '🍄', 'setas': '🍄', 'mushroom': '🍄', 'cogumelo': '🍄',
+        'mani': '🥜', 'cacahuate': '🥜', 'peanut': '🥜', 'amendoim': '🥜',
+        'espinaca': '🍃', 'spinach': '🍃', 'espinafre': '🍃',
+        'repollo': '🥬', 'cabbage': '🥬', 'repolho': '🥬',
+        'batata dulce': '🍠', 'sweet potato': '🍠', 'batata doce': '🍠', 'camote': '🍠',
+
+        // --- CARNES / MEATS ---
+        'carne': '🥩', 'meat': '🥩',
+        'bistec': '🥩', 'steak': '🥩', 'bife': '🥩',
+        'res': '🥩', 'beef': '🥩', 'boi': '🥩',
+        'asado': '🥩', 'bbq': '🥩', 'churrasco': '🥩', 'parrillada': '🥩',
+        'pollo': '🍗', 'chicken': '🍗', 'frango': '🍗',
+        'pechuga': '🍗', 'breast': '🍗', 'peito': '🍗',
+        'muslo': '🍗', 'thigh': '🍗', 'coxa': '🍗',
+        'pavo': '🦃', 'turkey': '🦃', 'peru': '🦃',
+        'cerdo': '🐖', 'puerco': '🐖', 'pork': '🐖', 'pig': '🐖', 'porco': '🐖', 'cochino': '🐖',
+        'costilla': '🍖', 'ribs': '🍖', 'costela': '🍖',
+        'chuleta': '🍖', 'chop': '🍖', 'bisteca': '🍖',
+        'huevo': '🥚', 'egg': '🥚', 'ovo': '🥚',
+        'pescado': '🐟', 'fish': '🐟', 'peixe': '🐟',
+        'atun': '🐟', 'tuna': '🐟', 'atum': '🐟',
+        'salmon': '🐟', 'salmon': '🐟', 'salmao': '🐟',
+        'marisco': '🦐', 'seafood': '🦐', 'frutos do mar': '🦐',
+        'camaron': '🦐', 'shrimp': '🦐', 'camarao': '🦐', 'gamba': '🦐',
+        'langosta': '🦞', 'lobster': '🦞', 'lagosta': '🦞',
+        'cangrejo': '🦀', 'crab': '🦀', 'caranguejo': '🦀',
+
+        // --- FIAMBRES / DELI ---
+        'jamon': '🥓', 'ham': '🥓', 'presunto': '🥓',
+        'tocino': '🥓', 'bacon': '🥓', 'panceta': '🥓', 'beicon': '🥓',
+        'queso': '🧀', 'cheese': '🧀', 'queijo': '🧀', 'muzzarella': '🧀',
+        'salchicha': '🌭', 'sausage': '🌭', 'salsicha': '🌭',
+        'chorizo': '🌭', 'linguica': '🌭', 'longaniza': '🌭',
+        'salami': '🌭', 'salame': '🌭',
+
+        // --- PANADERIA / BAKERY ---
+        'pan': '🍞', 'bread': '🍞', 'pao': '🍞',
+        'tostada': '🍞', 'toast': '🍞', 'torrada': '🍞',
+        'bolillo': '🥖', 'baguette': '🥖', 'baguete': '🥖', 'barra': '🥖',
+        'medialuna': '🥐', 'croissant': '🥐',
+        'dona': '🍩', 'donut': '🍩', 'rosquinha': '🍩',
+        'bagel': '🥯',
+        'yogur': '🥛', 'yogurt': '🥛', 'iogurte': '🥛',
+        'manteca': '🧈', 'mantequilla': '🧈', 'butter': '🧈', 'manteiga': '🧈',
+        'margarina': '🧈', 'margarine': '🧈',
+        'cereal': '🥣', 'avena': '🥣', 'oats': '🥣', 'aveia': '🥣',
+        'harina': '🌾', 'flour': '🌾', 'farinha': '🌾',
+
+        // --- DESPENSA / PANTRY ---
+        'arroz': '🍚', 'rice': '🍚',
+        'frijol': '🫘', 'bean': '🫘', 'feijao': '🫘', 'poroto': '🫘', 'caraota': '🫘',
+        'lenteja': '🥘', 'lentil': '🥘', 'lentilha': '🥘',
+        'fideos': '🍝', 'pasta': '🍝', 'noodle': '🍝', 'macarrao': '🍝', 
+        'espagueti': '🍝', 'spaghetti': '🍝', 'tallarin': '🍝', 'macarrones': '🍝',
+        'aceite': '🌻', 'oil': '🌻', 'oleo': '🌻', 'azeite': '🌻',
+        'sal': '🧂', 'salt': '🧂',
+        'pimienta': '🧂', 'pepper': '🧂', 'pimenta': '🧂',
+        'condimento': '🧂', 'seasoning': '🧂', 'tempero': '🧂',
+        'azucar': '🍬', 'sugar': '🍬', 'acucar': '🍬',
+        'miel': '🍯', 'honey': '🍯', 'mel': '🍯',
+        'galleta': '🍪', 'cookie': '🍪', 'biscuit': '🍪', 'bolacha': '🍪',
+        'chocolate': '🍫',
+        'dulce': '🍬', 'candy': '🍬', 'doce': '🍬', 'caramelo': '🍬', 'bala': '🍬',
+        'helado': '🍦', 'ice cream': '🍦', 'sorvete': '🍦',
+        'torta': '🍰', 'cake': '🍰', 'bolo': '🍰', 'pastel': '🍰',
+        'cotufas': '🍿', 'palomitas': '🍿', 'popcorn': '🍿', 'pipoca': '🍿',
+
+        // --- COMIDA PREPARADA / FAST FOOD ---
+        'pizza': '🍕',
+        'hamburguesa': '🍔', 'burger': '🍔', 'hamburguer': '🍔',
+        'sandwich': '🥪', 'sanduiche': '🥪', 'bocadillo': '🥪',
+        'sushi': '🍣',
+        'taco': '🌮',
+        'burrito': '🌯',
+        'empanada': '🥟', 'pastel': '🥟',
+        'sopa': '🍲', 'soup': '🍲', 'caldo': '🍲',
+        'papas fritas': '🍟', 'fries': '🍟', 'batata frita': '🍟',
+
+        // --- LIMPIEZA / CLEANING ---
+        'jabon': '🧼', 'soap': '🧼', 'sabao': '🧼', 'sabonete': '🧼',
+        'detergente': '🫧', 'detergent': '🫧',
+        'lavandina': '🧴', 'bleach': '🧴', 'cloro': '🧴', 'agua sanitaria': '🧴',
+        'suavizante': '🧴', 'softener': '🧴', 'amaciante': '🧴',
+        'esponja': '🧽', 'sponge': '🧽', 'bucha': '🧽', 'trapo': '🧽', 'pano': '🧽',
+        'escoba': '🧹', 'broom': '🧹', 'vassoura': '🧹',
+        'limpiador': '🪣', 'cleaner': '🪣', 'balde': '🪣', 'cubo': '🪣',
+        'basura': '🗑️', 'trash': '🗑️', 'lixo': '🗑️',
+        'bolsa': '🛍️', 'bag': '🛍️', 'sacola': '🛍️',
+
+        // --- HIGIENE / PERSONAL CARE ---
+        'shampoo': '🧴', 'xampu': '🧴', 'champu': '🧴',
+        'acondicionador': '🧴', 'conditioner': '🧴', 'crema': '🧴', 'cream': '🧴', 'creme': '🧴',
+        'papel': '🧻', 'paper': '🧻', 'higienico': '🧻', 'toilet paper': '🧻',
+        'servilleta': '🧻', 'napkin': '🧻', 'guardanapo': '🧻',
+        'pasta dental': '🪥', 'toothpaste': '🪥', 'pasta de dente': '🪥', 'dentifrico': '🪥',
+        'cepillo': '🪥', 'brush': '🪥', 'escova': '🪥',
+        'hilo dental': '🦷', 'floss': '🦷', 'fio dental': '🦷',
+        'toalla': '🧖', 'towel': '🧖', 'toalha': '🧖',
+        'panal': '👶', 'diaper': '👶', 'fralda': '👶',
+        'toallita': '👶', 'wipes': '👶', 'lenco umedecido': '👶',
+        'afeitadora': '🪒', 'razor': '🪒', 'gillette': '🪒', 'barbeador': '🪒',
+
+        // --- HOGAR / HOUSEHOLD ---
+        'pila': '🔋', 'battery': '🔋', 'bateria': '🔋',
+        'foco': '💡', 'bulb': '💡', 'bombilla': '💡', 'lampada': '💡',
+        'mascotas': '🐶', 'pets': '🐶',
+        'perro': '🐶', 'dog': '🐶', 'cachorro': '🐶',
+        'gato': '🐱', 'cat': '🐱',
+        'alimento': '🥣', 'food': '🥣', 'racao': '🥣', 'croquetas': '🥣',
+        'medicina': '💊', 'medicine': '💊', 'remedio': '💊',
+        'pastilla': '💊', 'pill': '💊', 'comprimido': '💊',
+        'jarabe': '🥄', 'syrup': '🥄', 'xarope': '🥄',
+        'curita': '🩹', 'bandaid': '🩹', 'curativo': '🩹',
+        'cinta': '🩹', 'tape': '🩹', 'fita': '🩹',
+        'cigarro': '🚬', 'cigarette': '🚬',
+        'fuego': '🔥', 'fire': '🔥', 'fogo': '🔥',
+        'fosforo': '🔥', 'match': '🔥', 'isquero': '🔥', 'lighter': '🔥', 'encendedor': '🔥', 'isqueiro': '🔥',
+        'herramienta': '🔧', 'tool': '🔧', 'ferramenta': '🔧',
+        'clavo': '🔩', 'nail': '🔩', 'prego': '🔩',
+        'tornillo': '🔩', 'screw': '🔩', 'parafuso': '🔩'
     },
+
 
     // --- UTILS ---
     normalize(str) {
@@ -81,11 +213,20 @@ const Shopping = {
         return { name: name.charAt(0).toUpperCase() + name.slice(1), qty };
     },
 
-    parseQtyValue(qtyString) {
-        if (!qtyString) return 1;
-        const match = qtyString.match(/(\d+(\.\d+)?)/);
-        return match ? parseFloat(match[0]) : 1;
-    },
+    // En shopping.js
+parseQtyValue(qtyString) {
+    if (!qtyString) return 1;
+    
+    // Si la cantidad contiene letras de unidades (kg, g, l, ml, lbs), 
+    // asumimos que el precio ingresado es por esa unidad completa.
+    const hasUnit = /[a-zA-Z]/.test(qtyString);
+    if (hasUnit) return 1; 
+
+    // Si es solo un número (ej: "2"), extraemos el valor para multiplicar
+    const match = qtyString.match(/(\d+(\.\d+)?)/);
+    return match ? parseFloat(match[0]) : 1;
+},
+
 
     // --- GESTIÓN DE LISTAS ---
     openCreationMenu() { Main.openAddMenu(); },
@@ -514,6 +655,9 @@ activeLists.forEach(l => {
             return a.checked ? 1 : -1; 
         });
         Data.save();
+        
+if (typeof Finance !== 'undefined') Finance.renderHomeWidgets();
+if (typeof UI !== 'undefined') UI.renderBudgetChart();
         this.renderShoppingItems();
     },
 
@@ -633,6 +777,8 @@ activeLists.forEach(l => {
 
         Data.save();
 
+if (typeof Finance !== 'undefined') Finance.renderHomeWidgets(); // Actualiza Gastos Recientes
+if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo de presupuesto
         if (typeof Assistant !== 'undefined') {
             Assistant.addXP(50, "Lista Completada");
             Assistant.updateMood();
@@ -977,6 +1123,9 @@ activeLists.forEach(l => {
         if(await UI.confirm("confirm_del_list", "confirm_desc")) {
             Data.store.lists = Data.store.lists.filter(l => l.id !== this.currentDetailListId);
             Data.save();
+            
+if (typeof Finance !== 'undefined') Finance.renderHomeWidgets();
+if (typeof UI !== 'undefined') UI.renderBudgetChart();
             this.closeDetailModal();
             this.renderHistoryLists(document.getElementById('history-box'));
             if(typeof UI.renderBudgetChart === 'function') UI.renderBudgetChart();

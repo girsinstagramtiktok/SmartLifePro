@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - UI MANAGER (V8.2 - BACKUP FIX)
+   SMART LIFE PRO - UI MANAGER (V8.3 - PIN FIX FINAL)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -86,7 +86,7 @@ const UI = {
             ph_desc: "\u00BFEn qu\u00E9 gastaste?",
             ph_sub_name: "Nombre (Ej: Netflix)",
             ph_sub_day: "D\u00EDa de cobro (1-31)",
-            import_ph: "Ej: - Pan\n- Leche...",
+            import_ph: "Ej: - Pan\n- Leite...",
             ph_cuotas: "Cuotas",
             ph_paid: "Pagadas",
             shop_placeholder: "\u00BFQu\u00E9 compramos?",
@@ -104,9 +104,9 @@ const UI = {
             msg_list_saved: "Lista finalizada y guardada",
             msg_auth_success: "Verificado \u2705",
             msg_auth_fail: "No verificado \u274C",
-            msg_bio_active: "Seguridad activada \uD83D\uDD12",
-            msg_bio_inactive: "Seguridad desactivada \uD83D\uDD13",
-            msg_no_bio_support: "Dispositivo no soporta biometr\u00EDa",
+            msg_bio_active: "PIN activado \uD83D\uDD12", // <--- CORREGIDO
+            msg_bio_inactive: "Bloqueo desactivado \uD83D\uDD13",
+            msg_no_bio_support: "Dispositivo no soporta seguridad",
             import_success_title: "\u00A1\u00C9xito!",
             import_success_msg: "Datos importados correctamente.",
             
@@ -137,8 +137,8 @@ const UI = {
             curr_label: "Moneda",
             theme_label: "Tema Visual",
             dark_mode: "Modo Oscuro",
-            bio_lock: "Bloqueo Biom\u00E9trico",
-            biometrics: "Bloqueo Biom\u00E9trico",
+            bio_lock: "Bloqueo con PIN", // <--- CORREGIDO
+            biometrics: "Bloqueo con PIN", // <--- CORREGIDO (Por si acaso)
             currency: "Moneda",
             btn_export: "Exportar Copia",
             btn_import: "Restaurar Copia",
@@ -155,14 +155,19 @@ const UI = {
             guide_fin: "\uD83D\uDCB0 <b>Finanzas:</b> Gestiona suscripciones y cuotas.",
             guide_mascot: "\uD83E\uDD16 <b>Smarty:</b> Toca la mascota para consejos.",
 
-            // CONFIRM (CLAVES RECUPERADAS)
+            // CONFIRM
             confirm_title: "Confirmar",
             confirm_text: "\u00BFEst\u00E1s seguro?",
-            confirm_del_list: "\u00BFBorrar esta lista?",
-            confirm_del_prod: "\u00BFBorrar este producto?",
-            confirm_del_exp: "\u00BFBorrar este gasto?",
-            confirm_desc: "Esta acci\u00F3n no se puede deshacer."
-        },
+            confirm_desc: "Esta acci\u00F3n no se puede deshacer.",
+        // Agrega esto dentro de es: { ... }
+confirm_del_list: "¿Borrar esta lista?",
+confirm_del_prod: "¿Borrar este producto?",
+confirm_del_exp: "¿Borrar este gasto?",
+pin_enter: "PIN",
+pin_forgot: "Olvidé mi PIN"
+
+
+},
 
         pt: {
             app_name: "Smart Life",
@@ -262,9 +267,9 @@ const UI = {
             msg_list_saved: "Compra salva",
             msg_auth_success: "Verificado \u2705",
             msg_auth_fail: "N\u00E3o verificado \u274C",
-            msg_bio_active: "Seguran\u00E7a ativada \uD83D\uDD12",
-            msg_bio_inactive: "Seguran\u00E7a desativada \uD83D\uDD13",
-            msg_no_bio_support: "Dispositivo n\u00E3o suporta biometria",
+            msg_bio_active: "PIN Ativado \uD83D\uDD12", // <--- CORREGIDO
+            msg_bio_inactive: "Bloqueo Desativado \uD83D\uDD13",
+            msg_no_bio_support: "Dispositivo n\u00E3o suporta segurança",
             import_success_title: "Sucesso!",
             import_success_msg: "Dados importados corretamente.",
             
@@ -295,8 +300,8 @@ const UI = {
             curr_label: "Moeda",
             theme_label: "Tema Visual",
             dark_mode: "Modo Escuro",
-            bio_lock: "Bloqueio Biom\u00E9trico",
-            biometrics: "Bloqueio Biom\u00E9trico",
+            bio_lock: "Bloqueio com PIN", // <--- CORREGIDO
+            biometrics: "Bloqueio com PIN",
             currency: "Moeda",
             btn_export: "Exportar Backup",
             btn_import: "Restaurar Backup",
@@ -316,11 +321,18 @@ const UI = {
             // CONFIRM
             confirm_title: "Confirmar",
             confirm_text: "Tem certeza?",
-            confirm_del_list: "Apagar esta lista?",
-            confirm_del_prod: "Apagar este produto?",
-            confirm_del_exp: "Apagar este gasto?",
-            confirm_desc: "Esta a\u00E7\u00E3o n\u00E3o pode ser desfeita."
-        },
+            confirm_desc: "Esta a\u00E7\u00E3o n\u00E3o pode ser desfeita.",
+        // Agrega esto dentro de pt: { ... }
+budget_label: "Orçamento:",
+touch_budget: "Toque para definir orçamento ✍️",
+confirm_del_list: "Apagar esta lista?",
+confirm_del_prod: "Apagar este produto?",
+confirm_del_exp: "Apagar este gasto?",
+pin_enter: "PIN",
+pin_forgot: "Esqueci meu PIN"
+
+
+},
 
         en: {
             app_name: "Smart Life",
@@ -420,9 +432,9 @@ const UI = {
             msg_list_saved: "Shopping saved",
             msg_auth_success: "Verified \u2705",
             msg_auth_fail: "Not Verified \u274C",
-            msg_bio_active: "Security enabled \uD83D\uDD12",
+            msg_bio_active: "PIN Enabled \uD83D\uDD12", // <--- CORREGIDO
             msg_bio_inactive: "Security disabled \uD83D\uDD13",
-            msg_no_bio_support: "Device does not support biometrics",
+            msg_no_bio_support: "Device does not support security",
             import_success_title: "Success!",
             import_success_msg: "Data imported successfully.",
             
@@ -453,8 +465,8 @@ const UI = {
             curr_label: "Currency",
             theme_label: "Visual Theme",
             dark_mode: "Dark Mode",
-            bio_lock: "Biometric Lock",
-            biometrics: "Biometric Lock",
+            bio_lock: "PIN Lock", // <--- CORREGIDO
+            biometrics: "PIN Lock",
             currency: "Currency",
             btn_export: "Export Backup",
             btn_import: "Restore Backup",
@@ -474,11 +486,19 @@ const UI = {
             // CONFIRM
             confirm_title: "Confirm",
             confirm_text: "Are you sure?",
-            confirm_del_list: "Delete this list?",
-            confirm_del_prod: "Delete this item?",
-            confirm_del_exp: "Delete this expense?",
-            confirm_desc: "This action cannot be undone."
-        }
+            confirm_desc: "This action cannot be undone.",
+        /* EN UI.JS -> dictionary -> en */
+
+// Agrega estas líneas dentro del bloque 'en':
+confirm_del_list: "Delete this list?",
+confirm_del_prod: "Delete this item?",
+confirm_del_exp: "Delete this expense?",
+pin_enter: "PIN",
+pin_forgot: "Forgot PIN",
+msg_bio_inactive: "Lock Disabled 🔓"
+
+
+}
     },
 
     // --- CATEGORÍAS DISPONIBLES ---
@@ -659,12 +679,15 @@ const UI = {
         container.appendChild(fragment);
     },
 
-    // --- RENDERIZADO DE AJUSTES ---
+    // --- [CORREGIDO] RENDERIZADO DE AJUSTES CON PIN ---
     renderSettingsView() {
         const container = document.getElementById('settings-inject');
         if (!container || typeof Data === 'undefined') return;
         
         const s = Data.store.settings;
+        
+        // CORRECCIÓN CLAVE: Verificar PIN en lugar de Biometría antigua
+        const hasPin = (s.pin !== null && s.pin !== undefined);
 
         container.innerHTML = `
             <div class="section-label" style="margin-top:0;">${this.t('sec_general')}</div>
@@ -720,9 +743,9 @@ const UI = {
             </div>
             
             <div class="setting-item">
-                <span>${this.t('biometrics')}</span>
+                <span>${this.t('bio_lock')}</span>
                 <label class="switch-wrap">
-                    <input type="checkbox" id="bio-toggle" ${s.biometrics ? 'checked' : ''} onchange="UI.toggleBiometrics()">
+                    <input type="checkbox" id="pin-toggle" ${hasPin ? 'checked' : ''} onchange="Main.togglePinLock()">
                     <span class="slider"></span>
                 </label>
             </div>
@@ -747,7 +770,7 @@ const UI = {
             </button>
             
             <div style="text-align:center; margin-top:20px; color:var(--text-sec); font-size:12px;">
-                Smart Life Pro v8.2<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
+                Smart Life Pro v8.3<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
             </div>
             <div style="height:50px;"></div>
         `;
@@ -781,11 +804,7 @@ const UI = {
         this.refreshDOM();
     },
 
-    toggleBiometrics() {
-        Data.store.settings.biometrics = document.getElementById('bio-toggle').checked;
-        Data.save();
-        this.showSnackbar(this.t('msg_updated'));
-    },
+    // --- ELIMINADA: toggleBiometrics ya no es necesaria, Main.togglePinLock hace el trabajo ---
 
     // --- MODALES Y DIÁLOGOS (PROMISE BASED) ---
     confirm(titleKey, textKey) {

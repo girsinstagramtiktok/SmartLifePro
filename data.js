@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - DATA MANAGER (V7.5 - THEME SUPPORT)
+   SMART LIFE PRO - DATA MANAGER (V7.6 - PIN SECURITY)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -13,8 +13,8 @@ const Data = {
             lang: 'es',
             darkMode: false,
             currency: '$',
-            biometrics: false,
-            theme: 'blue' // <--- NUEVO CAMPO DEFAULT
+            theme: 'blue',
+            pin: null // <--- NUEVO CAMPO: null = desactivado, "123456" = activado
         },
         budget: { limit: 0, currency: '$' },
         subscriptions: [],
@@ -58,20 +58,33 @@ const Data = {
             dirty = true; 
         }
 
-        // 3. Configuración (Actualizada con Themes)
+        // 3. Configuración (Actualizada con PIN y Themes)
         if (!this.store.settings) { 
             this.store.settings = { 
                 lang: 'es', 
                 darkMode: false, 
                 currency: '$', 
-                biometrics: false,
-                theme: 'blue'
+                theme: 'blue',
+                pin: null
             }; 
             dirty = true; 
         } else {
             // Asegurar que el campo theme exista en usuarios antiguos
             if (!this.store.settings.theme) {
                 this.store.settings.theme = 'blue';
+                dirty = true;
+            }
+            
+            // TRANSICIÓN A PIN: Asegurar que el campo pin exista
+            if (typeof this.store.settings.pin === 'undefined') {
+                this.store.settings.pin = null;
+                dirty = true;
+            }
+
+            // LIMPIEZA: Eliminar rastros de biometría antigua si existen
+            if ('biometrics' in this.store.settings) {
+                delete this.store.settings.biometrics;
+                delete this.store.settings.bioCredentialId;
                 dirty = true;
             }
         }
@@ -103,7 +116,7 @@ const Data = {
         }
 
         if (dirty) {
-            console.log("Estructura de datos actualizada (V7.5).");
+            console.log("Estructura de datos actualizada (V7.6 - PIN Ready).");
             this.save();
         }
     },
@@ -121,7 +134,7 @@ const Data = {
     exportJSON() {
         const backup = {
             meta: { 
-                version: "7.5", 
+                version: "7.6", 
                 date: new Date().toISOString(),
                 platform: "SmartLifePro"
             },
@@ -141,6 +154,11 @@ const Data = {
                 // Protección extra al importar para no perder gamificación
                 if (!this.store.gamification) {
                     this.store.gamification = { xp: 0, level: 1, badges: [] };
+                }
+
+                // Asegurar compatibilidad al importar backups viejos
+                if(this.store.settings && typeof this.store.settings.pin === 'undefined') {
+                    this.store.settings.pin = null;
                 }
 
                 this.repairData(); 

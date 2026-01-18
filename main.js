@@ -1,10 +1,14 @@
 /* =========================================
-   SMART LIFE PRO - MAIN CONTROLLER (V7.6 - BIO AUTH FIX)
+   SMART LIFE PRO - MAIN CONTROLLER (V7.6 - PIN SECURITY)
    Autor: A_True_Alpha
    ========================================= */
 
 const Main = {
     sessionAuthenticated: false,
+    
+    // Variables para el PIN
+    tempPin: "",
+    isSettingUpPin: false,
 
     init() {
         console.log("Iniciando Smart Life Pro v7.6...");
@@ -12,10 +16,10 @@ const Main = {
         // 1. Cargar datos
         if (typeof Data !== 'undefined') Data.init();
         
-        // 2. Inyectar pantalla de bloqueo
+        // 2. Inyectar pantalla de bloqueo (PIN)
         this.injectLockScreenHTML();
         
-        // 3. Verificar seguridad (Biometría)
+        // 3. Verificar seguridad (PIN)
         if (this.checkSecurityAtStart()) {
             return; // Esperar desbloqueo
         }
@@ -171,88 +175,156 @@ const Main = {
         console.log(`Fondo establecido: ${randomBg}`);
     },
 
-    // --- SEGURIDAD (BIO) ---
-    injectLockScreenHTML() {
-        if (document.getElementById('lock-screen')) return; 
+    // --- SEGURIDAD (PIN) ---
+    /* EN MAIN.JS */
 
-        const div = document.createElement('div');
-        div.id = 'lock-screen';
-        div.className = 'hidden';
-        div.innerHTML = `
-            <div class="lock-icon-container"></div>
-            <h2 style="margin-bottom:20px;">Smart Life</h2>
-            <button class="auth-btn" onclick="Main.authenticate()">
-                Desbloquear
-            </button>
-        `;
-        document.body.appendChild(div);
+injectLockScreenHTML() {
+    if (document.getElementById('lock-screen')) return;
+
+    const div = document.createElement('div');
+    div.id = 'lock-screen';
+    div.className = 'hidden'; 
+    div.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <div style="font-size:40px; margin-bottom:10px;"></div>
+            
+            <h2 style="margin-bottom:30px; color:var(--text-color);">PIN</h2>
+            
+            <div class="pin-display" id="pin-dots">
+                <div class="pin-dot"></div><div class="pin-dot"></div>
+                <div class="pin-dot"></div><div class="pin-dot"></div>
+                <div class="pin-dot"></div><div class="pin-dot"></div>
+            </div>
+
+          
+
+<div class="pin-pad">
+    <div class="pin-btn" onclick="Main.pressPin(1)">1</div>
+    <div class="pin-btn" onclick="Main.pressPin(2)">2</div>
+    <div class="pin-btn" onclick="Main.pressPin(3)">3</div>
+    <div class="pin-btn" onclick="Main.pressPin(4)">4</div>
+    <div class="pin-btn" onclick="Main.pressPin(5)">5</div>
+    <div class="pin-btn" onclick="Main.pressPin(6)">6</div>
+    <div class="pin-btn" onclick="Main.pressPin(7)">7</div>
+    <div class="pin-btn" onclick="Main.pressPin(8)">8</div>
+    <div class="pin-btn" onclick="Main.pressPin(9)">9</div>
+    
+    <div class="pin-btn clear"></div> <div class="pin-btn" onclick="Main.pressPin(0)">0</div>
+    
+    <div class="pin-btn clear" onclick="Main.clearPin()" style="display:flex; align-items:center; justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+            <line x1="18" y1="9" x2="12" y2="15"></line>
+            <line x1="12" y1="9" x2="18" y2="15"></line>
+        </svg>
+    </div>
+</div>
+
+
+       
+<button onclick="Main.forgotPin()" 
+        style="margin-top:30px; background:none; border:none; color:var(--text-sec); font-size:12px; text-decoration:underline;"
+        data-i18n="pin_forgot">
+    ${UI.t('pin_forgot')}
+</button>
+
+        </div>
+    `;
+    document.body.appendChild(div);
+},
+
+
+    // --- LÓGICA DEL TECLADO PIN ---
+    pressPin(num) {
+        if (this.tempPin.length < 6) {
+            this.tempPin += num;
+            this.updatePinUI();
+            
+            // Verificar automáticamente al llegar a 6 dígitos
+            if (this.tempPin.length === 6) {
+                setTimeout(() => this.validatePin(), 100);
+            }
+        }
+        if(navigator.vibrate) navigator.vibrate(10);
+    },
+
+    clearPin() {
+        this.tempPin = this.tempPin.slice(0, -1);
+        this.updatePinUI();
+    },
+
+    updatePinUI() {
+        const dots = document.querySelectorAll('.pin-dot');
+        dots.forEach((dot, index) => {
+            if (index < this.tempPin.length) dot.classList.add('filled');
+            else dot.classList.remove('filled');
+        });
+    },
+
+    validatePin() {
+        const savedPin = Data.store.settings.pin;
+        
+        // CASO 1: Configurando nuevo PIN (Si vienes desde Ajustes)
+        if (this.isSettingUpPin) {
+            Data.store.settings.pin = this.tempPin;
+            Data.save();
+            this.isSettingUpPin = false;
+            document.getElementById('lock-screen').classList.add('hidden');
+            this.renderSettingsView();
+            UI.showSnackbar("PIN creado correctamente ");
+            return;
+        }
+
+        // CASO 2: Desbloqueando App
+        if (this.tempPin === savedPin) {
+            // PIN Correcto
+            this.tempPin = "";
+            this.updatePinUI();
+            this.unlockApp();
+            if(navigator.vibrate) navigator.vibrate(50);
+        } else {
+            // PIN Incorrecto
+            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            UI.showSnackbar("PIN Incorrecto ");
+            this.tempPin = "";
+            this.updatePinUI();
+        }
     },
 
     checkSecurityAtStart() {
-        if (Data.store.settings && Data.store.settings.biometrics) {
+        // Si hay un PIN guardado, mostramos el bloqueo
+        if (Data.store.settings && Data.store.settings.pin) {
             const lock = document.getElementById('lock-screen');
             if(lock) {
                 lock.classList.remove('hidden');
-                setTimeout(() => this.authenticate(), 500);
+                // Asegurar que el título sea correcto al inicio
+                lock.querySelector('h2').innerText = "PIN";
             }
-            return true;
+            return true; // Detiene la carga de la app
         }
         return false;
     },
 
-    // --- [CORREGIDO] AUTENTICACIÓN QUE USA LA CREDENCIAL GUARDADA ---
-    async authenticate() {
-        try {
-            if (window.PublicKeyCredential && Data.store.settings.bioCredentialId) {
-                
-                // 1. Recuperar el ID guardado y convertirlo de Base64 a Buffer
-                const savedId = Data.store.settings.bioCredentialId;
-                const binaryId = Uint8Array.from(atob(savedId), c => c.charCodeAt(0));
-
-                // 2. Desafío
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
-
-                // 3. Pedir autenticación SOLO para esa credencial
-                await navigator.credentials.get({
-                    publicKey: {
-                        challenge: challenge,
-                        timeout: 60000,
-                        userVerification: "required",
-                        allowCredentials: [{
-                            id: binaryId,
-                            type: "public-key",
-                            transports: ["internal"] // Prioriza sensor interno
-                        }]
-                    }
-                });
-
-                // Éxito
-                if(navigator.vibrate) navigator.vibrate(20);
-                this.unlockApp();
-
-            } else {
-                // Si no hay credencial guardada o no hay soporte
-                console.warn("No hay credencial biométrica guardada.");
-                
-                // Si estaba activado por error pero sin ID, lo desactivamos para no bloquear al user
-                if(Data.store.settings.biometrics) {
-                    Data.store.settings.biometrics = false;
-                    Data.save();
-                }
-                this.unlockApp(); 
-            }
-        } catch (e) {
-            console.error("Auth fallida", e);
-            if(typeof UI !== 'undefined') {
-                UI.showSnackbar("Huella no reconocida. Intenta de nuevo.");
-            }
-        }
-    },
-
     unlockApp() {
         this.sessionAuthenticated = true;
+        const lock = document.getElementById('lock-screen');
+        if(lock) lock.classList.add('hidden');
         this.continueLoadingApp();
+    },
+    
+    // CORREGIDO: Usamos UI.confirm para el modal propio y lógica async
+    async forgotPin() {
+        const confirmed = await UI.confirm("reset_confirm", "confirm_desc");
+        
+        if(confirmed) {
+            // Borrado completo y recarga
+            localStorage.removeItem(Data.KEY);
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+            }
+            location.reload();
+        }
     },
 
     // --- RENDERIZADO DE AJUSTES ---
@@ -261,8 +333,8 @@ const Main = {
         if (!container) return;
 
         const s = Data.store.settings;
-        const isBioActive = s.biometrics ? 'checked' : '';
         const isDark = s.darkMode ? 'checked' : '';
+        const hasPin = s.pin !== null; // Verifica si hay PIN activo
         
         // Tema actual (default 'blue')
         const currentTheme = s.theme || 'blue';
@@ -292,9 +364,9 @@ const Main = {
                 </div>
                 
                 <div class="setting-item" style="border-top:1px solid rgba(120,120,120,0.1); margin-top:10px; padding-top:15px;">
-                    <span>${UI.t('bio_lock')}</span>
+                    <span>Bloqueo con PIN</span>
                     <label class="switch-wrap">
-                        <input type="checkbox" ${isBioActive} onchange="Main.toggleBiometrics()">
+                        <input type="checkbox" ${hasPin ? 'checked' : ''} onchange="Main.togglePinLock()">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -343,7 +415,7 @@ const Main = {
             </div>
             
             <div style="text-align:center; margin-top:30px; margin-bottom:50px; opacity:0.3; font-size:12px;">
-                ID: ${Data.KEY}<br>v7.6 BioFix
+                ID: ${Data.KEY}<br>v7.6 PIN Secure
             </div>
         `;
     },
@@ -355,69 +427,37 @@ const Main = {
         UI.refreshDOM(); 
     },
 
-    // --- [CORREGIDO] REGISTRO DE CREDENCIAL AL ACTIVAR ---
-    async toggleBiometrics() {
-        const currentState = Data.store.settings.biometrics;
+    async togglePinLock() {
+    const hasPin = Data.store.settings.pin !== null;
+    
+    if (hasPin) {
+        // CAMBIO: Ahora usamos UI.confirm que es tu modal personalizado
+        const confirmed = await UI.confirm("confirm_title", "confirm_text");
         
-        if (!currentState) {
-            // --- ACTIVANDO: CREAMOS LA LLAVE ---
-            try {
-                if (!window.PublicKeyCredential) throw new Error("No soportado");
-
-                // Opciones de registro
-                // En main.js -> toggleBiometrics
-const publicKeyCredentialCreationOptions = {
-    challenge: Uint8Array.from("SmartLifeProChallenge", c => c.charCodeAt(0)),
-    // CAMBIO AQUÍ: Eliminamos 'id' para evitar errores con IPs o localhost
-    rp: { 
-        name: "Smart Life Pro" 
-    },
-    user: {
-        id: Uint8Array.from("MasterUserID", c => c.charCodeAt(0)),
-        name: "master@smartlife.pro",
-        displayName: "Master"
-    },
-    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-    authenticatorSelection: {
-        authenticatorAttachment: "platform", 
-        userVerification: "required"
-    },
-    timeout: 60000,
-    attestation: "none"
-};
-
-
-                // Pedir huella para CREAR la llave
-                const credential = await navigator.credentials.create({
-                    publicKey: publicKeyCredentialCreationOptions
-                });
-
-                // Guardar el ID de la credencial (convertido a Base64)
-                const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-                
-                Data.store.settings.biometrics = true;
-                Data.store.settings.bioCredentialId = credId; // <--- GUARDAMOS ID
-                Data.save();
-                
-                this.renderSettingsView();
-                UI.showSnackbar(UI.t('msg_bio_active'));
-
-            } catch (e) {
-                console.error("Error creando credencial:", e);
-                UI.showSnackbar("Error: No se pudo registrar la huella.");
-                // Revertir
-                Data.store.settings.biometrics = false;
-                this.renderSettingsView(); 
-            }
-        } else {
-            // --- DESACTIVANDO ---
-            Data.store.settings.biometrics = false;
-            Data.store.settings.bioCredentialId = null; // Borrar ID
+        if (confirmed) {
+            Data.store.settings.pin = null;
             Data.save();
-            this.renderSettingsView(); 
+            this.renderSettingsView();
             UI.showSnackbar(UI.t('msg_bio_inactive'));
+        } else {
+            // Si cancela, volvemos a pintar para que el switch se mantenga activo
+            this.renderSettingsView();
         }
-    },
+    } else {
+        // Iniciar configuración de nuevo PIN
+        this.isSettingUpPin = true;
+        this.tempPin = "";
+        this.updatePinUI();
+        
+        const lock = document.getElementById('lock-screen');
+        if(lock) {
+            // Usamos PIN simple para evitar problemas de traducción
+            lock.querySelector('h2').innerText = "PIN";
+            lock.classList.remove('hidden');
+        }
+    }
+},
+
 
     setCurrency(curr) {
         Data.store.settings.currency = curr;
