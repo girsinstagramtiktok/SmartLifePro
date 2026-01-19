@@ -16,7 +16,14 @@ const UI = {
             update: "Actualizar",
             month_names: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
             
-            // HOME & BUDGET
+            app_slogan: "Tu Dinero, Inteligente", // Nuevo Slogan
+            profile_title: "Cuartel General",
+            analysis_title: "Análisis de Smarty",
+            quests_title: "Misiones del Día",
+            badges_title: "Medallas Obtenidas",
+            no_badges: "Aún no tienes medallas.",
+            
+          // HOME & BUDGET
             budget_label: "Presupuesto",
             spent_label: "Gastado",
             remaining_label: "Restante",
@@ -179,7 +186,14 @@ pin_forgot: "Olvidé mi PIN"
             update: "Atualizar",
             month_names: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
             
-            // HOME & BUDGET
+            app_slogan: "Seu Dinheiro, Inteligente", // Nuevo Slogan
+            profile_title: "Quartel General",
+            analysis_title: "Análise do Smarty",
+            quests_title: "Missões do Dia",
+            badges_title: "Medalhas Obtidas",
+            no_badges: "Sem medalhas ainda.",
+
+// HOME & BUDGET
             budget_label: "Or\u00E7amento:",
             spent_label: "Gasto:",
             remaining_label: "Restante",
@@ -344,7 +358,14 @@ pin_forgot: "Esqueci meu PIN"
             update: "Update",
             month_names: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
             
-            // HOME & BUDGET
+            app_slogan: "Your Money, Smarter", // Nuevo Slogan
+            profile_title: "Headquarters",
+            analysis_title: "Smarty's Analysis",
+            quests_title: "Daily Quests",
+            badges_title: "Earned Badges",
+            no_badges: "No badges yet.",
+
+// HOME & BUDGET
             budget_label: "Budget:",
             spent_label: "Spent:",
             remaining_label: "Remaining",
@@ -710,15 +731,18 @@ msg_bio_inactive: "Lock Disabled 🔓"
                 </div>
             </div>
 
-            <div class="setting-item" style="margin-top:15px;">
+                        <div class="setting-item" onclick="UI.openCurrencyModal()" style="margin-top:15px; cursor:pointer;">
                 <span>${this.t('curr_label')}</span>
-                <select class="setting-select" id="curr-select" onchange="UI.saveSettings()">
-                    <option value="$" ${s.currency === '$' ? 'selected' : ''}>$ (USD/Peso)</option>
-                    <option value="€" ${s.currency === '€' ? 'selected' : ''}>€ (Euro)</option>
-                    <option value="R$" ${s.currency === 'R$' ? 'selected' : ''}>R$ (Real)</option>
-                    <option value="S/." ${s.currency === 'S/.' ? 'selected' : ''}>S/. (Sol)</option>
-                </select>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-weight:700; color:var(--primary); font-size:16px;">
+                        ${Data.store.settings.currency || '$'}
+                    </span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
             </div>
+
 
             <div class="section-label">${this.t('sec_app')}</div>
             
@@ -882,5 +906,94 @@ msg_bio_inactive: "Lock Disabled 🔓"
             `;
             modal.classList.add('open');
         }
+    },
+        // --- NUEVO: SELECTOR DE MONEDA (MODAL PRO) ---
+        // --- FUNCIÓN CORREGIDA: SELECTOR DE MONEDA ---
+    openCurrencyModal() {
+        const currencies = [
+            { code: 'USD', symbol: '$', name: 'D\u00F3lar', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
+            { code: 'EUR', symbol: '\u20AC', name: 'Euro', flag: '\uD83C\uDDEA\uD83C\uDDFA' },
+            { code: 'BRL', symbol: 'R$', name: 'Real', flag: '\uD83C\uDDE7\uD83C\uDDF7' },
+            { code: 'VES', symbol: 'Bs', name: 'Bol\u00EDvar', flag: '\uD83C\uDDFB\uD83C\uDDEA' },
+            { code: 'ARS', symbol: '$', name: 'Peso Arg', flag: '\uD83C\uDDE6\uD83C\uDDF7' },
+            { code: 'MXN', symbol: '$', name: 'Peso Mex', flag: '\uD83C\uDDF2\uD83C\uDDFD' },
+            { code: 'COP', symbol: '$', name: 'Peso Col', flag: '\uD83C\uDDE8\uD83C\uDDF4' },
+            { code: 'CLP', symbol: '$', name: 'Peso Chi', flag: '\uD83C\uDDE8\uD83C\uDDF1' },
+            { code: 'PEN', symbol: 'S/', name: 'Sol Peru', flag: '\uD83C\uDDF5\uD83C\uDDEA' },
+            { code: 'UYU', symbol: '$U', name: 'Peso Uru', flag: '\uD83C\uDDFA\uD83C\uDDFE' }
+        ];
+
+        let listHTML = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">';
+        
+        // CORRECCIÓN 1: Obtenemos el código guardado (ej: 'MXN') para comparar, no solo el símbolo
+        const currentCode = (Data.store.settings.currencyCode || 'USD'); 
+
+        currencies.forEach(c => {
+            // CORRECCIÓN 2: Comparamos por CÓDIGO (único), así no se marcan 5 a la vez
+            const isActive = currentCode === c.code; 
+            const border = isActive ? '2px solid var(--primary)' : '1px solid var(--glass-border)';
+            const bg = isActive ? 'rgba(0,122,255,0.08)' : 'var(--glass-bg)';
+
+            // CORRECCIÓN 3: Pasamos ambos datos (código y símbolo) a la función de guardar
+            listHTML += `
+                <div onclick="UI.setAppCurrency('${c.code}', '${c.symbol}')" 
+                     style="background:${bg}; border:${border}; border-radius:16px; padding:15px; cursor:pointer; display:flex; align-items:center; gap:12px; transition:transform 0.1s;">
+                    <div style="font-size:24px;">${c.flag}</div>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:700; font-size:13px; color:var(--text-color);">${c.code}</span>
+                        <span style="font-size:11px; color:var(--text-sec);">${c.name} (${c.symbol})</span>
+                    </div>
+                </div>
+            `;
+        });
+        listHTML += '</div>';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay open';
+        overlay.style.zIndex = '11000';
+        
+        overlay.innerHTML = `
+            <div class="settings-card" onclick="event.stopPropagation()" style="max-height:85vh; width:90%; max-width:400px; animation: popIn 0.3s forwards; opacity: 1;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 style="margin:0; font-size:18px; color:var(--primary);">Seleccionar Moneda</h2>
+                    <button class="icon-btn" id="close-curr-btn">&#10005;</button>
+                </div>
+                <div style="overflow-y:auto; padding-bottom:10px;">
+                    ${listHTML}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        const close = () => { overlay.classList.remove('open'); setTimeout(() => overlay.remove(), 300); };
+        overlay.querySelector('#close-curr-btn').onclick = close;
+        overlay.onclick = close;
+    },
+
+    // --- FUNCIÓN CORREGIDA: GUARDAR SIN REINICIAR ---
+    setAppCurrency(code, symbol) {
+        if (!Data.store.settings) Data.store.settings = {};
+        
+        // Guardamos AMBOS: el código (para saber cuál es) y el símbolo (para mostrar $)
+        Data.store.settings.currencyCode = code; 
+        Data.store.settings.currency = symbol;
+        
+        if(Data.store.budget) Data.store.budget.currency = symbol;
+        
+        Data.save();
+        
+        const modal = document.querySelector('.modal-overlay.open');
+        if(modal) modal.classList.remove('open');
+        
+        this.showSnackbar(`Moneda actualizada: ${code}`);
+        
+        // CORRECCIÓN 4: Quitamos location.reload() y usamos refreshDOM()
+        // Esto actualiza la pantalla al instante sin mandarte al Home
+        if(typeof this.refreshDOM === 'function') this.refreshDOM();
+        
+        // Si tienes el asistente cargado, actualizamos sus widgets también
+        if(typeof Assistant !== 'undefined' && Assistant.updateHomeXP) Assistant.updateHomeXP();
     }
+
+
 };

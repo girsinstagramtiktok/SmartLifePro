@@ -23,8 +23,15 @@
         <div id="view-home" class="view active">
             <header class="home-header">
                 <div style="display:flex; align-items:center;">
-                    <img src="logo.png" class="app-logo-small" alt="Logo">
-                    <span class="app-title-text" data-i18n="app_name">Smart Life</span>
+                    <button class="icon-btn" onclick="Main.openProfile()" style="margin-right:10px; background:var(--glass-bg); box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                    <span class="app-title-text" style="font-size:16px; opacity:0.8;" data-i18n="app_slogan">
+                        Tu Dinero, Inteligente
+                    </span>
                 </div>
                 <button class="icon-btn glass-btn-small" onclick="UI.toggleGuide()">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
@@ -193,24 +200,19 @@
         </div>
 
         <div id="modal-profile" class="modal-overlay" onclick="Main.closeProfile()">
-            <div class="settings-card" onclick="event.stopPropagation()">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <h2 style="color:var(--primary); margin:0;">Mi Perfil</h2>
+            <div class="settings-card" onclick="event.stopPropagation()" style="max-height: 90vh; overflow-y: auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h2 style="color:var(--primary); margin:0;" data-i18n="profile_title" id="profile-title-text">Perfil</h2>
                     <button class="icon-btn" onclick="Main.closeProfile()">&#10005;</button>
                 </div>
 
                 <div class="profile-header">
-                    <div class="level-ring" id="profile-level-ring">
-                        <div style="background:var(--glass-bg); width:100px; height:100px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2;">
-                            <span class="level-label">NIVEL</span>
-                            <span class="level-number" id="profile-lvl-num">1</span>
-                        </div>
-                    </div>
-                    <div style="font-size:14px; font-weight:600; color:var(--text-sec);" id="profile-xp-txt">0 / 100 XP</div>
+                    <div class="level-ring" id="profile-level-ring" style="width:140px; height:140px; margin:0 auto;">
+                         </div>
+                    <div style="font-size:14px; font-weight:600; color:var(--text-sec); margin-top:5px;" id="profile-xp-txt">...</div>
                 </div>
 
-                <div class="section-label" style="text-align:center;">Medallas Desbloqueadas</div>
-                <div class="badges-grid" id="profile-badges-grid"></div>
+                <div id="profile-dynamic-content" style="width:100%;"></div>
             </div>
         </div>
 

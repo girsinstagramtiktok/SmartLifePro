@@ -371,16 +371,16 @@ injectLockScreenHTML() {
                     </label>
                 </div>
 
-                <div class="setting-item">
-                    <span>${UI.t('currency')}</span>
-                    <select class="setting-select" onchange="Main.setCurrency(this.value)">
-                        <option value="$" ${s.currency === '$' ? 'selected' : ''}>$ (USD)</option>
-                        <option value="€" ${s.currency === '€' ? 'selected' : ''}>€ (EUR)</option>
-                        <option value="R$" ${s.currency === 'R$' ? 'selected' : ''}>R$ (BRL)</option>
-                        <option value="Bs" ${s.currency === 'Bs' ? 'selected' : ''}>Bs (VES)</option>
-                    </select>
-                </div>
-            </div>
+                <div class="setting-item" onclick="UI.openCurrencyModal()" style="cursor:pointer;">
+    <span>${UI.t('curr_label')}</span> <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-weight:700; color:var(--primary); font-size:16px;">
+            ${Data.store.settings.currency || '$'}
+        </span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;">
+            <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+    </div>
+</div>
 
             <div class="section-label">Idioma</div>
             <div class="lang-grid">
