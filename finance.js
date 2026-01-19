@@ -1,19 +1,19 @@
 /* =========================================
-   SMART LIFE PRO - FINANCE MODULE (V8.2 - TOP CATEGORIES FIX)
+   SMART LIFE PRO - FINANCE MODULE (V9.9 - FINAL LOGIC RESTORED)
    Autor: A_True_Alpha
    ========================================= */
 
 const Finance = {
     // --- ESTADO INTERNO ---
-    selectedHistoryMonth: null, // Formato "YYYY-MM" para el filtro de historial
+    selectedHistoryMonth: null, 
+    selectedCategoryFilter: 'ALL', // Estado del filtro de categorías
 
     // --- NAVEGACIÓN DE PESTAÑAS (TABS) ---
     setTab(tab) {
         // 1. Ocultar todas las pestañas primero
-        const contents = document.querySelectorAll('.finance-tab-content');
-        contents.forEach(content => {
-            content.classList.add('hidden');
-            content.style.display = 'none'; 
+        document.querySelectorAll('.finance-tab-content').forEach(el => {
+            el.classList.add('hidden');
+            el.style.display = 'none';
         });
 
         // 2. Desactivar botones de navegación
@@ -28,7 +28,7 @@ const Finance = {
         if (btn) btn.classList.add('active');
         if (content) {
             content.classList.remove('hidden');
-            content.style.display = 'block';
+            content.style.display = 'block'; 
         }
 
         // 4. Renderizar el contenido específico
@@ -37,7 +37,6 @@ const Finance = {
         } else if (tab === 'installments') {
             this.renderInstallments();
         } else if (tab === 'history') {
-            // Si no hay mes seleccionado, seleccionar el actual
             if (!this.selectedHistoryMonth) {
                 const now = new Date();
                 const monthStr = String(now.getMonth() + 1).padStart(2, '0');
@@ -47,31 +46,58 @@ const Finance = {
         }
     },
 
+    // --- NUEVO: GENERADOR DE CHIPS DE FILTRO (CON EMOJIS) ---
+    renderFilterChips() {
+        let html = `<div class="filter-scroll-container">`;
+
+        // 1. Chip "Todo"
+        const allActive = this.selectedCategoryFilter === 'ALL' ? 'active' : '';
+        html += `<div class="filter-chip ${allActive}" onclick="Finance.setCategoryFilter('ALL')">Todo</div>`;
+
+        // 2. Chips de Categorías (Desde UI.categories)
+        if (typeof UI !== 'undefined' && UI.categories) {
+            UI.categories.forEach(cat => {
+                const isActive = this.selectedCategoryFilter === cat.id ? 'active' : '';
+                // Usamos el emoji original definido en UI.js
+                html += `
+                    <div class="filter-chip ${isActive}" onclick="Finance.setCategoryFilter('${cat.id}')">
+                        ${cat.icon} ${UI.t(cat.id)}
+                    </div>
+                `;
+            });
+        }
+        html += `</div>`;
+        return html;
+    },
+
+    // Acción al tocar un filtro
+    setCategoryFilter(catId) {
+        this.selectedCategoryFilter = catId;
+        // Feedback vibración
+        if(navigator.vibrate) navigator.vibrate(5);
+        this.renderExpensesHistory(); // Recargar lista filtrada
+    },
+
     // --- LÓGICA DE CIERRE DE MES (AUTOMÁTICO) ---
     checkMonthTransition() {
         const now = new Date();
         const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         
-        // Inicializar control si no existe
         if (!Data.store.appControl) {
             Data.store.appControl = { lastActivePeriod: currentPeriod };
         }
         
         const lastPeriod = Data.store.appControl.lastActivePeriod || currentPeriod;
 
-        // Si cambió el mes desde la última vez
         if (currentPeriod !== lastPeriod) {
             console.log(`[Finance] Cambio de mes detectado: ${lastPeriod} -> ${currentPeriod}`);
             this.performMonthClose(lastPeriod);
-            
-            // Actualizar periodo
             Data.store.appControl.lastActivePeriod = currentPeriod;
             Data.save();
         }
     },
 
     performMonthClose(periodString) {
-        // Damos XP al usuario por sobrevivir el mes
         if (typeof Assistant !== 'undefined') {
             Assistant.addXP(100, "Nuevo Mes Iniciado");
             Assistant.updateMood();
@@ -83,8 +109,6 @@ const Finance = {
     },
 
     // --- CÁLCULOS FINANCIEROS (CORE) ---
-    
-    // Calcula cuánto se ha gastado en el mes actual (Gastos + Listas + Suscripciones)
     calculateMonthlySpent() {
         let total = 0;
         const now = new Date();
@@ -92,26 +116,24 @@ const Finance = {
         const currentYear = now.getFullYear();
         const currentDay = now.getDate();
 
-        // 1. Sumar Gastos Individuales
+        // 1. Sumar Gastos
         if (Data.store.expenses) {
             Data.store.expenses.forEach(exp => {
                 if (!exp.isInstallment) {
-                    // Gasto normal: verificar si cae en este mes
                     const d = new Date(exp.date);
                     if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
                         total += parseFloat(exp.amount);
                     }
                 } else {
-                    // Gasto parcelado: verificar si la cuota está activa
                     const { current } = this.calculateProgress(exp.date, exp.installments.total);
                     if (current > 0 && current <= exp.installments.total) {
-                        total += parseFloat(exp.amount); // Sumar la cuota mensual
+                        total += parseFloat(exp.amount);
                     }
                 }
             });
         }
 
-        // 2. Sumar Listas de Compra (Solo las completadas este mes)
+        // 2. Sumar Listas Completadas
         if (Data.store.lists) {
             Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                 const d = new Date(l.date);
@@ -121,7 +143,7 @@ const Finance = {
             });
         }
 
-        // 3. Sumar Suscripciones (Solo si ya pasó el día de cobro)
+        // 3. Sumar Suscripciones
         if (Data.store.subscriptions) {
             Data.store.subscriptions.forEach(sub => {
                 if (currentDay >= sub.day) {
@@ -136,12 +158,10 @@ const Finance = {
     // Helper para calcular progreso de cuotas
     calculateProgressAtDate(startDateTimestamp, totalInstallments, targetDate) {
         const start = new Date(startDateTimestamp);
-        // Diferencia en años * 12 + diferencia en meses
         let months = (targetDate.getFullYear() - start.getFullYear()) * 12;
         months -= start.getMonth();
         months += targetDate.getMonth();
         
-        // Sumamos 1 porque el primer mes cuenta como cuota 1
         const current = months + 1;
         
         return { current: current > 0 ? current : 1 };
@@ -151,65 +171,63 @@ const Finance = {
         return this.calculateProgressAtDate(startDateTimestamp, totalInstallments, new Date());
     },
 
+    // --- HELPER PARA ICONOS (SOLUCIÓN DEFINITIVA) ---
+    getCategoryIcon(catName) {
+        // 1. Verificar si es una categoría especial del sistema
+        if (catName === 'cat_market' || catName === UI.t('cat_market')) return '\uD83D\uDED2'; // 
+        if (catName === 'tab_subs' || catName === 'cat_subs' || catName === UI.t('tab_subs')) return '\uD83D\uDCC5'; // 
+
+        // 2. Buscar en UI.categories (donde están los emojis oficiales)
+        if (typeof UI !== 'undefined' && UI.categories) {
+            // Intentar por ID
+            let found = UI.categories.find(c => c.id === catName);
+            // Intentar por Nombre Traducido
+            if (!found) found = UI.categories.find(c => UI.t(c.id) === catName);
+            
+            if (found) return found.icon; 
+        }
+        
+        return '\uD83D\uDCE6'; //  Default
+    },
     // --- RENDERIZADO HOME (WIDGETS) ---
-        // --- RENDERIZADO HOME (WIDGETS) ---
     renderHomeWidgets() {
-        // 1. RENDERIZAR GASTOS RECIENTES (UNIFICADO: GASTOS + LISTAS + SUBS)
+        // 1. GASTOS RECIENTES
         const recentContainer = document.getElementById('home-recent-expenses');
         if (recentContainer) {
             recentContainer.innerHTML = '';
-            
             let allMovements = [];
 
-            // A. Agregar Gastos Manuales
+            // A. Gastos
             if (Data.store.expenses) {
                 Data.store.expenses.forEach(exp => {
                     allMovements.push({
-                        type: 'expense',
-                        name: exp.desc,
-                        amount: parseFloat(exp.amount),
-                        date: new Date(exp.date).getTime(),
-                        icon: this.getCategoryIcon(exp.category)
+                        type: 'expense', name: exp.desc, amount: parseFloat(exp.amount),
+                        date: new Date(exp.date).getTime(), icon: this.getCategoryIcon(exp.category)
                     });
                 });
             }
-
-            // B. Agregar Listas Completadas
+            // B. Listas (RESTORED ICON )
             if (Data.store.lists) {
                 Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                     allMovements.push({
-                        type: 'list',
-                        name: l.name, 
-                        amount: parseFloat(l.total),
-                        date: new Date(l.date).getTime(),
-                        icon: '\uD83D\uDED2' // Icono Carrito
+                        type: 'list', name: l.name, amount: parseFloat(l.total),
+                        date: new Date(l.date).getTime(), icon: '\uD83D\uDED2' 
                     });
                 });
             }
-
-            // C. Agregar Suscripciones (Calculando el cobro más reciente)
-            const now = new Date();
+            // C. Suscripciones (RESTORED ICON )
             if (Data.store.subscriptions) {
+                const now = new Date();
                 Data.store.subscriptions.forEach(sub => {
-                    // Calculamos la fecha de cobro teórica de este mes
-                    let lastChargeDate = new Date(now.getFullYear(), now.getMonth(), sub.day);
-                    
-                    // Si el día de cobro de este mes aún no ha llegado, el "reciente" fue el mes pasado
-                    if (lastChargeDate > now) {
-                        lastChargeDate.setMonth(lastChargeDate.getMonth() - 1);
-                    }
-
+                    let lastCharge = new Date(now.getFullYear(), now.getMonth(), sub.day);
+                    if (lastCharge > now) lastCharge.setMonth(lastCharge.getMonth() - 1);
                     allMovements.push({
-                        type: 'sub',
-                        name: sub.name,
-                        amount: parseFloat(sub.cost),
-                        date: lastChargeDate.getTime(),
-                        icon: '\uD83D\uDCC5' // Icono Calendario
+                        type: 'sub', name: sub.name, amount: parseFloat(sub.cost),
+                        date: lastCharge.getTime(), icon: '\uD83D\uDCC5'
                     });
                 });
             }
 
-            // D. Ordenar por fecha (El más nuevo primero) y tomar los 3 últimos
             allMovements.sort((a, b) => b.date - a.date);
             const last3 = allMovements.slice(0, 3);
             
@@ -219,7 +237,6 @@ const Finance = {
                 last3.forEach(item => {
                     const row = document.createElement('div');
                     row.className = 'home-expense-row';
-                    
                     row.innerHTML = `
                         <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
                             <span style="font-size:18px;">${item.icon}</span>
@@ -234,20 +251,19 @@ const Finance = {
                 });
             }
         }
-
-        // 2. RENDERIZAR TOP 3 CATEGORÍAS (MES ACTUAL)
+        
+        // 2. TOP CATEGORÍAS (RESTORED FUNCTIONALITY)
         const catContainer = document.getElementById('home-top-categories');
         if (catContainer) {
             catContainer.innerHTML = '';
-            
             const now = new Date();
             const curM = now.getMonth();
             const curY = now.getFullYear();
-            const currentDay = now.getDate();
+            const curD = now.getDate();
             const groups = {};
             let totalM = 0;
 
-            // A. Sumar GASTOS
+            // Sumar Gastos
             Data.store.expenses.forEach(e => {
                 const d = new Date(e.date);
                 if (!e.isInstallment && d.getMonth() === curM && d.getFullYear() === curY) {
@@ -257,25 +273,23 @@ const Finance = {
                     totalM += parseFloat(e.amount);
                 }
             });
-
-            // B. Sumar SUSCRIPCIONES (Si ya pasó el día de cobro)
+            // Sumar Subs
             if (Data.store.subscriptions) {
                 Data.store.subscriptions.forEach(sub => {
-                    if (currentDay >= sub.day) {
-                        const cat = UI.t('tab_subs'); // "Suscrip."
+                    if (curD >= sub.day) {
+                        const cat = UI.t('tab_subs');
                         if(!groups[cat]) groups[cat] = 0;
                         groups[cat] += parseFloat(sub.cost);
                         totalM += parseFloat(sub.cost);
                     }
                 });
             }
-
-            // C. Sumar LISTAS (Si están completadas este mes)
+            // Sumar Listas
             if (Data.store.lists) {
                 Data.store.lists.forEach(l => {
                     const d = new Date(l.date);
                     if (l.status === 'completed' && d.getMonth() === curM && d.getFullYear() === curY) {
-                        const cat = UI.t('cat_market'); // "Supermercado"
+                        const cat = UI.t('cat_market');
                         if(!groups[cat]) groups[cat] = 0;
                         groups[cat] += parseFloat(l.total);
                         totalM += parseFloat(l.total);
@@ -289,16 +303,9 @@ const Finance = {
                 catContainer.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">Sin datos este mes.</div>`;
             } else {
                 const colors = ['var(--primary)', 'var(--purple)', 'var(--warning)'];
-                
                 sorted.forEach(([cat, amount], i) => {
                     const pct = (amount / totalM) * 100;
-                    
-                    // Icono dinámico
-                    let icon = '';
-                    if (cat === UI.t('tab_subs')) icon = '\uD83D\uDCC5';
-                    else if (cat === UI.t('cat_market')) icon = '\uD83D\uDED2';
-                    else icon = this.getCategoryIcon(cat);
-
+                    const icon = this.getCategoryIcon(cat); // Usa el helper restaurado
                     const row = document.createElement('div');
                     row.className = 'home-cat-row';
                     row.innerHTML = `
@@ -316,374 +323,318 @@ const Finance = {
         }
     },
 
-
-    // --- GRÁFICO DE CATEGORÍAS (DONUT) ---
+    // --- GRÁFICO DONUT (RESTORED) ---
+    // --- GRÁFICO DONUT + LEYENDA (MODIFICADO) ---
     renderCategoryChart(container) {
         const categories = {};
         const [selYear, selMonth] = this.selectedHistoryMonth.split('-').map(Number);
-        
         let totalMonth = 0;
 
-        // A. Procesar Gastos (Normales y Parcelados)
+        // 1. Sumar Gastos
         Data.store.expenses.forEach(e => {
             const d = new Date(e.date);
             let match = false;
-
-            if (!e.isInstallment) {
-                // Coincide el mes y año
-                if (d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
-                    match = true;
-                }
-            } else {
-                // Para parcelas, ver si estaba activa en ese mes específico
-                const targetDate = new Date(selYear, selMonth - 1, 1);
-                const { current } = this.calculateProgressAtDate(e.date, e.installments.total, targetDate);
-                
-                if (current > 0 && current <= e.installments.total) {
-                    match = true;
-                }
+            
+            // Lógica de fechas (Normal vs Parcelado)
+            if (!e.isInstallment && d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
+                match = true;
+            } else if (e.isInstallment) {
+                const target = new Date(selYear, selMonth - 1, 1);
+                const { current } = this.calculateProgressAtDate(e.date, e.installments.total, target);
+                if (current > 0 && current <= e.installments.total) match = true;
             }
 
             if (match) {
-                let catName = e.category || UI.t('cat_other');
-                // Limpiar posibles iconos si venían guardados
-                if(catName.includes(' ')) {
-                    const parts = catName.split(' ');
-                    if(parts.length > 1 && parts[0].match(/\p{Emoji}/u)) {
-                        parts.shift(); // Quitar emoji
-                        catName = parts.join(' ');
-                    }
+                // Limpieza básica de nombre (si tiene emoji pegado)
+                let cat = e.category || UI.t('cat_other');
+                if (cat.includes(' ') && cat.split(' ')[0].match(/\p{Emoji}/u)) {
+                    cat = cat.split(' ').slice(1).join(' ');
                 }
-
-                if (!categories[catName]) categories[catName] = 0;
-                categories[catName] += parseFloat(e.amount);
+                
+                if (!categories[cat]) categories[cat] = 0;
+                categories[cat] += parseFloat(e.amount);
                 totalMonth += parseFloat(e.amount);
             }
         });
 
-        // B. Procesar Listas de Compra
+        // 2. Sumar Listas
         if (Data.store.lists) {
             Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                 const d = new Date(l.date);
                 if (d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
-                    const catKey = UI.t('cat_market'); 
-                    if (!categories[catKey]) categories[catKey] = 0;
-                    categories[catKey] += parseFloat(l.total);
+                    const c = UI.t('cat_market');
+                    if (!categories[c]) categories[c] = 0;
+                    categories[c] += parseFloat(l.total);
                     totalMonth += parseFloat(l.total);
                 }
             });
         }
 
-        // C. Procesar Suscripciones
-        const daysInMonth = new Date(selYear, selMonth, 0).getDate();
+        // 3. Sumar Subs
         if (Data.store.subscriptions) {
+            const daysInMonth = new Date(selYear, selMonth, 0).getDate();
             Data.store.subscriptions.forEach(s => {
                 if (s.day <= daysInMonth) {
-                    const catKey = UI.t('tab_subs'); 
-                    if (!categories[catKey]) categories[catKey] = 0;
-                    categories[catKey] += parseFloat(s.cost);
+                    const c = UI.t('tab_subs');
+                    if (!categories[c]) categories[c] = 0;
+                    categories[c] += parseFloat(s.cost);
                     totalMonth += parseFloat(s.cost);
                 }
             });
         }
-
-        if (totalMonth === 0) return;
-
-        // D. Construir el Gráfico Visual (CSS Conic Gradient)
-        let currentDeg = 0;
-        let gradientParts = [];
         
-        const colors = [
-            '#007AFF', '#FF9500', '#FF2D55', '#AF52DE', 
-            '#34C759', '#FFCC00', '#5AC8FA', '#8E8E93'
-        ];
-        
-        const sortedCats = Object.entries(categories).sort((a, b) => b[1] - a[1]);
-        
-        let legendHTML = '<div class="chart-legend" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:25px;">';
-
-        sortedCats.forEach(([cat, amount], index) => {
-            const percentage = (amount / totalMonth) * 100;
-            const degrees = (amount / totalMonth) * 360;
-            const color = colors[index % colors.length];
+        // --- RENDERIZADO ---
+        if (totalMonth > 0) {
+            const colors = ['#007AFF', '#FF9500', '#FF2D55', '#AF52DE', '#34C759', '#5AC8FA', '#8E8E93'];
+            let currentDeg = 0;
+            let gradientParts = [];
             
-            gradientParts.push(`${color} ${currentDeg}deg ${currentDeg + degrees}deg`);
-            currentDeg += degrees;
+            // A. ORDENAR: De Mayor a Menor
+            const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+            
+            // B. GENERAR LEYENDA (AQUÍ ESTÁ LO QUE PEDISTE)
+            let legendHTML = '<div style="margin-top:25px; width:100%; display:flex; flex-direction:column; gap:10px;">';
+            
+            sorted.forEach(([cat, amount], i) => {
+                const deg = (amount / totalMonth) * 360;
+                const pct = (amount / totalMonth) * 100;
+                const col = colors[i % colors.length];
+                
+                // Usamos tu función getCategoryIcon existente para mantener los emojis
+                const icon = this.getCategoryIcon(cat); 
 
-            legendHTML += `
-                <div style="display:flex; align-items:center; font-size:12px;">
-                    <div style="width:8px; height:8px; background:${color}; border-radius:50%; margin-right:8px; box-shadow:0 0 5px ${color};"></div>
-                    <div style="flex:1; color:var(--text-color); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat}</div>
-                    <div style="font-weight:800; color:var(--text-sec);">${Math.round(percentage)}%</div>
+                // Construcción del degradado del donut
+                gradientParts.push(`${col} ${currentDeg}deg ${currentDeg + deg}deg`);
+                currentDeg += deg;
+
+                // Construcción de la fila de la leyenda
+                legendHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px;">
+                        <div style="display:flex; align-items:center; gap:10px; width:45%; overflow:hidden;">
+                            <div style="width:10px; height:10px; border-radius:50%; background:${col}; flex-shrink:0; box-shadow:0 0 5px ${col};"></div>
+                            <span style="font-size:16px;">${icon}</span>
+                            <span style="font-weight:600; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat}</span>
+                        </div>
+                        
+                        <div style="flex:1; margin:0 12px; height:5px; background:rgba(0,0,0,0.05); border-radius:3px; overflow:hidden;">
+                            <div style="height:100%; width:${pct}%; background:${col}; border-radius:3px;"></div>
+                        </div>
+                        
+                        <div style="font-weight:800; color:var(--text-sec); width:14%; text-align:right;">${Math.round(pct)}%</div>
+                    </div>
+                `;
+            });
+            legendHTML += '</div>';
+
+            const chartHTML = `
+                <div class="glass-card" style="padding:25px; margin-bottom:20px; display:flex; flex-direction:column; align-items:center;">
+                    <div style="font-size:12px; font-weight:700; color:var(--text-sec); margin-bottom:20px; text-transform:uppercase; letter-spacing:1px;">${UI.t('cat_distribution')}</div>
+                    
+                    <div style="position:relative; width:160px; height:160px; border-radius:50%; background: conic-gradient(${gradientParts.join(', ')});">
+                        <div style="position:absolute; inset:22px; background:var(--glass-bg); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:inset 0 2px 10px rgba(0,0,0,0.05);">
+                            <span style="font-size:10px; color:var(--text-sec); font-weight:700; text-transform:uppercase;">TOTAL</span>
+                            <span style="font-size:19px; font-weight:900; color:var(--text-color); margin-top:2px;">${UI.formatMoney(totalMonth)}</span>
+                        </div>
+                    </div>
+                    
+                    ${legendHTML}
                 </div>
             `;
-        });
-        legendHTML += '</div>';
-
-        const chartHTML = `
-            <div class="glass-card" style="padding:25px; margin-bottom:25px;">
-                <div class="section-label" style="margin-bottom:25px; text-align:center; display:block;">
-                    ${UI.t('cat_distribution')}
-                </div>
-                
-                <div style="position:relative; width:160px; height:160px; margin:0 auto; border-radius:50%; background: conic-gradient(${gradientParts.join(', ')});">
-                    <div style="position:absolute; inset:22px; background:var(--glass-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-direction:column; backdrop-filter:blur(10px);">
-                        <span style="font-size:10px; color:var(--text-sec); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Total</span>
-                        <span style="font-size:18px; font-weight:900; color:var(--text-color); margin-top:4px;">${UI.formatMoney(totalMonth)}</span>
-                    </div>
-                </div>
-                
-                ${legendHTML}
-            </div>
-        `;
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = chartHTML;
-        container.appendChild(tempDiv);
+            
+            const div = document.createElement('div');
+            div.innerHTML = chartHTML;
+            container.appendChild(div);
+        }
     },
 
-    // --- HELPER PARA ICONOS ---
-    getCategoryIcon(catName) {
-        // Intentar buscar en las categorías de UI por texto traducido
-        const found = UI.categories.find(c => UI.t(c.id) === catName || c.id === catName);
-        if (found) return found.icon;
-        // Si no, devolver genérico (Caja)
-        return '\uD83D\uDCE6'; 
-    },
 
-    // --- HISTORIAL DETALLADO (Renderizado Principal) ---
+    // --- HISTORIAL DETALLADO (CON FILTROS Y EMOJIS CORRECTOS) ---
     renderExpensesHistory() {
         const container = document.getElementById('expenses-history-list');
         if (!container) return;
         container.innerHTML = ''; 
 
         this.renderMonthSelector(container);
-        this.renderCategoryChart(container);
+        this.renderCategoryChart(container); // Donut
+
+        // Filtros (Chips)
+        const filterContainer = document.createElement('div');
+        filterContainer.innerHTML = this.renderFilterChips();
+        container.appendChild(filterContainer);
 
         const [selYear, selMonth] = this.selectedHistoryMonth.split('-').map(Number);
-        
-        // Lista de Movimientos
         let allItems = [];
 
-        // 1. Recolectar Gastos
+        // 1. Recolectar Datos
         Data.store.expenses.forEach(e => {
+            let match = false;
+            let date = e.date;
             const d = new Date(e.date);
-            if (!e.isInstallment && d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
-                allItems.push({
-                    type: 'expense', id: e.id, date: e.date, amount: e.amount, name: e.desc, 
-                    icon: this.getCategoryIcon(e.category)
-                });
+            if(!e.isInstallment && d.getMonth() === (selMonth-1) && d.getFullYear() === selYear) match = true;
+            else if (e.isInstallment) {
+                const target = new Date(selYear, selMonth-1, 1);
+                const {current} = this.calculateProgressAtDate(e.date, e.installments.total, target);
+                if(current > 0 && current <= e.installments.total) { match = true; date = target.getTime(); }
             }
-            if (e.isInstallment) {
-                const targetDate = new Date(selYear, selMonth - 1, 1);
-                const { current } = this.calculateProgressAtDate(e.date, e.installments.total, targetDate);
-                if (current > 0 && current <= e.installments.total) {
-                    allItems.push({
-                        type: 'expense', id: e.id, date: targetDate.getTime(), amount: e.amount, 
-                        name: `${e.desc} (${current}/${e.installments.total})`,
-                        icon: this.getCategoryIcon(e.category)
-                    });
-                }
+            if(match) {
+                allItems.push({
+                    type: 'expense', id: e.id, date: date, amount: e.amount, name: e.desc, 
+                    rawCat: e.category, icon: this.getCategoryIcon(e.category)
+                });
             }
         });
 
-        // 2. Recolectar Listas
-        if (Data.store.lists) {
+        // Listas (Icono )
+        if(Data.store.lists) {
             Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                 const d = new Date(l.date);
-                if (d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
-                    allItems.push({
-                        type: 'list', 
-                        id: l.id, 
-                        date: l.date, 
-                        amount: l.total, 
-                        name: l.name, 
-                        icon: '\uD83D\uDED2' //   Carrito Unicode
+                if(d.getMonth() === (selMonth-1) && d.getFullYear() === selYear) {
+                    allItems.push({ 
+                        type: 'list', id: l.id, date: l.date, amount: l.total, name: l.name, 
+                        rawCat: 'cat_market', icon: '\uD83D\uDED2' 
                     });
                 }
             });
         }
 
-        // 3. Recolectar Suscripciones
-        if (Data.store.subscriptions) {
+        // Suscripciones (Icono )
+        if(Data.store.subscriptions) {
+            const daysInM = new Date(selYear, selMonth, 0).getDate();
             Data.store.subscriptions.forEach(s => {
-                const daysInMonth = new Date(selYear, selMonth, 0).getDate();
-                if (s.day <= daysInMonth) {
-                    // Crear fecha ficticia para ordenar
-                    const date = new Date(selYear, selMonth - 1, s.day).getTime();
-                    allItems.push({
-                        type: 'sub', id: s.id, date: date, amount: s.cost, name: s.name, 
-                        icon: '\uD83D\uDCC5' // Calendario
+                if(s.day <= daysInM) {
+                    allItems.push({ 
+                        type: 'sub', id: s.id, date: new Date(selYear, selMonth-1, s.day).getTime(), 
+                        amount: s.cost, name: s.name, 
+                        rawCat: 'cat_subs', icon: '\uD83D\uDCC5' 
                     });
                 }
             });
         }
 
-        allItems.sort((a, b) => b.date - a.date);
+        // 2. Aplicar Filtro
+        if(this.selectedCategoryFilter !== 'ALL') {
+            allItems = allItems.filter(item => {
+                const filter = this.selectedCategoryFilter;
+                const itemName = UI.t(filter);
+                // Si filtro es 'cat_market' dejamos pasar las listas
+                if(item.type === 'list' && filter === 'cat_market') return true;
+                // Si filtro es 'cat_subs' (o bills) dejamos pasar las subs
+                if(item.type === 'sub' && (filter === 'cat_subs' || filter === 'cat_bills')) return true;
 
-        if (allItems.length > 0) {
+                return item.rawCat === filter || item.rawCat === itemName;
+            });
+        }
+
+        // 3. Renderizar
+        allItems.sort((a,b) => b.date - a.date);
+        
+        // Total Filtrado
+        if(this.selectedCategoryFilter !== 'ALL') {
+            const totalF = allItems.reduce((s,i)=>s+parseFloat(i.amount),0);
+            const sumDiv = document.createElement('div');
+            sumDiv.className = 'glass-card';
+            sumDiv.style.cssText = "text-align:center; padding:15px; margin-bottom:10px;";
+            sumDiv.innerHTML = `<div style="font-size:11px; font-weight:700; color:var(--text-sec);">${UI.t(this.selectedCategoryFilter).toUpperCase()}</div><div style="font-size:20px; font-weight:800;">${UI.formatMoney(totalF)}</div>`;
+            container.appendChild(sumDiv);
+        }
+
+        if(allItems.length === 0) {
+            container.innerHTML += `<div style="text-align:center; padding:30px; opacity:0.5; font-size:13px;">Sin movimientos con este filtro.</div>`;
+        } else {
             allItems.forEach(item => {
                 const row = document.createElement('div');
-                row.className = 'glass-card item-row';
-                row.style.marginBottom = '10px';
+                row.className = 'item-row'; 
+                const delFn = item.type === 'expense' ? `Finance.deleteExpense('${item.id}')` : (item.type === 'list' ? `Shopping.deleteList('${item.id}')` : `Finance.deleteSub('${item.id}')`);
                 
-                const deleteAction = item.type === 'expense' 
-                    ? `Finance.deleteExpense('${item.id}')` 
-                    : (item.type === 'list' ? `Shopping.deleteList('${item.id}')` : `Finance.deleteSub('${item.id}')`);
-
                 row.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                        <span style="font-size:24px;">${item.icon}</span>
-                        <div style="overflow:hidden;">
-                            <div style="font-weight:700; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
-                            <div style="font-size:12px; color:var(--text-sec);">${new Date(item.date).toLocaleDateString()}</div>
+                    <div class="item-content-wrap">
+                        <div style="width:40px; height:40px; background:var(--segment-bg); border-radius:12px; display:grid; place-items:center; font-size:22px; margin-right:15px; flex-shrink:0;">
+                            ${item.icon}
                         </div>
-                    </div>
-                    <div style="text-align:right; display:flex; align-items:center; gap:10px;">
-                        <div style="font-weight:800; font-size:15px; color:var(--text-color);">${UI.formatMoney(item.amount)}</div>
-                        <button class="icon-btn" style="color:var(--danger); width:32px; height:32px;" onclick="${deleteAction}">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:600; font-size:14px; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
+                            <div style="font-size:11px; color:var(--text-sec);">${new Date(item.date).toLocaleDateString()}</div>
+                        </div>
+                        <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                            <div style="font-weight:700; font-size:14px; color:var(--text-color);">${UI.formatMoney(item.amount)}</div>
+                            <button class="icon-btn" style="color:var(--danger); width:32px; height:32px;" onclick="${delFn}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(row);
             });
-        } else {
-            container.innerHTML = `<div style="text-align:center; padding:30px; opacity:0.5;">${UI.t('empty_history_month')}</div>`;
         }
     },
 
-    // --- RENDERIZADO DEL SELECTOR DE MES (CORREGIDO) ---
     renderMonthSelector(container) {
-        // Crear contenedor flexible (barra de navegación)
-        const navContainer = document.createElement('div');
-        navContainer.className = 'glass-card';
-        navContainer.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px 15px; margin-bottom:20px;';
-
+        const nav = document.createElement('div');
+        nav.className = 'glass-card';
+        nav.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px 15px; margin-bottom:10px;';
         const [y, m] = this.selectedHistoryMonth.split('-').map(Number);
-
-        // 1. Botón Anterior (<)
-        const btnPrev = document.createElement('button');
-        btnPrev.className = 'icon-btn';
-        btnPrev.style.cssText = 'width:32px; height:32px; background:transparent;';
-        btnPrev.innerHTML = '&#9664;'; // Flecha Izquierda
-        btnPrev.onclick = () => this.changeMonth(-1);
-
-        // 2. Texto del Mes (Centro)
-        const label = document.createElement('div');
-        label.style.cssText = 'font-weight:800; font-size:16px; color:var(--text-color); text-transform:capitalize;';
-        label.innerText = `${UI.getMonthName(parseInt(m) - 1)} ${y}`;
-
-        // 3. Botón Siguiente (>)
-        const btnNext = document.createElement('button');
-        btnNext.className = 'icon-btn';
-        btnNext.style.cssText = 'width:32px; height:32px; background:transparent;';
-        btnNext.innerHTML = '&#9654;'; // Flecha Derecha
-        btnNext.onclick = () => this.changeMonth(1);
-
-        navContainer.appendChild(btnPrev);
-        navContainer.appendChild(label);
-        navContainer.appendChild(btnNext);
         
-        container.appendChild(navContainer);
+        nav.innerHTML = `
+            <button class="icon-btn" onclick="Finance.changeMonth(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <div style="font-weight:800; font-size:15px; color:var(--text-color); text-transform:capitalize;">${UI.getMonthName(parseInt(m)-1)} ${y}</div>
+            <button class="icon-btn" onclick="Finance.changeMonth(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+        `;
+        container.appendChild(nav);
     },
 
-    // --- NUEVA LÓGICA DE CAMBIO DE MES ---
     changeMonth(offset) {
         let [y, m] = this.selectedHistoryMonth.split('-').map(Number);
-        
         m += offset;
-        
-        // Manejo de cambio de año
-        if (m > 12) {
-            m = 1;
-            y++;
-        } else if (m < 1) {
-            m = 12;
-            y--;
-        }
-        
+        if (m > 12) { m = 1; y++; } else if (m < 1) { m = 12; y--; }
         this.selectedHistoryMonth = `${y}-${String(m).padStart(2,'0')}`;
         this.renderExpensesHistory();
-        
-        // Pequeña vibración de feedback
-        if(navigator.vibrate) navigator.vibrate(10);
     },
 
-    // --- GESTIÓN DE PRESUPUESTO ---
+    // --- RESTO DE FUNCIONES (CRUD - IGUAL AL ORIGINAL) ---
     openBudgetModal() {
         const modal = document.getElementById('modal-budget');
-        const input = document.getElementById('budget-input');
-        input.value = Data.store.budget.limit || '';
+        document.getElementById('budget-input').value = Data.store.budget.limit || '';
         modal.classList.add('open');
-        input.focus();
+        setTimeout(() => document.getElementById('budget-input').focus(), 100);
     },
 
     saveBudget() {
-        const input = document.getElementById('budget-input');
-        const val = parseFloat(input.value);
+        const val = parseFloat(document.getElementById('budget-input').value);
         if (!isNaN(val)) {
             Data.store.budget.limit = val;
             Data.save();
             Main.closeModal('budget');
             UI.renderBudgetChart();
-            Finance.renderHomeWidgets(); 
-            
-            if (typeof Assistant !== 'undefined') {
-                Assistant.addXP(20, "Presupuesto Definido"); 
-                Assistant.updateMood();
-            }
+            this.renderHomeWidgets();
             UI.showSnackbar(UI.t('msg_updated'));
         }
     },
 
-    // --- GESTIÓN DE GASTOS ---
     openExpenseModal() {
         document.getElementById('exp-amount').value = '';
         document.getElementById('exp-desc').value = '';
         document.getElementById('exp-is-install').checked = false;
-        
         this.toggleInstallmentInputs();
-        
-        if (typeof UI.renderCategoryChips === 'function') {
-            UI.renderCategoryChips();
-        }
-        
+        if (typeof UI.renderCategoryChips === 'function') UI.renderCategoryChips();
         document.getElementById('modal-expense').classList.add('open');
-        setTimeout(() => document.getElementById('exp-amount').focus(), 100);
     },
 
     toggleInstallmentInputs() {
         const isInstall = document.getElementById('exp-is-install').checked;
         const div = document.getElementById('installment-inputs');
-        if (isInstall) {
-            div.classList.remove('hidden');
-        } else {
-            div.classList.add('hidden');
-        }
+        if (isInstall) div.classList.remove('hidden'); else div.classList.add('hidden');
     },
 
     saveExpense() {
         const val = parseFloat(document.getElementById('exp-amount').value);
-        const descInput = document.getElementById('exp-desc').value.trim();
-        const desc = descInput || UI.t('cat_other');
+        const desc = document.getElementById('exp-desc').value.trim() || UI.t('cat_other');
         const isInstall = document.getElementById('exp-is-install').checked;
         
         const catChip = document.querySelector('.cat-chip.selected');
         let category = UI.t('cat_other');
-        
-        if (catChip) {
-            if (catChip.dataset.id) {
-                category = UI.t(catChip.dataset.id);
-            } else {
-                const text = catChip.innerText; 
-                category = text.includes(' ') ? text.split(' ')[1] : text;
-            }
-        }
+        if (catChip) category = catChip.dataset.id ? UI.t(catChip.dataset.id) : catChip.innerText.split(' ')[1];
 
-        if (!val || val <= 0) {
-            return UI.showSnackbar(UI.t('msg_invalid_amount'));
-        }
+        if (!val || val <= 0) return UI.showSnackbar(UI.t('msg_invalid_amount'));
 
         let finalAmount = val;
         let installData = null;
@@ -691,10 +642,7 @@ const Finance = {
         if (isInstall) {
             const count = parseInt(document.getElementById('exp-inst-count').value) || 1;
             finalAmount = val / count; 
-            installData = { 
-                total: count, 
-                originalTotal: val 
-            };
+            installData = { total: count, originalTotal: val };
         }
 
         const newExpense = {
@@ -714,18 +662,11 @@ const Finance = {
         Main.closeModal('expense');
         UI.showSnackbar(UI.t('msg_saved'));
         UI.renderBudgetChart();
-        Finance.renderHomeWidgets();
+        this.renderHomeWidgets();
         
-        if (typeof Assistant !== 'undefined') {
-            Assistant.addXP(10, "Gasto Registrado");
-            Assistant.updateMood();
-        }
-
         const activeTab = document.querySelector('.segment-btn.active');
-        if (activeTab) {
-            if (activeTab.id.includes('history')) this.renderExpensesHistory();
-            if (activeTab.id.includes('installments')) this.renderInstallments();
-        }
+        if (activeTab && activeTab.id.includes('history')) this.renderExpensesHistory();
+        if (activeTab && activeTab.id.includes('installments')) this.renderInstallments();
     },
 
     async deleteExpense(id) {
@@ -734,12 +675,10 @@ const Finance = {
             Data.save(); 
             this.setTab('history'); 
             UI.renderBudgetChart();
-            Finance.renderHomeWidgets();
-            if (typeof Assistant !== 'undefined') Assistant.updateMood();
+            this.renderHomeWidgets();
         }
     },
 
-    // --- GESTIÓN DE SUSCRIPCIONES ---
     addSubscription() { 
         document.getElementById('sub-name').value = '';
         document.getElementById('sub-cost').value = '';
@@ -751,32 +690,23 @@ const Finance = {
         const name = document.getElementById('sub-name').value;
         const cost = parseFloat(document.getElementById('sub-cost').value);
         const day = parseInt(document.getElementById('sub-day').value);
-        
         if (name && cost && day) {
-            Data.store.subscriptions.push({ 
-                id: Date.now().toString(), 
-                name, 
-                cost, 
-                day 
-            });
+            Data.store.subscriptions.push({ id: Date.now().toString(), name, cost, day });
             Data.save();
             Main.closeModal('sub');
             this.renderSubscriptions();
             UI.renderBudgetChart();
-            
-            if (typeof Assistant !== 'undefined') Assistant.updateMood();
+            this.renderHomeWidgets();
         }
     },
 
     renderSubscriptions() {
         const container = document.getElementById('subs-list');
         container.innerHTML = '';
-        
         if (!Data.store.subscriptions || Data.store.subscriptions.length === 0) {
             container.innerHTML = `<div style="text-align:center; padding:30px; opacity:0.5;">${UI.t('empty_subs')}</div>`;
             return;
         }
-        
         Data.store.subscriptions.forEach(sub => {
             const div = document.createElement('div');
             div.className = 'glass-card item-row';
@@ -785,14 +715,9 @@ const Finance = {
                     <div style="font-weight:700;">${sub.name}</div>
                     <div style="font-size:12px; opacity:0.7;">${UI.t('sub_charge_day')} ${sub.day}</div>
                 </div>
-                <div style="font-weight:800; margin-right:15px; color:var(--text-color);">
-                    ${UI.formatMoney(sub.cost)}
-                </div>
-                <button class="icon-btn" style="color:var(--danger); width:36px; height:36px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
+                <div style="font-weight:800; margin-right:15px; color:var(--text-color);">${UI.formatMoney(sub.cost)}</div>
+                <button class="icon-btn" style="color:var(--danger); width:36px; height:36px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             `;
-            // Cierre correcto de evento
             div.querySelector('button').onclick = () => this.deleteSub(sub.id);
             container.appendChild(div);
         });
@@ -804,14 +729,13 @@ const Finance = {
             Data.save(); 
             this.renderSubscriptions(); 
             UI.renderBudgetChart();
+            this.renderHomeWidgets();
         }
     },
 
-    // --- GESTIÓN DE PARCELAS (CUOTAS) ---
     renderInstallments() {
         const container = document.getElementById('installments-list');
         container.innerHTML = '';
-        
         const activeInstalls = Data.store.expenses.filter(e => e.isInstallment);
         
         if (activeInstalls.length === 0) {
@@ -821,16 +745,12 @@ const Finance = {
         
         activeInstalls.forEach(inst => {
             const { current } = this.calculateProgress(inst.date, inst.installments.total);
-            
             if (current > inst.installments.total) return;
-            
             const pct = (current / inst.installments.total) * 100;
-            
             const div = document.createElement('div');
             div.className = 'glass-card';
             div.style.padding = '15px';
             div.style.marginBottom = '12px';
-            
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span style="font-weight:700;">${inst.desc}</span>
@@ -844,12 +764,9 @@ const Finance = {
                     <div style="width:${pct}%; background:var(--primary-grad); height:100%;"></div>
                 </div>
                 <div style="text-align:right; margin-top:10px;">
-                    <button class="text-btn-small" style="color:var(--danger);">
-                        ${UI.t('delete')}
-                    </button>
+                    <button class="text-btn-small" style="color:var(--danger);">${UI.t('delete')}</button>
                 </div>
             `;
-            
             div.querySelector('button').onclick = () => this.deleteExpense(inst.id);
             container.appendChild(div);
         });

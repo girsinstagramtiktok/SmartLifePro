@@ -700,105 +700,133 @@ msg_bio_inactive: "Lock Disabled 🔓"
         container.appendChild(fragment);
     },
 
-    // --- [CORREGIDO] RENDERIZADO DE AJUSTES CON PIN ---
+     // --- RENDERIZADO DE AJUSTES (ESTRUCTURA BLINDADA) ---
     renderSettingsView() {
         const container = document.getElementById('settings-inject');
         if (!container || typeof Data === 'undefined') return;
         
         const s = Data.store.settings;
-        
-        // CORRECCIÓN CLAVE: Verificar PIN en lugar de Biometría antigua
-        const hasPin = (s.pin !== null && s.pin !== undefined);
+        // Verificación segura de PIN
+        const hasPin = (s.pin !== null && s.pin !== undefined && s.pin !== ""); 
+
+        // Variable para el botón cambiar (para no ensuciar el HTML)
+        const changeBtnHTML = hasPin 
+            ? `<span onclick="Main.changePin()" style="font-size:12px; font-weight:700; color:var(--primary); cursor:pointer; margin-right:8px;">Cambiar</span>` 
+            : '';
 
         container.innerHTML = `
-            <div class="section-label" style="margin-top:0;">${this.t('sec_general')}</div>
-            
-            <div class="setting-item">
-                <span>${this.t('lang_label')}</span>
-            </div>
-            <div class="lang-grid">
-                <div class="lang-btn-opt ${s.lang === 'es' ? 'selected' : ''}" onclick="UI.changeLang('es')">
-                    <div class="flag-icon flag-es"></div>
-                    <span>Español</span>
+            <div style="margin-bottom: 20px;">
+                <div class="section-label" style="margin-top:0;">${this.t('sec_general')}</div>
+                
+                <div class="setting-item">
+                    <span>${this.t('lang_label')}</span>
                 </div>
-                <div class="lang-btn-opt ${s.lang === 'en' ? 'selected' : ''}" onclick="UI.changeLang('en')">
-                    <div class="flag-icon flag-en"></div>
-                    <span>English</span>
+                <div class="lang-grid">
+                    <div class="lang-btn-opt ${s.lang === 'es' ? 'selected' : ''}" onclick="UI.changeLang('es')"><div class="flag-icon flag-es"></div><span>Español</span></div>
+                    <div class="lang-btn-opt ${s.lang === 'en' ? 'selected' : ''}" onclick="UI.changeLang('en')"><div class="flag-icon flag-en"></div><span>English</span></div>
+                    <div class="lang-btn-opt ${s.lang === 'pt' ? 'selected' : ''}" onclick="UI.changeLang('pt')"><div class="flag-icon flag-pt"></div><span>Português</span></div>
                 </div>
-                <div class="lang-btn-opt ${s.lang === 'pt' ? 'selected' : ''}" onclick="UI.changeLang('pt')">
-                    <div class="flag-icon flag-pt"></div>
-                    <span>Português</span>
-                </div>
-            </div>
 
-                        <div class="setting-item" onclick="UI.openCurrencyModal()" style="margin-top:15px; cursor:pointer;">
-                <span>${this.t('curr_label')}</span>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:700; color:var(--primary); font-size:16px;">
-                        ${Data.store.settings.currency || '$'}
-                    </span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
+                <div class="setting-item" onclick="UI.openCurrencyModal()" style="margin-top:15px; cursor:pointer;">
+                    <span>${this.t('curr_label')}</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-weight:700; color:var(--primary); font-size:16px;">${s.currency || '$'}</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.5;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
                 </div>
             </div>
 
+            <div style="margin-bottom: 20px;">
+                <div class="section-label">${this.t('sec_app')}</div>
+                
+                <div class="setting-item">
+                    <span>${this.t('theme_label')}</span>
+                </div>
+                <div class="theme-selector-grid">
+                    <div class="theme-btn t-blue ${s.theme === 'blue' ? 'active' : ''}" onclick="UI.changeTheme('blue')"></div>
+                    <div class="theme-btn t-pink ${s.theme === 'pink' ? 'active' : ''}" onclick="UI.changeTheme('pink')"></div>
+                    <div class="theme-btn t-green ${s.theme === 'green' ? 'active' : ''}" onclick="UI.changeTheme('green')"></div>
+                    <div class="theme-btn t-orange ${s.theme === 'orange' ? 'active' : ''}" onclick="UI.changeTheme('orange')"></div>
+                    <div class="theme-btn t-red ${s.theme === 'red' ? 'active' : ''}" onclick="UI.changeTheme('red')"></div>
+                    <div class="theme-btn t-purple ${s.theme === 'purple' ? 'active' : ''}" onclick="UI.changeTheme('purple')"></div>
+                </div>
 
-            <div class="section-label">${this.t('sec_app')}</div>
-            
-            <div class="setting-item">
-                <span>${this.t('theme_label')}</span>
-            </div>
-            <div class="theme-selector-grid">
-                <div class="theme-btn t-blue ${s.theme === 'blue' ? 'active' : ''}" onclick="UI.changeTheme('blue')"></div>
-                <div class="theme-btn t-pink ${s.theme === 'pink' ? 'active' : ''}" onclick="UI.changeTheme('pink')"></div>
-                <div class="theme-btn t-green ${s.theme === 'green' ? 'active' : ''}" onclick="UI.changeTheme('green')"></div>
-                <div class="theme-btn t-orange ${s.theme === 'orange' ? 'active' : ''}" onclick="UI.changeTheme('orange')"></div>
-                <div class="theme-btn t-red ${s.theme === 'red' ? 'active' : ''}" onclick="UI.changeTheme('red')"></div>
-                <div class="theme-btn t-purple ${s.theme === 'purple' ? 'active' : ''}" onclick="UI.changeTheme('purple')"></div>
-            </div>
+                    
+<div class="setting-item" style="margin-top:15px; border-top:1px solid rgba(120,120,120,0.1); padding-top:15px;">
+                    <span>Tipografía</span>
+                </div>
+                <div class="font-selector-grid">
+                    <div class="font-btn ${(!s.font || s.font === 'Modern') ? 'active' : ''}" onclick="UI.changeFont('Modern')">
+                        <span style="font-family: 'Manrope', sans-serif; font-size:16px;">Aa</span>
+                        <small>Modern</small>
+                    </div>
+                    
+                    <div class="font-btn ${s.font === 'Classic' ? 'active' : ''}" onclick="UI.changeFont('Classic')">
+                        <span style="font-family: 'Lora', serif; font-size:16px; font-weight:600;">Aa</span>
+                        <small>Classic</small>
+                    </div>
+                    
+                    <div class="font-btn ${s.font === 'Tech' ? 'active' : ''}" onclick="UI.changeFont('Tech')">
+                        <span style="font-family: 'Roboto Mono', monospace; font-size:14px;">{Aa}</span>
+                        <small>Tech</small>
+                    </div>
+                    
+                    <div class="font-btn ${s.font === 'Soft' ? 'active' : ''}" onclick="UI.changeFont('Soft')">
+                        <span style="font-family: 'Comfortaa', cursive; font-size:13px; font-weight:700;">Aa</span>
+                        <small>Soft</small>
+                    </div>
+                </div>
 
-            <div class="setting-item" style="margin-top:15px;">
-                <span>${this.t('dark_mode')}</span>
-                <label class="switch-wrap">
-                    <input type="checkbox" id="dark-mode-toggle" ${s.darkMode ? 'checked' : ''} onchange="UI.toggleDarkMode()">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            
-            <div class="setting-item">
-                <span>${this.t('bio_lock')}</span>
-                <label class="switch-wrap">
-                    <input type="checkbox" id="pin-toggle" ${hasPin ? 'checked' : ''} onchange="Main.togglePinLock()">
-                    <span class="slider"></span>
-                </label>
-            </div>
 
-            <div class="section-label">${this.t('sec_data')}</div>
+                <div class="setting-item" style="margin-top:15px;">
+                    <span>${this.t('dark_mode')}</span>
+                    <label class="switch-wrap">
+                        <input type="checkbox" id="dark-mode-toggle" ${s.darkMode ? 'checked' : ''} onchange="UI.toggleDarkMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
             
-            <div class="btn-data-row">
-                <button class="btn-data" onclick="Main.downloadBackup()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    <span>${this.t('btn_backup')}</span>
+            <div style="margin-bottom: 40px;">
+                <div class="section-label">${this.t('sec_data')}</div>
+
+                <div class="setting-item">
+                    <span>${this.t('bio_lock')}</span>
+                    <div style="display:flex; align-items:center;">
+                        ${changeBtnHTML}
+                        <label class="switch-wrap">
+                            <input type="checkbox" id="pin-toggle" ${hasPin ? 'checked' : ''} onchange="Main.togglePinLock()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="btn-data-row" style="margin-top:15px;">
+                    <button class="btn-data" onclick="Main.downloadBackup()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>${this.t('btn_backup')}</span>
+                    </button>
+                    <div class="btn-data" style="position:relative;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <span>${this.t('btn_restore')}</span>
+                        <input type="file" id="restore-input" style="position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer;" onchange="Main.handleImport(this)">
+                    </div>
+                </div>
+
+                <button class="btn-danger-outline" onclick="Main.factoryReset()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                    ${this.t('btn_reset')}
                 </button>
-                <div class="btn-data" style="position:relative;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    <span>${this.t('btn_restore')}</span>
-                    <input type="file" id="restore-input" style="position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer;" onchange="Main.handleImport(this)">
-                </div>
             </div>
-
-            <button class="btn-danger-outline" onclick="Main.factoryReset()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                ${this.t('btn_reset')}
-            </button>
             
-            <div style="text-align:center; margin-top:20px; color:var(--text-sec); font-size:12px;">
-                Smart Life Pro v8.3<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
+            <div style="text-align:center; color:var(--text-sec); font-size:11px; padding-bottom: 20px;">
+                Smart Life Pro v10.2<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
             </div>
-            <div style="height:50px;"></div>
         `;
     },
+
+
+
 
     // --- ACCIONES DE AJUSTES ---
     saveSettings() {
@@ -821,6 +849,45 @@ msg_bio_inactive: "Lock Disabled 🔓"
         if(typeof Main !== 'undefined') Main.applyThemeToBody(theme);
         this.renderSettingsView();
     },
+
+    
+        // --- CAMBIAR FUENTE (AUTO-CORRECCIÓN) ---
+    changeFont(fontName) {
+        if (!Data.store.settings) Data.store.settings = {};
+
+        // Mapa de fuentes con familias reales
+        const fontMap = {
+            'Modern': "'Manrope', sans-serif",
+            'Classic': "'Lora', serif",
+            'Tech': "'Roboto Mono', monospace",
+            'Soft': "'Comfortaa', cursive"
+        };
+
+        // CORRECCIÓN AUTOMÁTICA: Si el nombre no existe (ej: "Manrope"), forzar "Modern"
+        let validFont = fontName;
+        if (!fontMap[fontName]) {
+            validFont = 'Modern'; // Fallback seguro
+        }
+
+        // 1. Guardar el nombre VÁLIDO
+        Data.store.settings.font = validFont;
+        Data.save();
+
+        // 2. Aplicar al CSS
+        const cssValue = fontMap[validFont];
+        document.documentElement.style.setProperty('--font-main', cssValue);
+
+        // 3. Refrescar UI (solo si la vista settings está activa para no parpadear)
+        const settingsView = document.getElementById('view-settings');
+        if (settingsView && settingsView.classList.contains('active')) {
+            this.renderSettingsView();
+        }
+        
+        if(navigator.vibrate) navigator.vibrate(10);
+    },
+
+
+
 
     toggleDarkMode() {
         Data.store.settings.darkMode = document.getElementById('dark-mode-toggle').checked;
