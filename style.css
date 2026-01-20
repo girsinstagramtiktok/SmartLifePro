@@ -595,13 +595,32 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 /* Botones flotantes y datos */
 .floating-cta { 
-    position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); 
-    background: var(--text-color); color: var(--bg-body); padding: 16px 30px; 
-    border-radius: 50px; border: none; font-size: 16px; font-weight: 800; 
-    display: flex; gap: 10px; align-items: center; box-shadow: 0 15px 40px rgba(0,0,0,0.25); 
-    z-index: 90; transition: transform 0.2s;
+    position: absolute; 
+    bottom: 120px;       /* Altura suficiente para librar el dock */
+    right: 25px;         /* Pegado a la derecha */
+    left: auto;          /* Quitamos el centrado */
+    transform: none;     /* Quitamos el transform del centro */
+    
+    width: 60px;         /* Hacemos un círculo perfecto */
+    height: 60px;
+    padding: 0;          /* Sin padding de texto */
+    border-radius: 50%; 
+    
+    background: var(--success); /* Verde éxito (más semántico para finalizar) */
+    color: white; 
+    border: none; 
+    
+    display: grid;       /* Para centrar el icono */
+    place-items: center;
+    
+    box-shadow: 0 10px 30px rgba(52, 199, 89, 0.4); /* Sombra verde */
+    z-index: 90; 
+    transition: transform 0.2s, bottom 0.2s;
 }
-.floating-cta:active { transform: translateX(-50%) scale(0.95); }
+
+.floating-cta:active { 
+    transform: scale(0.90); 
+}
 
 .btn-data-row { display: flex; gap: 12px; width: 100%; margin-bottom: 12px; }
 .btn-data {

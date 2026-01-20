@@ -658,6 +658,13 @@ const Finance = {
         if (!Data.store.expenses) Data.store.expenses = [];
         Data.store.expenses.push(newExpense);
         Data.save();
+                // >>> HOOK SMARTY: Reacción gasto alto
+        if (typeof Assistant !== 'undefined') {
+             Assistant.updateMood(); 
+             Assistant.updateHomeXP();
+             Assistant.reactToEvent('expense_added', { amount: finalAmount });
+        }
+
 
         Main.closeModal('expense');
         UI.showSnackbar(UI.t('msg_saved'));
@@ -711,6 +718,11 @@ const Finance = {
         if (name && cost && day) {
             Data.store.subscriptions.push({ id: Date.now().toString(), name, cost, day });
             Data.save();
+                        // >>> HOOK SMARTY: Reacción nueva suscripción
+            if (typeof Assistant !== 'undefined') {
+                Assistant.reactToEvent('sub_added', null);
+            }
+
             Main.closeModal('sub');
             this.renderSubscriptions();
             UI.renderBudgetChart();

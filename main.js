@@ -48,6 +48,7 @@ const Main = {
     },
 
 
+
     setTheme(themeName) {
         if (!Data.store.settings) Data.store.settings = {};
         Data.store.settings.theme = themeName;
@@ -369,6 +370,21 @@ const Main = {
             location.reload();
         }
     },
+        // --- PEGAR ESTO ---
+    toggleSmartTips() {
+        if (!Data.store.settings) Data.store.settings = {};
+        
+        const chk = document.getElementById('smarty-tips-toggle');
+        // Guardamos si está activado o no
+        Data.store.settings.showSmartTips = chk.checked;
+        Data.save();
+        
+        if (typeof UI !== 'undefined') {
+            const status = chk.checked ? "Activados \u2705" : "Desactivados \u274C";
+            UI.showSnackbar(`Consejos ${status}`);
+        }
+    },
+
 
     closeModal(id) {
         document.getElementById(`modal-${id}`).classList.remove('open');

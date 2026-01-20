@@ -415,12 +415,24 @@ activeLists.forEach(l => {
                 </button>
             </div>
             
-            <div class="input-area" style="position: relative;">
+           <div class="input-area" style="position: relative;">
                 <input type="text" id="shop-input" placeholder="${UI.t('shop_placeholder')}" autocomplete="off" list="suggestions">
-                <button id="mic-btn" class="mic-btn" onclick="Shopping.startVoiceRecognition()">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                
+                <button id="mic-btn" class="icon-btn" onclick="Shopping.startVoiceRecognition()" style="width:30px; height:30px; margin-right:5px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
                 </button>
-                <button id="add-btn" onclick="Shopping.addItem()" class="send-btn">\u2795</button>
+
+                <button id="add-btn" onclick="Shopping.addItem()" class="send-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
             </div>
 
             <div id="shop-chips" class="quick-chips"></div>
@@ -429,7 +441,12 @@ activeLists.forEach(l => {
                 <div class="section-label" style="margin-top:20px; display:block;">${UI.t('cart_label')}</div>
                 <div id="shop-cart"></div>
             </div>
-            <button id="shop-finish-btn" class="floating-cta hidden" onclick="Shopping.finishList()">${UI.t('btn_finish')}</button>
+                    <button id="shop-finish-btn" class="floating-cta hidden" onclick="Shopping.finishList()">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </button>
+
         `;
 
         this.renderShoppingItems();
@@ -437,11 +454,26 @@ activeLists.forEach(l => {
         
         const input = document.getElementById('shop-input');
         const btn = document.getElementById('add-btn');
+        
+        // Guardamos el HTML del icono SVG original para restaurarlo luego
+        const originalPlusIcon = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>`;
+
         if(input) {
             input.focus();
             input.addEventListener('input', () => {
                 const em = this.getEmoji(input.value);
-                btn.innerText = em !== '🛒' ? em : '\u2795';
+                // Si hay emoji, usamos innerText. Si no, restauramos el SVG con innerHTML
+                if (em !== '🛒') {
+                    btn.innerText = em;
+                    btn.style.fontSize = '22px'; // Ajuste visual para el emoji
+                } else {
+                    btn.innerHTML = originalPlusIcon;
+                    btn.style.fontSize = ''; // Reset
+                }
             });
             input.addEventListener('keypress', (e) => { 
                 if (e.key === 'Enter') this.addItem(); 
@@ -607,7 +639,11 @@ activeLists.forEach(l => {
         const price = knownPrice ? Data.store.prices[knownPrice] : 0;
         list.items.push({ name, qty, checked: false, price });
         Data.save();
-        input.value = ''; document.getElementById('add-btn').innerText = '\u2795';
+        input.value = ''; document.getElementById('add-btn').innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>`;
         input.focus();
         this.renderShoppingItems();
     },
@@ -784,6 +820,13 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         list.name = `${namePrefix} ${dateStr}`;
 
         Data.save();
+                // >>> HOOK SMARTY: Reacción al finalizar lista
+        if (typeof Assistant !== 'undefined') {
+            Assistant.addXP(50, "Lista Completada");
+            Assistant.updateMood();
+            Assistant.reactToEvent('list_completed', { total: list.total }); 
+        }
+
 
 if (typeof Finance !== 'undefined') Finance.renderHomeWidgets(); // Actualiza Gastos Recientes
 if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo de presupuesto

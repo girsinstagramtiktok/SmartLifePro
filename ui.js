@@ -793,6 +793,24 @@ msg_bio_inactive: "Lock Disabled 🔓"
                 </div>
             </div>
             
+  
+
+                <div class="setting-item">
+                    <span>${this.t('dark_mode')}</span>
+                    <label class="switch-wrap">
+                        <input type="checkbox" id="dark-mode-toggle" ${s.darkMode ? 'checked' : ''} onchange="UI.toggleDarkMode()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item" style="border-top:1px solid rgba(120,120,120,0.1);">
+                    <span>Consejos Smarty</span> <label class="switch-wrap">
+                        <input type="checkbox" id="smarty-tips-toggle" ${s.showSmartTips !== false ? 'checked' : ''} onchange="Main.toggleSmartTips()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+            
             <div style="margin-bottom: 40px;">
                 <div class="section-label">${this.t('sec_data')}</div>
 

@@ -142,6 +142,103 @@ const Assistant = {
             ]
         }
     },
+    // ---------------------------------------------------------
+    // PEGA AQUÍ EL BLOQUE "POOL DE REACCIONES" Y LAS FUNCIONES
+    // ---------------------------------------------------------
+
+    // --- POOL DE REACCIONES ---
+    reactionPool: {
+        list_cheaper: {
+            es: ["\u00A1Genial! Gastaste menos que la \u00FAltima vez \uD83D\uDCC9", "Ahorro detectado. \u00A1Bien jugado! \uD83E\uDD11", "Tu bolsillo te agradece este respiro \uD83D\uDE0C"],
+            en: ["Great! You spent less than last time \uD83D\uDCC9", "Savings detected. Well played! \uD83E\uDD11", "Your wallet thanks you \uD83D\uDE0C"],
+            pt: ["\u00D3timo! Gastou menos que da \u00FAltima vez \uD83D\uDCC9", "Economia detectada. Bem jogado! \uD83E\uDD11", "Sua carteira agradece \uD83D\uDE0C"]
+        },
+        list_expensive: {
+            es: ["Opa, la cuenta subi\u00F3. \u00BFMuchos caprichos? \uD83E\uDD28", "Cuidado, gastaste m\u00E1s que la anterior \uD83D\uDCC8", "\u00BFTodo bien? El total fue alto esta vez \uD83D\uDCB8"],
+            en: ["Oops, bill went up. Too many treats? \uD83E\uDD28", "Watch out, spent more than before \uD83D\uDCC8", "Everything ok? Total was high this time \uD83D\uDCB8"],
+            pt: ["Opa, a conta subiu. Muitos caprichos? \uD83E\uDD28", "Cuidado, gastou mais que a anterior \uD83D\uDCC8", "Tudo bem? O total foi alto dessa vez \uD83D\uDCB8"]
+        },
+        sub_added: {
+            es: ["Otra suscripci\u00F3n... \u00BFSeguro que la usar\u00E1s? \uD83D\uDC40", "Recuerda cancelar si no la usas \uD83D\uDD14", "Los gastos fijos son peligrosos... \u26A0\uFE0F"],
+            en: ["Another sub... Sure you'll use it? \uD83D\uDC40", "Remember to cancel if unused \uD83D\uDD14", "Fixed expenses are dangerous... \u26A0\uFE0F"],
+            pt: ["Outra assinatura... Vai usar mesmo? \uD83D\uDC40", "Lembre de cancelar se n\u00E3o usar \uD83D\uDD14", "Gastos fixos s\u00E3o perigosos... \u26A0\uFE0F"]
+        },
+        expense_high: {
+            es: ["Golpe fuerte al presupuesto \uD83E\uDD4A", "Ajusta el resto del mes, colega \uD83D\uDEA7", "\u00A1Wow! Eso fue costoso \uD83D\uDE31"],
+            en: ["Heavy hit to the budget \uD83E\uDD4A", "Adjust the rest of the month \uD83D\uDEA7", "Wow! That was expensive \uD83D\uDE31"],
+            pt: ["Golpe forte no or\u00E7amento \uD83E\uDD4A", "Ajuste o resto do m\u00EAs \uD83D\uDEA7", "Uau! Isso foi caro \uD83D\uDE31"]
+        },
+          expense_normal: {
+            es: ["Anotado \u270D\uFE0F", "Gasto registrado \u2705", "Poquito a poco... \uD83D\uDC22", "Controlando el flujo \uD83D\uDCA7", "Ok, seguimos \uD83D\uDC4D"],
+            en: ["Noted \u270D\uFE0F", "Expense saved \u2705", "Little by little... \uD83D\uDC22", "Controlling the flow \uD83D\uDCA7", "Ok, moving on \uD83D\uDC4D"],
+            pt: ["Anotado \u270D\uFE0F", "Despesa salva \u2705", "Pouco a pouco... \uD83D\uDC22", "Controlando o fluxo \uD83D\uDCA7", "Ok, seguimos \uD83D\uDC4D"]
+        }
+    },
+
+    reactToEvent(type, data) {
+        const s = Data.store.settings;
+        if (s.showSmartTips === false) return;
+
+        let moodKey = null;
+        if (type === 'list_completed') {
+            const history = Data.store.lists.filter(l => l.status === 'completed').sort((a,b) => b.date - a.date);
+            if (history.length >= 2) {
+                const current = history[0].total;
+                const prev = history[1].total;
+                if (current < prev) moodKey = 'list_cheaper';
+                else if (current > prev * 1.1) moodKey = 'list_expensive';
+            }
+        } else if (type === 'sub_added') {
+            moodKey = 'sub_added';
+        }else if (type === 'expense_added') {
+            const limit = Data.store.budget.limit || 0;
+            
+            // CASO 1: Gasto Alto (> 10% del presupuesto) -> SIEMPRE AVISA
+            if (limit > 0 && data.amount > (limit * 0.1)) {
+                moodKey = 'expense_high';
+            } 
+            // CASO 2: Gasto Normal -> AVISA A VECES (50% de probabilidad para no cansar)
+            else {
+                if (Math.random() > 0.5) { 
+                    moodKey = 'expense_normal';
+                }
+            }
+        }
+
+        if (!moodKey) return;
+
+        const lang = s.lang || 'es';
+        const pool = this.reactionPool[moodKey][lang] || this.reactionPool[moodKey]['es'];
+        const msg = pool[Math.floor(Math.random() * pool.length)];
+        this.showReactivePopup(msg);
+    },
+
+    showReactivePopup(text) {
+        const old = document.getElementById('smarty-popup');
+        if (old) old.remove();
+
+        const div = document.createElement('div');
+        div.id = 'smarty-popup';
+        div.style.cssText = `position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--glass-bg); border: 1px solid var(--primary); box-shadow: 0 10px 40px rgba(0,0,0,0.2); backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 30px; z-index: 15000; display: flex; align-items: center; gap: 15px; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; min-width: 280px;`;
+
+        const currentSkin = Data.store.gamification.currentSkin || 'default';
+        const skinPath = this.skinsDef.find(s => s.id === currentSkin).path || '';
+        
+        div.innerHTML = `
+            <img src="${skinPath}idle.png" style="width:65px; height:65px; object-fit:contain; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.2));" onerror="this.src='idle.png'">
+            <div style="font-size:13px; font-weight:700; color:var(--text-color); line-height:1.4;">${text}</div>
+        `;
+
+        document.body.appendChild(div);
+
+        requestAnimationFrame(() => { div.style.opacity = '1'; div.style.transform = 'translate(-50%, -50%) scale(1)'; });
+        if(navigator.vibrate) navigator.vibrate([30, 30]);
+
+        setTimeout(() => {
+            if(div) { div.style.opacity = '0'; div.style.transform = 'translate(-50%, -40%) scale(0.9)'; setTimeout(() => div.remove(), 400); }
+        }, 3500);
+    },
+
 
 
     // --- HELPER FUNCTIONS ---
@@ -762,22 +859,51 @@ const Assistant = {
 
 
 
-    getAnalysisData() {
+        getAnalysisData() {
         const d = Data.store;
         const limit = (d.budget && d.budget.limit) ? parseFloat(d.budget.limit) : 0;
         const spent = typeof Finance !== 'undefined' ? Finance.calculateMonthlySpent() : 0;
+        
         let score = 100;
         const now = new Date();
         const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const day = now.getDate();
-        if (limit > 0) { const percent = (spent / limit) * 100; if (percent > ((day/totalDays)*100) + 10) score -= 20; } else { score = 50; }
+
+        if (limit > 0) { 
+            const percent = (spent / limit) * 100; 
+            const expectedPercent = (day / totalDays) * 100; // Porcentaje que deberías llevar hoy
+            
+            // --- CORRECCIÓN LÓGICA DE PUNTUACIÓN ---
+            
+            // 1. NIVEL CRÍTICO: ¿Te pasaste del presupuesto?
+            if (percent >= 100) {
+                score = 0; // Suspenso inmediato
+            } 
+            // 2. NIVEL PELIGRO: ¿Estás gastando MUY rápido? (+15% de lo esperado)
+            else if (percent > expectedPercent + 15) {
+                score -= 50; // Golpe duro a la puntuación
+            }
+            // 3. NIVEL ALERTA: ¿Te estás desviando un poco? (+5% de lo esperado)
+            else if (percent > expectedPercent + 5) {
+                score -= 20; // Advertencia leve
+            }
+            // Si vas por debajo (ahorrando), se mantiene el 100.
+            
+        } else { 
+            score = 50; // Sin presupuesto no hay nota alta
+        }
+
+        // Lógica de hormigas (se mantiene igual para la pestaña de Fugas)
         const frequencyMap = {};
         d.expenses.forEach(e => { if (e.amount < 10) { const key = e.desc.toLowerCase().trim(); frequencyMap[key] = (frequencyMap[key] || 0) + e.amount; }});
         const topAnts = Object.entries(frequencyMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
         const dailyBurn = day > 0 ? spent / day : 0;
         const daysLeftMoney = (limit - spent) / (dailyBurn || 1);
-        return { score: Math.max(0, score), spent, limit, dailyBurn, projectedTotal: dailyBurn * totalDays, topAnts, daysLeftMoney, percent: limit > 0 ? (spent/limit)*100 : 0 };
+        
+        // Devolvemos score asegurando que no sea negativo ni mayor a 100
+        return { score: Math.max(0, Math.min(100, score)), spent, limit, dailyBurn, projectedTotal: dailyBurn * totalDays, topAnts, daysLeftMoney, percent: limit > 0 ? (spent/limit)*100 : 0 };
     },
+
 
     setAnalysisTab(tab) {
         this.config.currentAnalysisTab = tab;
