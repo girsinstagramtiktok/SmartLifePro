@@ -7,6 +7,9 @@ const Finance = {
     // --- ESTADO INTERNO ---
     selectedHistoryMonth: null, 
     selectedCategoryFilter: 'ALL', // Estado del filtro de categorías
+    
+    // Variable temporal para la foto (NUEVO)
+    tempPhotoData: null, 
 
     // --- NAVEGACIÓN DE PESTAÑAS (TABS) ---
     setTab(tab) {
@@ -46,7 +49,7 @@ const Finance = {
         }
     },
 
-    // --- NUEVO: GENERADOR DE CHIPS DE FILTRO (CON EMOJIS) ---
+    // --- GENERADOR DE CHIPS DE FILTRO ---
     renderFilterChips() {
         let html = `<div class="filter-scroll-container">`;
 
@@ -58,7 +61,6 @@ const Finance = {
         if (typeof UI !== 'undefined' && UI.categories) {
             UI.categories.forEach(cat => {
                 const isActive = this.selectedCategoryFilter === cat.id ? 'active' : '';
-                // Usamos el emoji original definido en UI.js
                 html += `
                     <div class="filter-chip ${isActive}" onclick="Finance.setCategoryFilter('${cat.id}')">
                         ${cat.icon} ${UI.t(cat.id)}
@@ -73,9 +75,8 @@ const Finance = {
     // Acción al tocar un filtro
     setCategoryFilter(catId) {
         this.selectedCategoryFilter = catId;
-        // Feedback vibración
         if(navigator.vibrate) navigator.vibrate(5);
-        this.renderExpensesHistory(); // Recargar lista filtrada
+        this.renderExpensesHistory(); 
     },
 
     // --- LÓGICA DE CIERRE DE MES (AUTOMÁTICO) ---
@@ -171,24 +172,19 @@ const Finance = {
         return this.calculateProgressAtDate(startDateTimestamp, totalInstallments, new Date());
     },
 
-    // --- HELPER PARA ICONOS (SOLUCIÓN DEFINITIVA) ---
+    // --- HELPER PARA ICONOS ---
     getCategoryIcon(catName) {
-        // 1. Verificar si es una categoría especial del sistema
-        if (catName === 'cat_market' || catName === UI.t('cat_market')) return '\uD83D\uDED2'; // 
-        if (catName === 'tab_subs' || catName === 'cat_subs' || catName === UI.t('tab_subs')) return '\uD83D\uDCC5'; // 
+        if (catName === 'cat_market' || catName === UI.t('cat_market')) return '\uD83D\uDED2'; 
+        if (catName === 'tab_subs' || catName === 'cat_subs' || catName === UI.t('tab_subs')) return '\uD83D\uDCC5'; 
 
-        // 2. Buscar en UI.categories (donde están los emojis oficiales)
         if (typeof UI !== 'undefined' && UI.categories) {
-            // Intentar por ID
             let found = UI.categories.find(c => c.id === catName);
-            // Intentar por Nombre Traducido
             if (!found) found = UI.categories.find(c => UI.t(c.id) === catName);
-            
             if (found) return found.icon; 
         }
-        
-        return '\uD83D\uDCE6'; //  Default
+        return '\uD83D\uDCE6'; 
     },
+
     // --- RENDERIZADO HOME (WIDGETS) ---
     renderHomeWidgets() {
         // 1. GASTOS RECIENTES
@@ -206,7 +202,7 @@ const Finance = {
                     });
                 });
             }
-            // B. Listas (RESTORED ICON )
+            // B. Listas
             if (Data.store.lists) {
                 Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                     allMovements.push({
@@ -215,7 +211,7 @@ const Finance = {
                     });
                 });
             }
-            // C. Suscripciones (RESTORED ICON )
+            // C. Suscripciones
             if (Data.store.subscriptions) {
                 const now = new Date();
                 Data.store.subscriptions.forEach(sub => {
@@ -252,7 +248,7 @@ const Finance = {
             }
         }
         
-        // 2. TOP CATEGORÍAS (RESTORED FUNCTIONALITY)
+        // 2. TOP CATEGORÍAS
         const catContainer = document.getElementById('home-top-categories');
         if (catContainer) {
             catContainer.innerHTML = '';
@@ -263,7 +259,6 @@ const Finance = {
             const groups = {};
             let totalM = 0;
 
-            // Sumar Gastos
             Data.store.expenses.forEach(e => {
                 const d = new Date(e.date);
                 if (!e.isInstallment && d.getMonth() === curM && d.getFullYear() === curY) {
@@ -273,7 +268,7 @@ const Finance = {
                     totalM += parseFloat(e.amount);
                 }
             });
-            // Sumar Subs
+            
             if (Data.store.subscriptions) {
                 Data.store.subscriptions.forEach(sub => {
                     if (curD >= sub.day) {
@@ -284,7 +279,7 @@ const Finance = {
                     }
                 });
             }
-            // Sumar Listas
+            
             if (Data.store.lists) {
                 Data.store.lists.forEach(l => {
                     const d = new Date(l.date);
@@ -305,7 +300,7 @@ const Finance = {
                 const colors = ['var(--primary)', 'var(--purple)', 'var(--warning)'];
                 sorted.forEach(([cat, amount], i) => {
                     const pct = (amount / totalM) * 100;
-                    const icon = this.getCategoryIcon(cat); // Usa el helper restaurado
+                    const icon = this.getCategoryIcon(cat);
                     const row = document.createElement('div');
                     row.className = 'home-cat-row';
                     row.innerHTML = `
@@ -323,19 +318,16 @@ const Finance = {
         }
     },
 
-    // --- GRÁFICO DONUT (RESTORED) ---
-    // --- GRÁFICO DONUT + LEYENDA (MODIFICADO) ---
+    // --- GRÁFICO DONUT + LEYENDA ---
     renderCategoryChart(container) {
         const categories = {};
         const [selYear, selMonth] = this.selectedHistoryMonth.split('-').map(Number);
         let totalMonth = 0;
 
-        // 1. Sumar Gastos
         Data.store.expenses.forEach(e => {
             const d = new Date(e.date);
             let match = false;
             
-            // Lógica de fechas (Normal vs Parcelado)
             if (!e.isInstallment && d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
                 match = true;
             } else if (e.isInstallment) {
@@ -345,7 +337,6 @@ const Finance = {
             }
 
             if (match) {
-                // Limpieza básica de nombre (si tiene emoji pegado)
                 let cat = e.category || UI.t('cat_other');
                 if (cat.includes(' ') && cat.split(' ')[0].match(/\p{Emoji}/u)) {
                     cat = cat.split(' ').slice(1).join(' ');
@@ -357,7 +348,6 @@ const Finance = {
             }
         });
 
-        // 2. Sumar Listas
         if (Data.store.lists) {
             Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                 const d = new Date(l.date);
@@ -370,7 +360,6 @@ const Finance = {
             });
         }
 
-        // 3. Sumar Subs
         if (Data.store.subscriptions) {
             const daysInMonth = new Date(selYear, selMonth, 0).getDate();
             Data.store.subscriptions.forEach(s => {
@@ -383,31 +372,24 @@ const Finance = {
             });
         }
         
-        // --- RENDERIZADO ---
         if (totalMonth > 0) {
             const colors = ['#007AFF', '#FF9500', '#FF2D55', '#AF52DE', '#34C759', '#5AC8FA', '#8E8E93'];
             let currentDeg = 0;
             let gradientParts = [];
             
-            // A. ORDENAR: De Mayor a Menor
             const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
             
-            // B. GENERAR LEYENDA (AQUÍ ESTÁ LO QUE PEDISTE)
             let legendHTML = '<div style="margin-top:25px; width:100%; display:flex; flex-direction:column; gap:10px;">';
             
             sorted.forEach(([cat, amount], i) => {
                 const deg = (amount / totalMonth) * 360;
                 const pct = (amount / totalMonth) * 100;
                 const col = colors[i % colors.length];
-                
-                // Usamos tu función getCategoryIcon existente para mantener los emojis
                 const icon = this.getCategoryIcon(cat); 
 
-                // Construcción del degradado del donut
                 gradientParts.push(`${col} ${currentDeg}deg ${currentDeg + deg}deg`);
                 currentDeg += deg;
 
-                // Construcción de la fila de la leyenda
                 legendHTML += `
                     <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px;">
                         <div style="display:flex; align-items:center; gap:10px; width:45%; overflow:hidden;">
@@ -446,18 +428,15 @@ const Finance = {
             container.appendChild(div);
         }
     },
-
-
-    // --- HISTORIAL DETALLADO (CON FILTROS Y EMOJIS CORRECTOS) ---
+    // --- HISTORIAL DETALLADO ---
     renderExpensesHistory() {
         const container = document.getElementById('expenses-history-list');
         if (!container) return;
         container.innerHTML = ''; 
 
         this.renderMonthSelector(container);
-        this.renderCategoryChart(container); // Donut
+        this.renderCategoryChart(container);
 
-        // Filtros (Chips)
         const filterContainer = document.createElement('div');
         filterContainer.innerHTML = this.renderFilterChips();
         container.appendChild(filterContainer);
@@ -465,7 +444,6 @@ const Finance = {
         const [selYear, selMonth] = this.selectedHistoryMonth.split('-').map(Number);
         let allItems = [];
 
-        // 1. Recolectar Datos
         Data.store.expenses.forEach(e => {
             let match = false;
             let date = e.date;
@@ -477,14 +455,18 @@ const Finance = {
                 if(current > 0 && current <= e.installments.total) { match = true; date = target.getTime(); }
             }
             if(match) {
+                // DETECTAR EXTRAS (FOTO/LINK) PARA MOSTRAR ICONO
+                let extrasIcon = '';
+                if (e.photo) extrasIcon += ' ';
+                if (e.link) extrasIcon += ' ';
+
                 allItems.push({
-                    type: 'expense', id: e.id, date: date, amount: e.amount, name: e.desc, 
+                    type: 'expense', id: e.id, date: date, amount: e.amount, name: e.desc + ' ' + extrasIcon, 
                     rawCat: e.category, icon: this.getCategoryIcon(e.category)
                 });
             }
         });
 
-        // Listas (Icono )
         if(Data.store.lists) {
             Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                 const d = new Date(l.date);
@@ -497,7 +479,6 @@ const Finance = {
             });
         }
 
-        // Suscripciones (Icono )
         if(Data.store.subscriptions) {
             const daysInM = new Date(selYear, selMonth, 0).getDate();
             Data.store.subscriptions.forEach(s => {
@@ -511,24 +492,18 @@ const Finance = {
             });
         }
 
-        // 2. Aplicar Filtro
         if(this.selectedCategoryFilter !== 'ALL') {
             allItems = allItems.filter(item => {
                 const filter = this.selectedCategoryFilter;
                 const itemName = UI.t(filter);
-                // Si filtro es 'cat_market' dejamos pasar las listas
                 if(item.type === 'list' && filter === 'cat_market') return true;
-                // Si filtro es 'cat_subs' (o bills) dejamos pasar las subs
                 if(item.type === 'sub' && (filter === 'cat_subs' || filter === 'cat_bills')) return true;
-
                 return item.rawCat === filter || item.rawCat === itemName;
             });
         }
 
-        // 3. Renderizar
         allItems.sort((a,b) => b.date - a.date);
         
-        // Total Filtrado
         if(this.selectedCategoryFilter !== 'ALL') {
             const totalF = allItems.reduce((s,i)=>s+parseFloat(i.amount),0);
             const sumDiv = document.createElement('div');
@@ -547,7 +522,7 @@ const Finance = {
                 const delFn = item.type === 'expense' ? `Finance.deleteExpense('${item.id}')` : (item.type === 'list' ? `Shopping.deleteList('${item.id}')` : `Finance.deleteSub('${item.id}')`);
                 
                 row.innerHTML = `
-                    <div class="item-content-wrap">
+                    <div class="item-content-wrap" onclick="Finance.openExpenseDetail('${item.id}')" style="cursor:pointer;">
                         <div style="width:40px; height:40px; background:var(--segment-bg); border-radius:12px; display:grid; place-items:center; font-size:22px; margin-right:15px; flex-shrink:0;">
                             ${item.icon}
                         </div>
@@ -555,14 +530,19 @@ const Finance = {
                             <div style="font-weight:600; font-size:14px; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
                             <div style="font-size:11px; color:var(--text-sec);">${new Date(item.date).toLocaleDateString()}</div>
                         </div>
-                        <div style="text-align:right; display:flex; align-items:center; gap:10px;">
-                            <div style="font-weight:700; font-size:14px; color:var(--text-color);">${UI.formatMoney(item.amount)}</div>
-                            <button class="icon-btn" style="color:var(--danger); width:32px; height:32px;" onclick="${delFn}">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                        </div>
+                        
+                        <div style="font-weight:700; font-size:14px; color:var(--text-color); margin-right:10px;">${UI.formatMoney(item.amount)}</div>
                     </div>
+
+                    <button class="icon-btn" style="color:var(--danger); width:32px; height:32px; margin-left:5px;" onclick="${delFn}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
                 `;
+                // Ajustamos estilo del row padre para alinear
+                row.style.display = 'flex';
+                row.style.alignItems = 'center';
+                row.style.justifyContent = 'space-between';
+
                 container.appendChild(row);
             });
         }
@@ -590,7 +570,7 @@ const Finance = {
         this.renderExpensesHistory();
     },
 
-    // --- RESTO DE FUNCIONES (CRUD - IGUAL AL ORIGINAL) ---
+    // --- RESTO DE FUNCIONES (CRUD) ---
     openBudgetModal() {
         const modal = document.getElementById('modal-budget');
         document.getElementById('budget-input').value = Data.store.budget.limit || '';
@@ -613,6 +593,11 @@ const Finance = {
     openExpenseModal() {
         document.getElementById('exp-amount').value = '';
         document.getElementById('exp-desc').value = '';
+        
+        // LIMPIEZA DE NUEVOS CAMPOS
+        document.getElementById('exp-link').value = ''; 
+        this.clearPhoto(); 
+        
         document.getElementById('exp-is-install').checked = false;
         this.toggleInstallmentInputs();
         if (typeof UI.renderCategoryChips === 'function') UI.renderCategoryChips();
@@ -624,11 +609,78 @@ const Finance = {
         const div = document.getElementById('installment-inputs');
         if (isInstall) div.classList.remove('hidden'); else div.classList.add('hidden');
     },
+    
+    // --- LÓGICA DE FOTOS CON COMPRESIÓN ---
+    handlePhotoSelect(input) {
+        const file = input.files[0];
+        if (file) {
+            const icon = document.getElementById('exp-photo-icon');
+            // Icono de "Cargando" (Reloj de arena)
+            if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4"/><path d="M4 8h16"/><path d="M4 16h16"/></svg>';
+            
+            this.compressImage(file, 800, 0.7).then(base64 => {
+                this.tempPhotoData = base64;
+                const img = document.getElementById('exp-photo-img');
+                if(img) img.src = base64;
+                
+                const container = document.getElementById('exp-photo-preview-container');
+                if(container) container.classList.remove('hidden');
+                
+                // Icono de "Éxito" (Check)
+                if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            }).catch(err => {
+                console.error("Error foto", err);
+                // Icono de "Error" (X)
+                if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            });
+        }
+    },
 
-       saveExpense() {
+    clearPhoto() {
+        this.tempPhotoData = null;
+        const input = document.getElementById('exp-photo-input');
+        if(input) input.value = '';
+        
+        const container = document.getElementById('exp-photo-preview-container');
+        if(container) container.classList.add('hidden');
+        
+        const icon = document.getElementById('exp-photo-icon');
+        // RESTAURAR LA CÁMARA ORIGINAL (IMPORTANTE)
+        if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
+    },
+
+    compressImage(file, maxWidth, quality) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const elem = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                    elem.width = width;
+                    elem.height = height;
+                    const ctx = elem.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(elem.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    },
+
+    saveExpense() {
         const val = parseFloat(document.getElementById('exp-amount').value);
         const desc = document.getElementById('exp-desc').value.trim() || UI.t('cat_other');
         const isInstall = document.getElementById('exp-is-install').checked;
+        const linkVal = document.getElementById('exp-link').value.trim();
         
         const catChip = document.querySelector('.cat-chip.selected');
         let category = UI.t('cat_other');
@@ -652,34 +704,26 @@ const Finance = {
             desc: desc,
             category: category,
             isInstallment: isInstall,
-            installments: installData
+            installments: installData, 
+            link: linkVal,
+            photo: this.tempPhotoData
         };
 
         if (!Data.store.expenses) Data.store.expenses = [];
         Data.store.expenses.push(newExpense);
         Data.save();
-                // >>> HOOK SMARTY: Reacción gasto alto
+
         if (typeof Assistant !== 'undefined') {
              Assistant.updateMood(); 
              Assistant.updateHomeXP();
              Assistant.reactToEvent('expense_added', { amount: finalAmount });
         }
 
-
         Main.closeModal('expense');
         UI.showSnackbar(UI.t('msg_saved'));
         
-        // 1. Actualizamos gráficos financieros
         UI.renderBudgetChart();
         this.renderHomeWidgets();
-        
-        // --- FIX DEFINITIVO: AVISAR AL ASISTENTE AQUÍ MISMO ---
-        if (typeof Assistant !== 'undefined') {
-            console.log("Notificando gasto al asistente..."); // Debug
-            Assistant.updateMood(); 
-            Assistant.updateHomeXP();
-        }
-        // ------------------------------------------------------
         
         const activeTab = document.querySelector('.segment-btn.active');
         if (activeTab && activeTab.id.includes('history')) this.renderExpensesHistory();
@@ -691,16 +735,16 @@ const Finance = {
             Data.store.expenses = Data.store.expenses.filter(e => e.id !== id);
             Data.save(); 
             
-            this.setTab('history'); 
+            const activeTab = document.querySelector('.segment-btn.active');
+            if (activeTab && activeTab.id.includes('history')) this.renderExpensesHistory();
+            
             UI.renderBudgetChart();
             this.renderHomeWidgets();
 
-            // --- FIX DEFINITIVO: AVISAR AL ASISTENTE AL BORRAR ---
             if (typeof Assistant !== 'undefined') {
                 Assistant.updateMood();
                 Assistant.updateHomeXP();
             }
-            // -----------------------------------------------------
         }
     },
 
@@ -718,7 +762,7 @@ const Finance = {
         if (name && cost && day) {
             Data.store.subscriptions.push({ id: Date.now().toString(), name, cost, day });
             Data.save();
-                        // >>> HOOK SMARTY: Reacción nueva suscripción
+            
             if (typeof Assistant !== 'undefined') {
                 Assistant.reactToEvent('sub_added', null);
             }
@@ -800,5 +844,62 @@ const Finance = {
             div.querySelector('button').onclick = () => this.deleteExpense(inst.id);
             container.appendChild(div);
         });
+    },
+    
+    // --- VISOR DE DETALLES (NUEVO) ---
+    openExpenseDetail(id) {
+        const expense = Data.store.expenses.find(e => e.id === id);
+        if (!expense) return;
+
+        // 1. Rellenar Textos Básicos
+        document.getElementById('det-exp-desc').innerText = expense.desc;
+        document.getElementById('det-exp-amount').innerText = UI.formatMoney(expense.amount);
+        document.getElementById('det-exp-date').innerText = new Date(expense.date).toLocaleString();
+        
+        // Categoría (con emoji si es posible)
+        const catName = expense.category || UI.t('cat_other');
+        const icon = this.getCategoryIcon(catName);
+        document.getElementById('det-exp-cat').innerText = `${icon} ${catName}`;
+
+        // 2. Manejar FOTO
+        const imgContainer = document.getElementById('det-exp-photo-container');
+        const img = document.getElementById('det-exp-img');
+        if (expense.photo) {
+            img.src = expense.photo;
+            imgContainer.classList.remove('hidden');
+        } else {
+            imgContainer.classList.add('hidden');
+            img.src = '';
+        }
+
+        // 3. Manejar LINK
+        const linkBtn = document.getElementById('det-exp-link-btn');
+        if (expense.link) {
+            let url = expense.link;
+            // Si no tiene http, se lo ponemos para que funcione el link
+            if (!url.startsWith('http')) url = 'https://' + url;
+            
+            linkBtn.href = url;
+            linkBtn.classList.remove('hidden');
+            // Cambiar texto si parece ser solo texto y no url
+            if(!url.includes('.')) {
+                 linkBtn.removeAttribute('href'); // Es solo texto (lugar), no link clickeable
+                 linkBtn.querySelector('span').innerText = ` ${expense.link}`;
+            } else {
+                 linkBtn.querySelector('span').innerText = ` Ir al enlace`;
+            }
+        } else {
+            linkBtn.classList.add('hidden');
+        }
+
+        // 4. Configurar Botón de Borrar
+        const delBtn = document.getElementById('det-exp-delete-btn');
+        delBtn.onclick = () => {
+            this.deleteExpense(id);
+            Main.closeModal('expense-detail');
+        };
+
+        // 5. Abrir Modal
+        document.getElementById('modal-expense-detail').classList.add('open');
     }
 };

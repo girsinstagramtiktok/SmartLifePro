@@ -216,30 +216,84 @@
         </div>
 
         <div id="modal-expense" class="modal-overlay" onclick="Main.closeModal('expense')">
-            <div class="settings-card" onclick="event.stopPropagation()">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h2 style="color:var(--primary); margin:0;" data-i18n="mod_exp_title">Registrar Gasto</h2>
-                    <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
-                </div>
-                <div class="input-area glass-card" style="margin:0 0 15px 0; justify-content: center;">
-                    <span style="font-size:24px; font-weight:700; color:var(--primary);">$</span>
-                    <input type="number" id="exp-amount" class="big-input" placeholder="0.00" step="0.01" data-i18n-ph="ph_amount">
-                </div>
-                <input type="text" id="exp-desc" class="setting-input" placeholder="&iquest;En qu&eacute; gastaste?" data-i18n-ph="ph_desc">
-                <div class="chips-container" id="cat-chips"></div>
-                <div class="setting-item" style="margin-top:10px;">
-                    <span data-i18n="lbl_is_inst">&iquest;Es Parcelado?</span>
-                    <label class="switch-wrap"><input type="checkbox" id="exp-is-install" onchange="Finance.toggleInstallmentInputs()"><span class="slider"></span></label>
-                </div>
-                <div id="installment-inputs" class="hidden" style="margin-top:10px;">
-                    <div style="display:flex; gap:10px;">
-                        <input type="number" id="exp-inst-count" class="setting-input" placeholder="Cuotas" data-i18n-ph="ph_cuotas">
-                        <input type="number" id="exp-inst-paid" class="setting-input" placeholder="Pagadas" data-i18n-ph="ph_paid">
-                    </div>
-                </div>
-                <button class="btn-full" onclick="Finance.saveExpense()" data-i18n="save">Guardar Gasto</button>
+    <div class="settings-card" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 style="color:var(--primary); margin:0;" data-i18n="mod_exp_title">Registrar Gasto</h2>
+            <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
+        </div>
+
+        <div class="input-area glass-card" style="margin:0 0 15px 0; justify-content: center;">
+            <span style="font-size:24px; font-weight:700; color:var(--primary);">$</span>
+            <input type="number" id="exp-amount" class="big-input" placeholder="0.00" step="0.01" data-i18n-ph="ph_amount">
+        </div>
+
+        <input type="text" id="exp-desc" class="setting-input" placeholder="&iquest;En qu&eacute; gastaste?" data-i18n-ph="ph_desc">
+        
+        <div class="chips-container" id="cat-chips"></div>
+
+        <div class="setting-item" style="margin-top:10px;">
+            <span data-i18n="lbl_is_inst">&iquest;Es Parcelado?</span>
+            <label class="switch-wrap"><input type="checkbox" id="exp-is-install" onchange="Finance.toggleInstallmentInputs()"><span class="slider"></span></label>
+        </div>
+        <div id="installment-inputs" class="hidden" style="margin-top:10px;">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="exp-inst-count" class="setting-input" placeholder="Cuotas" data-i18n-ph="ph_cuotas">
+                <input type="number" id="exp-inst-paid" class="setting-input" placeholder="Pagadas" data-i18n-ph="ph_paid">
             </div>
         </div>
+
+        <div style="display:flex; gap:10px; margin-top:15px; align-items:flex-start;">
+            <div style="flex:1; background:var(--input-bg); border-radius:12px; padding:10px; display:flex; align-items:center;">
+                <span style="font-size:16px; margin-right:5px;">🔗</span>
+                <input type="text" id="exp-link" placeholder="Link o Lugar (Opcional)" style="background:transparent; border:none; width:100%; font-size:13px; outline:none; color:var(--text-color);">
+            </div>
+
+        <label class="icon-btn" style="width:44px; height:44px; cursor:pointer; flex-shrink:0; background:var(--input-bg); border-radius:12px; display:flex; align-items:center; justify-content:center;">
+    <input type="file" id="exp-photo-input" accept="image/*" style="display:none;" onchange="Finance.handlePhotoSelect(this)">
+    <span id="exp-photo-icon" style="display:flex; align-items:center; justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+    </span>
+</label>
+
+        </div>
+        <div id="exp-photo-preview-container" class="hidden" style="margin-top:10px; position:relative;">
+            <img id="exp-photo-img" src="" style="width:100%; height:120px; object-fit:cover; border-radius:12px; border:1px solid var(--glass-border);">
+            <button onclick="Finance.clearPhoto()" style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-weight:bold;">✕</button>
+        </div>
+        <button class="btn-full" onclick="Finance.saveExpense()" data-i18n="save">Guardar Gasto</button>
+    </div>
+</div>
+<div id="modal-expense-detail" class="modal-overlay" onclick="Main.closeModal('expense-detail')">
+    <div class="settings-card" onclick="event.stopPropagation()">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+            <div style="flex:1;">
+                <h2 style="color:var(--primary); margin:0; font-size:18px; line-height:1.2;" id="det-exp-desc">Gasto</h2>
+                <div style="font-size:12px; opacity:0.7; margin-top:4px;" id="det-exp-date">...</div>
+            </div>
+            <button class="icon-btn" onclick="Main.closeModal('expense-detail')">&#10005;</button>
+        </div>
+
+        <div class="glass-card" style="text-align:center; padding:20px; margin-bottom:15px;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-sec); text-transform:uppercase;">MONTO</div>
+            <div style="font-size:32px; font-weight:900; color:var(--text-color);" id="det-exp-amount">$0.00</div>
+            <div class="chip" style="display:inline-block; margin-top:5px; background:var(--segment-bg);" id="det-exp-cat">...</div>
+        </div>
+
+        <div id="det-exp-photo-container" class="hidden" style="margin-bottom:15px;">
+            <img id="det-exp-img" src="" style="width:100%; border-radius:16px; border:1px solid var(--glass-border); max-height:250px; object-fit:contain; background:rgba(0,0,0,0.05);">
+        </div>
+
+        <a id="det-exp-link-btn" href="#" target="_blank" class="btn-data hidden" style="text-decoration:none; margin-bottom:15px; background:var(--input-bg); color:var(--primary); display:flex; align-items:center; justify-content:center; gap:10px;">
+            <span>🔗 Ver Enlace / Lugar</span>
+        </a>
+
+        <button class="btn-danger-outline" id="det-exp-delete-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+            Borrar Gasto
+        </button>
+    </div>
+</div>
+
 
         <div id="modal-sub" class="modal-overlay" onclick="Main.closeModal('sub')">
             <div class="settings-card" onclick="event.stopPropagation()">

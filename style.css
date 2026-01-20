@@ -461,10 +461,19 @@ input, textarea {
 
 /* Modal normal (ej: info) */
 .settings-card:not(.full-width) {
-    background: var(--glass-bg); width: 90%; max-width: 360px; padding: 25px;
+    background: var(--glass-bg); width: 90%; max-width: 360px; 
+    padding: 25px;
     border-radius: 30px; transform: scale(0.95); transition: 0.2s;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.4); border: 1px solid var(--glass-border); 
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+    
+    /* --- FIX SCROLL --- */
+    max-height: 85vh;       /* Máximo 85% de la altura de pantalla */
+    overflow-y: auto;       /* Habilitar scroll si el contenido crece */
+    display: flex;          /* Para organizar mejor */
+    flex-direction: column; /* Columna */
 }
+
+
 .modal-overlay.open .settings-card:not(.full-width) { transform: scale(1); }
 
 .setting-input, .setting-select {
