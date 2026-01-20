@@ -538,7 +538,26 @@ const Assistant = {
 
         // Misiones
         const questsHtml = this.renderQuestsHTML(g, lang);
-        container.innerHTML += `<div class="section-label">Misiones</div>${questsHtml}`;
+        const qData = g.dailyQuests || { refreshUsed: false, quests: [] };
+        const anyCompleted = qData.quests.some(q => q.completed);
+        const canRefresh = !qData.refreshUsed && !anyCompleted;
+        
+        // Estilo del botón: si no se puede usar, se ve más transparente
+        const refreshOpacity = canRefresh ? '1' : '0.3';
+        
+        container.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-right:10px;">
+                <div class="section-label" style="margin-bottom:0;">Misiones</div>
+                <button onclick="Assistant.refreshMissions()" style="background:none; border:none; cursor:pointer; opacity:${refreshOpacity}; transition:0.2s; padding:5px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-sec)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                </button>
+            </div>
+            ${this.renderQuestsHTML(g, lang)}
+        `;
         
         // Medallas
         let badgesHTML = `<div class="section-label">Medallas (${g.badges.length}/${this.badgesDef.length})</div><div class="badges-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;">`;
@@ -792,12 +811,53 @@ const Assistant = {
         return html;
     },
 
-    generateDailyQuests() {
-        const today = new Date().toDateString(); const g = Data.store.gamification; 
+        generateDailyQuests() {
+        const today = new Date().toDateString(); 
+        const g = Data.store.gamification; 
+        
+        // Si ya existen misiones de hoy, no hacemos nada (salvo que falten propiedades)
         if (g.dailyQuests && g.dailyQuests.date === today && g.dailyQuests.quests.length >= 3) return;
-        const shuffled = Assistant.missionPool.sort(() => 0.5 - Math.random()); // USE Assistant.
-        g.dailyQuests = { date: today, quests: shuffled.slice(0, 3).map(q => ({ id: q.id, completed: false })) }; Data.save();
+        
+        // Generamos nuevas misiones
+        const shuffled = this.missionPool.sort(() => 0.5 - Math.random()); 
+        
+        g.dailyQuests = { 
+            date: today, 
+            refreshUsed: false, // <--- NUEVO: Bandera para controlar el refresco
+            quests: shuffled.slice(0, 3).map(q => ({ id: q.id, completed: false })) 
+        }; 
+        
+        Data.save();
     },
+    // --- NUEVO: REFRESCAR MISIONES (REROLL) ---
+    refreshMissions() {
+        const g = Data.store.gamification;
+        
+        // 1. Validaciones
+        if (g.dailyQuests.refreshUsed) {
+            return UI.showSnackbar("Solo 1 vez por día ⏳");
+        }
+        
+        const hasProgress = g.dailyQuests.quests.some(q => q.completed);
+        if (hasProgress) {
+            return UI.showSnackbar("Ya completaste misiones hoy 🚫");
+        }
+
+        // 2. Vibración y confirmación visual
+        if(navigator.vibrate) navigator.vibrate(20);
+
+        // 3. Reroll (Generar nuevas)
+        const shuffled = this.missionPool.sort(() => 0.5 - Math.random());
+        g.dailyQuests.quests = shuffled.slice(0, 3).map(q => ({ id: q.id, completed: false }));
+        g.dailyQuests.refreshUsed = true; // Quemamos el cartucho
+        
+        Data.save();
+        
+        // 4. Actualizar UI
+        this.renderProfile();
+        UI.showSnackbar("♻️ Misiones actualizadas");
+    },
+
 
     // --- FIX CRÍTICO EN VERIFICACIÓN ---
     verifyQuest(idx) {
