@@ -7,7 +7,7 @@ const UI = {
     // --- DICCIONARIO DE IDIOMAS COMPLETO ---
     dictionary: {
         es: {
-            app_name: "Smart Life",
+            app_name: "Smarty",
             back: "Volver",
             delete: "Borrar",
             confirm: "Confirmar",
@@ -156,7 +156,7 @@ const UI = {
             import_confirm: "Esto sobrescribirá tus datos actuales.",
             
             // GUÍA
-            guide_intro: "Bienvenido a Smart Life Pro.",
+            guide_intro: "Bienvenido a Smarty.",
             guide_home: "\uD83C\uDFE0 <b>Inicio:</b> El c\u00EDrculo es tu saldo. Toca el centro para ver historial.",
             guide_lists: "\uD83D\uDED2 <b>Listas:</b> Organiza tu s\u00FAper. Finalizar descuenta del presupuesto.",
             guide_fin: "\uD83D\uDCB0 <b>Finanzas:</b> Gestiona suscripciones y cuotas.",
@@ -177,7 +177,7 @@ pin_forgot: "Olvidé mi PIN"
 },
 
         pt: {
-            app_name: "Smart Life",
+            app_name: "Smarty",
             back: "Voltar",
             delete: "Apagar",
             confirm: "Confirmar",
@@ -326,7 +326,7 @@ pin_forgot: "Olvidé mi PIN"
             import_confirm: "Isso substituirá os dados atuais.",
             
             // GUÍA
-            guide_intro: "Bem-vindo ao Smart Life Pro.",
+            guide_intro: "Bem-vindo ao Smarty.",
             guide_home: "\uD83C\uDFE0 <b>In\u00EDcio:</b> O c\u00EDrculo mostra seu saldo. Toque no centro para ver o hist\u00F3rico.",
             guide_lists: "\uD83D\uDED2 <b>Listas:</b> Crie listas de compras. 'Finalizar' desconta do or\u00E7amento.",
             guide_fin: "\uD83D\uDCB0 <b>Finan\u00E7as:</b> Gerencie assinaturas e parcelas aqui.",
@@ -349,7 +349,7 @@ pin_forgot: "Esqueci meu PIN"
 },
 
         en: {
-            app_name: "Smart Life",
+            app_name: "Smarty",
             back: "Back",
             delete: "Delete",
             confirm: "Confirm",
@@ -498,7 +498,7 @@ pin_forgot: "Esqueci meu PIN"
             import_confirm: "This will overwrite current data.",
             
             // GUÍA
-            guide_intro: "Welcome to Smart Life Pro. Here are some quick tips:",
+            guide_intro: "Welcome to Smarty. Here are some quick tips:",
             guide_home: "\uD83C\uDFE0 <b>Home:</b> The circle shows your remaining budget. Tap center for history.",
             guide_lists: "\uD83D\uDED2 <b>Lists:</b> Create shopping lists. 'Finish' deducts from budget.",
             guide_fin: "\uD83D\uDCB0 <b>Finance:</b> Manage subscriptions and installments here.",
@@ -604,7 +604,13 @@ msg_bio_inactive: "Lock Disabled 🔓"
 
         // 6. Renderizar Ajustes
         this.renderSettingsView();
-    },
+        // 7. FIX: ACTUALIZAR ASISTENTE EN TIEMPO REAL
+        if (typeof Assistant !== 'undefined') {
+            Assistant.updateMood();   // Actualiza la cara
+            Assistant.updateHomeXP(); // Actualiza la barra de XP
+        }
+    }, // <--- ¡IMPORTANTE! Esta coma es necesaria porque hay más funciones debajo
+    
 
     // --- CHART DEL HOME (CÍRCULO DE PRESUPUESTO) ---
     renderBudgetChart() {
@@ -820,7 +826,7 @@ msg_bio_inactive: "Lock Disabled 🔓"
             </div>
             
             <div style="text-align:center; color:var(--text-sec); font-size:11px; padding-bottom: 20px;">
-                Smart Life Pro v10.2<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
+                Smarty v10.2<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
             </div>
         `;
     },

@@ -625,7 +625,7 @@ const Finance = {
         if (isInstall) div.classList.remove('hidden'); else div.classList.add('hidden');
     },
 
-    saveExpense() {
+       saveExpense() {
         const val = parseFloat(document.getElementById('exp-amount').value);
         const desc = document.getElementById('exp-desc').value.trim() || UI.t('cat_other');
         const isInstall = document.getElementById('exp-is-install').checked;
@@ -661,8 +661,18 @@ const Finance = {
 
         Main.closeModal('expense');
         UI.showSnackbar(UI.t('msg_saved'));
+        
+        // 1. Actualizamos gráficos financieros
         UI.renderBudgetChart();
         this.renderHomeWidgets();
+        
+        // --- FIX DEFINITIVO: AVISAR AL ASISTENTE AQUÍ MISMO ---
+        if (typeof Assistant !== 'undefined') {
+            console.log("Notificando gasto al asistente..."); // Debug
+            Assistant.updateMood(); 
+            Assistant.updateHomeXP();
+        }
+        // ------------------------------------------------------
         
         const activeTab = document.querySelector('.segment-btn.active');
         if (activeTab && activeTab.id.includes('history')) this.renderExpensesHistory();
@@ -673,9 +683,17 @@ const Finance = {
         if (await UI.confirm("confirm_del_exp", "confirm_desc")) {
             Data.store.expenses = Data.store.expenses.filter(e => e.id !== id);
             Data.save(); 
+            
             this.setTab('history'); 
             UI.renderBudgetChart();
             this.renderHomeWidgets();
+
+            // --- FIX DEFINITIVO: AVISAR AL ASISTENTE AL BORRAR ---
+            if (typeof Assistant !== 'undefined') {
+                Assistant.updateMood();
+                Assistant.updateHomeXP();
+            }
+            // -----------------------------------------------------
         }
     },
 

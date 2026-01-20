@@ -642,6 +642,14 @@ activeLists.forEach(l => {
             Data.save();
             this.renderLists();
             if(Data.store.currentId === id) Main.router('lists');
+                  // --- ACTUALIZAR TODO (SISTEMA Y ASISTENTE) ---
+            if (typeof Finance !== 'undefined') Finance.renderHomeWidgets();
+            if (typeof UI !== 'undefined') UI.renderBudgetChart();
+            
+            if (typeof Assistant !== 'undefined') {
+                Assistant.updateMood();
+                Assistant.updateHomeXP();
+            }
         } else {
             this.renderLists();
         }
@@ -1129,7 +1137,11 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
             this.closeDetailModal();
             this.renderHistoryLists(document.getElementById('history-box'));
             if(typeof UI.renderBudgetChart === 'function') UI.renderBudgetChart();
-        }
+        if (typeof Assistant !== 'undefined') {
+                Assistant.updateMood();
+                Assistant.updateHomeXP();
+            }
+}
     },
 
     renderProductHistory(container) {
