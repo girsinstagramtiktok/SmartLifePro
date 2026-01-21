@@ -447,3 +447,31 @@ const Main = {
         document.getElementById(`modal-${id}`).classList.remove('open');
     }
 };
+
+/* =========================================
+   TRUCO DE ESCALADO AUTOMÁTICO (RESPONSIVE)
+   ========================================= */
+function autoScaleApp() {
+    const width = window.innerWidth;
+    
+    // Si es pantalla grande (PC/Tablet > 700px)
+    if (width > 700) {
+        document.body.style.maxWidth = '450px'; // Ancho de móvil estándar
+        document.body.style.margin = '0 auto';  // Centrar en pantalla
+        document.body.style.minHeight = '100vh';
+        document.body.style.boxShadow = '0 0 50px rgba(0,0,0,0.1)'; // Sombra elegante
+        document.body.style.borderLeft = '1px solid rgba(0,0,0,0.05)';
+        document.body.style.borderRight = '1px solid rgba(0,0,0,0.05)';
+    } else {
+        // Si es móvil real, restauramos a pantalla completa
+        document.body.style.maxWidth = '100%';
+        document.body.style.margin = '0';
+        document.body.style.boxShadow = 'none';
+        document.body.style.border = 'none';
+    }
+}
+
+// Ejecutar al cargar y al cambiar tamaño de ventana
+window.addEventListener('resize', autoScaleApp);
+window.addEventListener('DOMContentLoaded', autoScaleApp);
+autoScaleApp(); // Ejecución inmediata
