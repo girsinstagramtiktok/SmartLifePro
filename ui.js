@@ -16,7 +16,7 @@ const UI = {
             update: "Actualizar",
             month_names: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
             
-            app_slogan: "Tu Dinero, Inteligente", // Nuevo Slogan
+            app_slogan: "Inteligencia para tus finanzas", // Nuevo Slogan
             profile_title: "Cuartel General",
             analysis_title: "Análisis de Smarty",
             quests_title: "Misiones del Día",
@@ -186,7 +186,7 @@ pin_forgot: "Olvidé mi PIN"
             update: "Atualizar",
             month_names: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
             
-            app_slogan: "Seu Dinheiro, Inteligente", // Nuevo Slogan
+            app_slogan: "Intelig\u00eancia para suas finan\u00e7as", // Nuevo Slogan
             profile_title: "Quartel General",
             analysis_title: "Análise do Smarty",
             quests_title: "Missões do Dia",
@@ -358,7 +358,7 @@ pin_forgot: "Esqueci meu PIN"
             update: "Update",
             month_names: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
             
-            app_slogan: "Your Money, Smarter", // Nuevo Slogan
+            app_slogan: "Intelligence for your finances", // Nuevo Slogan
             profile_title: "Headquarters",
             analysis_title: "Smarty's Analysis",
             quests_title: "Daily Quests",
@@ -707,19 +707,26 @@ msg_bio_inactive: "Lock Disabled 🔓"
     },
 
      // --- RENDERIZADO DE AJUSTES (ESTRUCTURA BLINDADA) ---
+    
+    // --- RENDERIZADO DE AJUSTES (ALMACENAMIENTO AL FINAL) ---
     renderSettingsView() {
         const container = document.getElementById('settings-inject');
         if (!container || typeof Data === 'undefined') return;
-        
-        const s = Data.store.settings;
-        // Verificación segura de PIN
-        const hasPin = (s.pin !== null && s.pin !== undefined && s.pin !== ""); 
 
-        // Variable para el botón cambiar (para no ensuciar el HTML)
+        // --- 1. PREPARAR DATOS GENERALES ---
+        const s = Data.store.settings;
+        const hasPin = (s.pin !== null && s.pin !== undefined && s.pin !== ""); 
+        
+        // Botón cambiar PIN
         const changeBtnHTML = hasPin 
             ? `<span onclick="Main.changePin()" style="font-size:12px; font-weight:700; color:var(--primary); cursor:pointer; margin-right:8px;">Cambiar</span>` 
             : '';
 
+        // --- 2. PREPARAR DATOS ALMACENAMIENTO ---
+        const storage = Data.getStorageUsage();
+        const barColor = storage.status === 'good' ? 'var(--success)' : (storage.status === 'warning' ? 'var(--warning)' : 'var(--danger)');
+
+        // --- 3. RENDERIZADO ÚNICO ---
         container.innerHTML = `
             <div style="margin-bottom: 20px;">
                 <div class="section-label" style="margin-top:0;">${this.t('sec_general')}</div>
@@ -757,8 +764,7 @@ msg_bio_inactive: "Lock Disabled 🔓"
                     <div class="theme-btn t-purple ${s.theme === 'purple' ? 'active' : ''}" onclick="UI.changeTheme('purple')"></div>
                 </div>
 
-                    
-<div class="setting-item" style="margin-top:15px; border-top:1px solid rgba(120,120,120,0.1); padding-top:15px;">
+                <div class="setting-item" style="margin-top:15px; border-top:1px solid rgba(120,120,120,0.1); padding-top:15px;">
                     <span>Tipografía</span>
                 </div>
                 <div class="font-selector-grid">
@@ -766,23 +772,19 @@ msg_bio_inactive: "Lock Disabled 🔓"
                         <span style="font-family: 'Manrope', sans-serif; font-size:16px;">Aa</span>
                         <small>Modern</small>
                     </div>
-                    
                     <div class="font-btn ${s.font === 'Classic' ? 'active' : ''}" onclick="UI.changeFont('Classic')">
                         <span style="font-family: 'Lora', serif; font-size:16px; font-weight:600;">Aa</span>
                         <small>Classic</small>
                     </div>
-                    
                     <div class="font-btn ${s.font === 'Tech' ? 'active' : ''}" onclick="UI.changeFont('Tech')">
                         <span style="font-family: 'Roboto Mono', monospace; font-size:14px;">{Aa}</span>
                         <small>Tech</small>
                     </div>
-                    
                     <div class="font-btn ${s.font === 'Soft' ? 'active' : ''}" onclick="UI.changeFont('Soft')">
                         <span style="font-family: 'Comfortaa', cursive; font-size:13px; font-weight:700;">Aa</span>
                         <small>Soft</small>
                     </div>
                 </div>
-
 
                 <div class="setting-item" style="margin-top:15px;">
                     <span>${this.t('dark_mode')}</span>
@@ -791,18 +793,17 @@ msg_bio_inactive: "Lock Disabled 🔓"
                         <span class="slider"></span>
                     </label>
                 </div>
-            </div>
-            
 
-                <div class="setting-item" style="border-top:1px solid rgba(120,120,120,0.1);">
-                    <span>Consejos Smarty</span> <label class="switch-wrap">
+                <div class="setting-item" style="border-top:1px solid rgba(120,120,120,0.1); margin-top:15px; padding-top:15px;">
+                    <span>Consejos Smarty</span> 
+                    <label class="switch-wrap">
                         <input type="checkbox" id="smarty-tips-toggle" ${s.showSmartTips !== false ? 'checked' : ''} onchange="Main.toggleSmartTips()">
                         <span class="slider"></span>
                     </label>
                 </div>
-
+            </div>
             
-            <div style="margin-bottom: 40px;">
+            <div style="margin-bottom: 20px;">
                 <div class="section-label">${this.t('sec_data')}</div>
 
                 <div class="setting-item">
@@ -828,9 +829,37 @@ msg_bio_inactive: "Lock Disabled 🔓"
                     </div>
                 </div>
 
-                <button class="btn-danger-outline" onclick="Main.factoryReset()">
+                <button class="btn-danger-outline" onclick="Main.factoryReset()" style="margin-top:15px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                     ${this.t('btn_reset')}
+                </button>
+            </div>
+
+            <div class="div-line" style="height:1px; background:rgba(120,120,120,0.1); margin:20px 0;"></div>
+
+            <div class="setting-group" style="margin-bottom:40px;">
+                <div style="font-size:12px; font-weight:700; color:var(--text-sec); margin-bottom:10px; text-transform:uppercase;">ALMACENAMIENTO</div>
+                
+                <div class="glass-card" style="padding:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-weight:600; font-size:14px;">Uso de Datos</span>
+                        <span style="font-weight:700; font-size:14px; color:${barColor}">${storage.percent}%</span>
+                    </div>
+                    
+                    <div style="background:rgba(0,0,0,0.1); height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;">
+                        <div style="width:${storage.percent}%; background:${barColor}; height:100%; transition:width 0.5s ease;"></div>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sec);">
+                        <span>${storage.usedKB} KB usados</span>
+                        <span>Máx ~${storage.totalKB} KB</span>
+                    </div>
+
+                    ${storage.status === 'critical' ? `<div style="color:var(--danger); font-size:11px; margin-top:8px; font-weight:700;">⚠️ Espacio casi lleno. Borra fotos antiguas.</div>` : ''}
+                </div>
+                
+                <button class="btn-danger-outline" style="width:100%; margin-top:10px;" onclick="Data.cleanOldPhotos()">
+                    🧹 Liberar espacio (Borrar fotos > 3 meses)
                 </button>
             </div>
             
@@ -839,7 +868,6 @@ msg_bio_inactive: "Lock Disabled 🔓"
             </div>
         `;
     },
-
 
 
 
@@ -961,8 +989,8 @@ msg_bio_inactive: "Lock Disabled 🔓"
             modal.classList.remove('open');
         } else {
             content.innerHTML = `
-                <div style="text-align:center; margin-bottom:25px;">
-                    <img src="logo.png" style="width:80px; height:auto; margin-bottom:15px; filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <img src="logo.png" style="width:150px; height:150px; margin-bottom:15px; filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
                     <p style="color:var(--text-sec); font-size:15px; line-height:1.5;">${this.t('guide_intro')}</p>
                 </div>
                 

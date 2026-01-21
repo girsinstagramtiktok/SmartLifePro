@@ -548,7 +548,7 @@ const Assistant = {
         img.onclick = () => this.giveTip();
     },
 
-    renderProfile() {
+        renderProfile() {
         const modal = document.getElementById('modal-profile');
         if(!modal) return;
 
@@ -564,61 +564,71 @@ const Assistant = {
             } else { return; }
         }
 
-        const lang = Data.store.settings.lang || 'es';
+        // Ocultar header viejo del HTML estático si existe
+        const oldHeader = document.querySelector('.profile-header');
+        if (oldHeader) oldHeader.style.display = 'none';
+
         const g = Data.store.gamification;
+        const lang = Data.store.settings.lang || 'es';
         
-        // Level Ring
-        const levelRing = document.getElementById('profile-level-ring');
-        if(levelRing) {
-             const required = Math.floor(this.config.baseXP * Math.pow(this.config.difficulty, g.level - 1));
-             const pct = Math.min(100, (g.xp / required) * 100);
-             levelRing.innerHTML = `
-                <div class="profile-chart-wrap">
-                    <svg viewBox="0 0 36 36" style="display:block; width:100%; height:100%;">
-                        <path stroke="rgba(120,120,120,0.1)" stroke-width="2.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path stroke="var(--primary)" stroke-dasharray="${pct}, 100" stroke-width="2.5" fill="none" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                         <span style="font-size:10px; color:var(--text-sec); font-weight:700;">NIVEL</span>
-                         <span style="font-size:42px; font-weight:900; color:var(--primary); line-height:1;">${g.level}</span>
-                    </div>
-                </div>`;
-            const xpText = document.getElementById('profile-xp-txt');
-            if(xpText) xpText.innerText = `${Math.floor(g.xp)} / ${required} XP`;
-        }
+        // --- 1. DATOS: RACHA Y XP ---
+        const streak = (g.streak && g.streak > 0) ? g.streak : 1; 
+        const nextLevelXP = this.config.baseXP * Math.pow(this.config.difficulty, g.level);
+        const pct = Math.min(100, (g.xp / nextLevelXP) * 100).toFixed(1);
 
         container.innerHTML = '';
 
-        // --- NUEVO: SELECTOR DE SKINS (Con imágenes PNG) ---
+        // --- 2. HEADER CON CÍRCULO SVG Y RACHA 🔥 ---
+        // Recuperamos el SVG original para el círculo
+        const headerHTML = `
+            <div style="display:flex; align-items:center; margin-bottom:20px; background:var(--input-bg); padding:15px; border-radius:16px; border:1px solid rgba(0,0,0,0.05);">
+                
+                <div style="position:relative; width:60px; height:60px; margin-right:15px; flex-shrink:0;">
+                    <svg viewBox="0 0 36 36" style="display:block; width:100%; height:100%;">
+                        <path stroke="var(--text-sec)" stroke-opacity="0.1" stroke-width="3" fill="none" 
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path stroke="var(--primary)" stroke-dasharray="${pct}, 100" stroke-width="3" fill="none" stroke-linecap="round" 
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                         <span style="font-size:7px; text-transform:uppercase; color:var(--text-sec); font-weight:700;">NIVEL</span>
+                         <span style="font-size:22px; font-weight:900; color:var(--primary); line-height:1;">${g.level}</span>
+                    </div>
+                </div>
+
+                <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-weight:800; font-size:18px; color:var(--text-color);">Master</span>
+                        
+                        <span style="background:rgba(255,59,48,0.1); color:#FF3B30; font-size:11px; font-weight:800; padding:4px 10px; border-radius:12px; display:flex; align-items:center; gap:4px; border:1px solid rgba(255,59,48,0.2);">
+                            🔥 ${streak} Días
+                        </span>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-sec);">
+                        <span>XP Actual</span>
+                        <span>${Math.floor(g.xp)} / ${Math.floor(nextLevelXP)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += headerHTML;
+
+        // --- 3. SKINS ---
         const currentSkin = g.currentSkin || 'default';
-        let skinsHTML = `
-            <div class="section-label" style="margin-top:0;">Skins</div>
-            <div class="skins-scroll-container">`;
-            
+        let skinsHTML = `<div class="section-label" style="margin-top:0;">Skins</div><div class="skins-scroll-container">`;
         this.skinsDef.forEach(skin => {
             const isUnlocked = g.level >= skin.level;
-            const isSelected = currentSkin === skin.id;
+            const activeClass = (currentSkin === skin.id) ? 'active' : '';
             const lockState = isUnlocked ? '' : 'locked';
-            const activeClass = isSelected ? 'active' : '';
-            
-            // Construimos la ruta de la imagen idle.png
             const imgPath = skin.path + 'idle.png';
-            
-            // Prevenir errores de sintaxis en el onclick
-            const clickAction = isUnlocked ? `Assistant.setSkin('${skin.id}')` : `UI.showSnackbar('Nivel ${skin.level} necesario')`;
-
-            skinsHTML += `
-                <div class="skin-card ${activeClass} ${lockState}" onclick="${clickAction}">
-                    <img src="${imgPath}" class="skin-preview-img" alt="${skin.name}" onerror="this.src='idle.png'">
-                    <div class="skin-name">${skin.name}</div>
-                    ${!isUnlocked ? `<div class="skin-lvl-req">Lv.${skin.level}</div>` : ''}
-                </div>
-            `;
+            const action = isUnlocked ? `Assistant.setSkin('${skin.id}')` : `UI.showSnackbar('Nivel ${skin.level}')`;
+            skinsHTML += `<div class="skin-card ${activeClass} ${lockState}" onclick="${action}"><img src="${imgPath}" class="skin-preview-img" onerror="this.src='idle.png'"><div class="skin-name">${skin.name}</div>${!isUnlocked ? `<div class="skin-lvl-req">Lv.${skin.level}</div>` : ''}</div>`;
         });
         skinsHTML += `</div>`;
         container.innerHTML += skinsHTML;
 
-        // Analysis
+        // --- 4. ANÁLISIS ---
         const analysisHTML = `
             <div class="section-label" style="margin-top:10px;">Análisis</div>
             <div class="analysis-box" style="padding:0; overflow:hidden;">
@@ -633,13 +643,9 @@ const Assistant = {
         container.innerHTML += analysisHTML;
         setTimeout(() => this.renderAnalysisContent(), 10); 
 
-        // Misiones
-        const questsHtml = this.renderQuestsHTML(g, lang);
+        // --- 5. MISIONES ---
         const qData = g.dailyQuests || { refreshUsed: false, quests: [] };
-        const anyCompleted = qData.quests.some(q => q.completed);
-        const canRefresh = !qData.refreshUsed && !anyCompleted;
-        
-        // Estilo del botón: si no se puede usar, se ve más transparente
+        const canRefresh = !qData.refreshUsed && !qData.quests.some(q => q.completed);
         const refreshOpacity = canRefresh ? '1' : '0.3';
         
         container.innerHTML += `
@@ -656,28 +662,17 @@ const Assistant = {
             ${this.renderQuestsHTML(g, lang)}
         `;
         
-        // Medallas
+        // --- 6. MEDALLAS ---
         let badgesHTML = `<div class="section-label">Medallas (${g.badges.length}/${this.badgesDef.length})</div><div class="badges-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;">`;
         this.badgesDef.forEach(b => {
             const isOwned = g.badges.includes(b.id);
-            const opacity = isOwned ? '1' : '0.4';
-            const filter = isOwned ? 'none' : 'grayscale(1)';
-            const lockIcon = isOwned ? '' : '<div style="font-size:8px; margin-top:2px;">🔒</div>';
-            const bg = isOwned ? 'background:var(--glass-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.05);' : 'background:rgba(0,0,0,0.03); border:1px dashed rgba(120,120,120,0.2);';
-            const msg = isOwned ? `🏆 ${b.name[lang]||b.name['es']}: ${b.desc[lang]||b.desc['es']}` : `🔒 Objetivo: ${b.desc[lang]||b.desc['es']}`;
-            
-            badgesHTML += `
-                <div class="badge-card" onclick="UI.showSnackbar('${msg}')" style="opacity:${opacity}; filter:${filter}; ${bg}; padding:10px 5px; min-height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                    <span style="font-size:26px; line-height:1; margin-bottom:5px;">${b.icon}</span>
-                    <div class="badge-name" style="font-size:10px; font-weight:800; line-height:1.1; text-align:center; color:var(--text-color);">${b.name[lang]||b.name['es']}</div>
-                    <div style="font-size:8px; color:var(--text-sec); line-height:1; text-align:center; margin-top:3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${b.desc[lang]||b.desc['es']}</div>
-                    ${lockIcon}
-                    ${b.id === 'b_month_streak' && g.monthStreak > 0 ? `<div style="font-size:9px; color:var(--primary); font-weight:bold; margin-top:2px;">Racha: ${g.monthStreak}</div>` : ''}
-                </div>`;
+            const style = isOwned ? 'opacity:1; background:var(--glass-bg); box-shadow:0 4px 10px rgba(0,0,0,0.05);' : 'opacity:0.4; filter:grayscale(1); background:rgba(0,0,0,0.03);';
+            badgesHTML += `<div class="badge-card" style="${style} padding:10px 5px; min-height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="UI.showSnackbar('${isOwned ? b.name[lang]||b.name.es : 'Bloqueado'}')"><span style="font-size:26px;">${b.icon}</span><div style="font-size:10px; font-weight:800;">${b.name[lang]||b.name.es}</div></div>`;
         });
         badgesHTML += `</div>`;
         container.innerHTML += badgesHTML;
     },
+
 
     // --- NUEVA FUNCIÓN: SELECCIONAR SKIN ---
     setSkin(skinId) {

@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - MAIN CONTROLLER (V10.0 - CLEANED)
+   SMART LIFE PRO - MAIN CONTROLLER (V10.1 - CSS BACKGROUNDS & AUTO-REFRESH)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -9,57 +9,79 @@ const Main = {
     isSettingUpPin: false,
 
     init() {
-        console.log("Iniciando Smart Life Pro v10.0...");
+        console.log("Iniciando Smart Life Pro v10.1...");
         if (typeof Data !== 'undefined') Data.init();
         this.injectLockScreenHTML();
         if (this.checkSecurityAtStart()) return;
         this.continueLoadingApp();
     },
 
-        continueLoadingApp() {
+    continueLoadingApp() {
         // Inicializar módulos
         if (typeof Finance !== 'undefined') Finance.checkMonthTransition();
         if (typeof Assistant !== 'undefined') Assistant.init();
-        
-        // Configurar fondo
+
+        // --- NUEVO: REFRESCAR AL VOLVER A LA APP ---
+        // Esto soluciona que las misiones no se actualicen si la app se queda abierta de noche
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                console.log("[Main] App visible: Verificando cambios de fecha...");
+                
+                // 1. Verificar Misiones y Racha (Assistant)
+                if (typeof Assistant !== 'undefined') {
+                    Assistant.validateDailyQuests();
+                    Assistant.checkDailyStreak();
+                    
+                    // Si el perfil está abierto, refrescar la UI visualmente
+                    const modalProfile = document.getElementById('modal-profile');
+                    if (modalProfile && modalProfile.classList.contains('open')) {
+                        Assistant.renderProfile();
+                    }
+                }
+                
+                // 2. Verificar Cambio de Mes (Finance)
+                if (typeof Finance !== 'undefined') {
+                    Finance.checkMonthTransition();
+                }
+            }
+        });
+
+        // Configurar fondo (Ahora con Gradients CSS)
         this.setRandomBackground();
-        
+
         // 1. APLICAR TEMA COLOR
         const savedTheme = (Data.store.settings && Data.store.settings.theme) ? Data.store.settings.theme : 'blue';
         this.applyThemeToBody(savedTheme);
-        
-        // 2. APLICAR FUENTE (ESTO ES LO QUE FALTABA O FALLABA)
-        // Usamos 'Modern' como default si no hay nada guardado
+
+        // 2. APLICAR FUENTE
         const savedFont = (Data.store.settings && Data.store.settings.font) ? Data.store.settings.font : 'Modern';
-        if(typeof UI !== 'undefined') UI.changeFont(savedFont);
-        
-        // 3. Renderizar Ajustes (Llama a UI, no a this)
-        if (typeof UI !== 'undefined') UI.renderSettingsView(); 
-        
-        // Refrescar textos
-        if(typeof UI !== 'undefined' && typeof UI.refreshDOM === 'function') UI.refreshDOM();
-        
+        if (typeof UI !== 'undefined') UI.changeFont(savedFont);
+
+        // 3. Renderizar Ajustes
+        if (typeof UI !== 'undefined') UI.renderSettingsView();
+
+        // Refrescar textos y DOM
+        if (typeof UI !== 'undefined' && typeof UI.refreshDOM === 'function') UI.refreshDOM();
+
         // Quitar bloqueo
         const lockScreen = document.getElementById('lock-screen');
-        if(lockScreen) lockScreen.classList.add('hidden');
+        if (lockScreen) lockScreen.classList.add('hidden');
 
         // Ir al inicio
         this.router('home');
     },
-
-
 
     setTheme(themeName) {
         if (!Data.store.settings) Data.store.settings = {};
         Data.store.settings.theme = themeName;
         Data.save();
         this.applyThemeToBody(themeName);
+
+        const savedFont = (Data.store.settings && Data.store.settings.font) ? Data.store.settings.font : 'Modern';
+        if (typeof UI !== 'undefined') UI.changeFont(savedFont);
         
-                const savedFont = (Data.store.settings && Data.store.settings.font) ? Data.store.settings.font : 'Modern';
-        if(typeof UI !== 'undefined') UI.changeFont(savedFont);
-        // LLAMADA CORREGIDA
         if (typeof UI !== 'undefined') UI.renderSettingsView();
-        if(navigator.vibrate) navigator.vibrate(10);
+        if (navigator.vibrate) navigator.vibrate(10);
     },
 
     applyThemeToBody(themeName) {
@@ -81,25 +103,25 @@ const Main = {
         }
         document.querySelectorAll('.dock-btn').forEach(btn => btn.classList.remove('active'));
         const navBtn = document.getElementById(`nav-${viewName}`);
-        if(navBtn) navBtn.classList.add('active');
+        if (navBtn) navBtn.classList.add('active');
 
         if (viewName === 'lists' && typeof Shopping !== 'undefined') Shopping.renderLists();
         if (viewName === 'finance' && typeof Finance !== 'undefined') {
             const activeTab = document.querySelector('.segment-btn.active');
-            if(activeTab) {
+            if (activeTab) {
                 const tabId = activeTab.id.replace('fin-tab-', '');
                 Finance.setTab(tabId);
             } else {
                 Finance.setTab('subs');
             }
         }
-        if(navigator.vibrate) navigator.vibrate(5);
+        if (navigator.vibrate) navigator.vibrate(5);
     },
 
     openAddMenu() {
         this.resetMenu();
         document.getElementById('creation-sheet').classList.add('open');
-        if(navigator.vibrate) navigator.vibrate(10);
+        if (navigator.vibrate) navigator.vibrate(10);
     },
 
     closeAddMenu() {
@@ -114,40 +136,79 @@ const Main = {
     resetMenu() {
         const l1 = document.getElementById('menu-level-1');
         const l2 = document.getElementById('menu-level-2');
-        if(l1) l1.classList.remove('hidden');
-        if(l2) l2.classList.add('hidden');
+        if (l1) l1.classList.remove('hidden');
+        if (l2) l2.classList.add('hidden');
     },
 
     openExpenseModalFromMenu() {
         this.closeAddMenu();
-        if(typeof Finance !== 'undefined') Finance.openExpenseModal();
+        if (typeof Finance !== 'undefined') Finance.openExpenseModal();
     },
 
     openProfile() {
-        if (typeof Assistant !== 'undefined') Assistant.renderProfile(); 
+        if (typeof Assistant !== 'undefined') Assistant.renderProfile();
         document.getElementById('modal-profile').classList.add('open');
-        if(navigator.vibrate) navigator.vibrate(10);
+        if (navigator.vibrate) navigator.vibrate(10);
     },
 
     closeProfile() {
         document.getElementById('modal-profile').classList.remove('open');
     },
 
+     // --- FONDOS CON GRADIENTES MÁS DISTINTIVOS ---
     setRandomBackground() {
         const bgLayer = document.getElementById('bg-layer');
-        if(!bgLayer) return;
-        const backgrounds = ['bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'];
-        const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-        bgLayer.style.backgroundImage = `url('${randomBg}')`;
-        bgLayer.style.backgroundSize = 'cover';
-        bgLayer.style.backgroundPosition = 'center';
+        if (!bgLayer) return;
+
+        // Paleta Light Mode (Más colorida y diferenciada)
+        const gradients = [
+            // 1. Azul Smarty (El clásico, pero más vivo)
+            'linear-gradient(135deg, #CFE7FA 0%, #E6F0F5 100%)', 
+            // 2. Atardecer Cálido (Melocotón suave)
+            'linear-gradient(120deg, #fdfbfb 0%, #ffe2e2 100%)', 
+            // 3. Frescura Menta (Verde agua visible)
+            'linear-gradient(to top, #d4fc79 0%, #96e6a1 100%)', 
+            // 4. Lavanda Digital (Morado suave)
+            'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', 
+            // 5. Profundidad (Radial azulado)
+            'radial-gradient(circle at 50% 0%, #eef2ff 10%, #dbeafe 90%)' 
+        ];
+
+        // Paleta Dark Mode (Profundos y elegantes)
+        const darkGradients = [
+            // 1. Deep Space (Negro azulado radial)
+            'radial-gradient(circle at 50% -20%, #2b32b2 0%, #1488cc 10%, #000000 80%)', 
+            // 2. Cyberpunk Night (Toque morado oscuro)
+            'linear-gradient(to bottom, #240b36, #c31432)', 
+            // 3. Forest Night (Verde muy oscuro)
+            'linear-gradient(to top, #000000, #0f9b0f)', 
+            // 4. Carbon Fiber (Gris industrial puro)
+            'linear-gradient(135deg, #434343 0%, #000000 100%)',
+            // 5. Midnight (Azul noche plano y limpio)
+            'linear-gradient(to bottom, #0f2027, #203a43, #2c5364)'
+        ];
+
+        let list = (Data.store.settings && Data.store.settings.darkMode) ? darkGradients : gradients;
+        
+        // --- TRUCO: Evitar repetir el mismo fondo que ya estaba ---
+        // Obtenemos el fondo actual para no elegirlo de nuevo
+        let currentBg = bgLayer.style.backgroundImage;
+        let newBg;
+        
+        do {
+            newBg = list[Math.floor(Math.random() * list.length)];
+        } while (newBg === currentBg && list.length > 1); // Seguir buscando si sale el mismo
+
+        // Aplicar
+        bgLayer.style.backgroundImage = newBg;
     },
+
 
     injectLockScreenHTML() {
         if (document.getElementById('lock-screen')) return;
         const div = document.createElement('div');
         div.id = 'lock-screen';
-        div.className = 'hidden'; 
+        div.className = 'hidden';
         div.innerHTML = `
             <div style="display:flex; flex-direction:column; align-items:center;">
                 <div style="font-size:40px; margin-bottom:10px;"></div>
@@ -186,7 +247,7 @@ const Main = {
             this.updatePinUI();
             if (this.tempPin.length === 6) setTimeout(() => this.validatePin(), 100);
         }
-        if(navigator.vibrate) navigator.vibrate(10);
+        if (navigator.vibrate) navigator.vibrate(10);
     },
 
     clearPin() {
@@ -209,7 +270,6 @@ const Main = {
             Data.save();
             this.isSettingUpPin = false;
             document.getElementById('lock-screen').classList.add('hidden');
-            // LLAMADA CORREGIDA A UI
             if (typeof UI !== 'undefined') {
                 UI.renderSettingsView();
                 UI.showSnackbar("PIN creado correctamente ");
@@ -220,9 +280,9 @@ const Main = {
             this.tempPin = "";
             this.updatePinUI();
             this.unlockApp();
-            if(navigator.vibrate) navigator.vibrate(50);
+            if (navigator.vibrate) navigator.vibrate(50);
         } else {
-            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             if (typeof UI !== 'undefined') UI.showSnackbar("PIN Incorrecto ");
             this.tempPin = "";
             this.updatePinUI();
@@ -232,7 +292,7 @@ const Main = {
     checkSecurityAtStart() {
         if (Data.store.settings && Data.store.settings.pin) {
             const lock = document.getElementById('lock-screen');
-            if(lock) {
+            if (lock) {
                 lock.classList.remove('hidden');
                 lock.querySelector('h2').innerText = "PIN";
             }
@@ -244,13 +304,13 @@ const Main = {
     unlockApp() {
         this.sessionAuthenticated = true;
         const lock = document.getElementById('lock-screen');
-        if(lock) lock.classList.add('hidden');
+        if (lock) lock.classList.add('hidden');
         this.continueLoadingApp();
     },
-    
+
     async forgotPin() {
         const confirmed = await UI.confirm("reset_confirm", "confirm_desc");
-        if(confirmed) {
+        if (confirmed) {
             localStorage.removeItem(Data.KEY);
             if ('caches' in window) {
                 const keys = await caches.keys();
@@ -260,12 +320,14 @@ const Main = {
         }
     },
 
-    // --- AQUÍ ESTABA renderSettingsView -> ELIMINADA ---
-
     toggleDarkMode() {
         Data.store.settings.darkMode = !Data.store.settings.darkMode;
         Data.save();
-        if (typeof UI !== 'undefined') UI.refreshDOM(); 
+        
+        // Recalcular fondo al cambiar de modo
+        this.setRandomBackground();
+        
+        if (typeof UI !== 'undefined') UI.refreshDOM();
     },
 
     async togglePinLock() {
@@ -275,7 +337,6 @@ const Main = {
             if (confirmed) {
                 Data.store.settings.pin = null;
                 Data.save();
-                // LLAMADA CORREGIDA
                 if (typeof UI !== 'undefined') {
                     UI.renderSettingsView();
                     UI.showSnackbar(UI.t('msg_bio_inactive'));
@@ -288,7 +349,7 @@ const Main = {
             this.tempPin = "";
             this.updatePinUI();
             const lock = document.getElementById('lock-screen');
-            if(lock) {
+            if (lock) {
                 lock.querySelector('h2').innerText = "PIN";
                 lock.classList.remove('hidden');
             }
@@ -297,30 +358,28 @@ const Main = {
 
     setCurrency(curr) {
         Data.store.settings.currency = curr;
-        if(Data.store.budget) Data.store.budget.currency = curr; 
+        if (Data.store.budget) Data.store.budget.currency = curr;
         Data.save();
-        if (typeof UI !== 'undefined') UI.refreshDOM(); 
+        if (typeof UI !== 'undefined') UI.refreshDOM();
     },
 
     setLang(lang) {
         Data.store.settings.lang = lang;
         Data.save();
-        // LLAMADA CORREGIDA
         if (typeof UI !== 'undefined') {
-            UI.renderSettingsView(); 
-            UI.refreshDOM(); 
+            UI.renderSettingsView();
+            UI.refreshDOM();
             UI.showSnackbar(UI.t('msg_updated'));
         }
-        if(typeof Assistant !== 'undefined') Assistant.updateMood();
+        if (typeof Assistant !== 'undefined') Assistant.updateMood();
     },
 
-    // --- CHANGE PIN (Helper faltante) ---
     changePin() {
         this.isSettingUpPin = true;
         this.tempPin = "";
         this.updatePinUI();
         const lock = document.getElementById('lock-screen');
-        if(lock) {
+        if (lock) {
             lock.querySelector('h2').innerText = "Nuevo PIN";
             lock.classList.remove('hidden');
         }
@@ -336,9 +395,9 @@ const Main = {
         a.download = `smart_life_backup_${new Date().toISOString().slice(0,10)}.json`;
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => { 
-            document.body.removeChild(a); 
-            window.URL.revokeObjectURL(url); 
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }, 100);
     },
 
@@ -348,7 +407,7 @@ const Main = {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const success = Data.importJSON(e.target.result);
-            if(success) {
+            if (success) {
                 await UI.confirm("import_success_title", "import_success_msg");
                 location.reload();
             } else {
@@ -356,7 +415,7 @@ const Main = {
             }
         };
         reader.readAsText(file);
-        input.value = ''; 
+        input.value = '';
     },
 
     async factoryReset() {
@@ -370,21 +429,19 @@ const Main = {
             location.reload();
         }
     },
-        // --- PEGAR ESTO ---
+
     toggleSmartTips() {
         if (!Data.store.settings) Data.store.settings = {};
-        
+
         const chk = document.getElementById('smarty-tips-toggle');
-        // Guardamos si está activado o no
         Data.store.settings.showSmartTips = chk.checked;
         Data.save();
-        
+
         if (typeof UI !== 'undefined') {
-            const status = chk.checked ? "Activados \u2705" : "Desactivados \u274C";
+            const status = chk.checked ? "Activados " : "Desactivados ";
             UI.showSnackbar(`Consejos ${status}`);
         }
     },
-
 
     closeModal(id) {
         document.getElementById(`modal-${id}`).classList.remove('open');

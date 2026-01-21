@@ -170,5 +170,64 @@ const Data = {
             console.error("Error importando JSON:", e);
             return false;
         }
-    }
+    },
+    
+        // --- GESTIÓN DE ALMACENAMIENTO ---
+    getStorageUsage() {
+        let totalUsed = 0;
+        // Límite típico de localStorage (5MB = 5242880 bytes). 
+        // Algunos navegadores dan 10MB, pero calculamos sobre 5MB para seguridad.
+        const TOTAL_LIMIT = 5242880; 
+
+        for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                // Cada caracter UTF-16 ocupa 2 bytes
+                const amount = (localStorage[key].length + key.length) * 2;
+                totalUsed += amount;
+            }
+        }
+
+        const usedKB = (totalUsed / 1024).toFixed(2);
+        const totalKB = (TOTAL_LIMIT / 1024).toFixed(0);
+        const percent = ((totalUsed / TOTAL_LIMIT) * 100).toFixed(1);
+        
+        // Estado de salud
+        let status = 'good'; // Verde
+        if(percent > 70) status = 'warning'; // Naranja
+        if(percent > 90) status = 'critical'; // Rojo
+
+        return {
+            usedBytes: totalUsed,
+            limitBytes: TOTAL_LIMIT,
+            usedKB: usedKB,
+            totalKB: totalKB,
+            percent: percent > 100 ? 100 : percent,
+            status: status
+        };
+    },
+    cleanOldPhotos() {
+        if (!this.store.expenses) return;
+        const beforeCount = this.store.expenses.length;
+        let photosRemoved = 0;
+        const threeMonthsAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
+
+        this.store.expenses.forEach(exp => {
+            // Si tiene foto Y es antiguo
+            if (exp.photo && exp.date < threeMonthsAgo) {
+                exp.photo = null; // Borramos solo la foto, mantenemos el gasto
+                photosRemoved++;
+            }
+        });
+
+        if (photosRemoved > 0) {
+            this.save();
+            if(typeof UI !== 'undefined') {
+                UI.showSnackbar(`Se limpiaron ${photosRemoved} fotos antiguas.`);
+                UI.renderSettings(); // Refrescar la barra
+            }
+        } else {
+             if(typeof UI !== 'undefined') UI.showSnackbar("No hay fotos antiguas para borrar.");
+        }
+    },
+
 };
