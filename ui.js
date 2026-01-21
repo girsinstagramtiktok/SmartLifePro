@@ -1021,6 +1021,7 @@ msg_bio_inactive: "Lock Disabled 🔓"
         // --- FUNCIÓN CORREGIDA: SELECTOR DE MONEDA ---
     openCurrencyModal() {
         const currencies = [
+            { code: 'CUP', symbol: 'Cup.', name: 'Peso Cub', flag: '\uD83C\uDDE8\uD83C\uDDFA' },
             { code: 'USD', symbol: '$', name: 'D\u00F3lar', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
             { code: 'EUR', symbol: '\u20AC', name: 'Euro', flag: '\uD83C\uDDEA\uD83C\uDDFA' },
             { code: 'BRL', symbol: 'R$', name: 'Real', flag: '\uD83C\uDDE7\uD83C\uDDF7' },

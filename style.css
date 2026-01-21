@@ -197,12 +197,12 @@ body.dark-mode #bg-layer::after { background: transparent !important; }
 /* --- TARJETA PRESUPUESTO --- */
 .summary-card {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 20px !important; margin: 0 20px 20px 20px;
+    padding: 17px !important; margin: 0 17px 17px 17px;
 }
 .compact-budget { padding: 15px !important; margin-bottom: 15px !important; }
 
-.chart-donut-wrap { position: relative; width: 130px; height: 130px; cursor: pointer; flex-shrink: 0; }
-.small-donut { width: 100px; height: 100px; }
+.chart-donut-wrap { position: relative; width: 100px; height: 100px; cursor: pointer; flex-shrink: 0; }
+.small-donut { width: 120px; height: 120px; }
 
 .circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 100%; }
 .circle-bg { fill: none; stroke: rgba(120,120,120,0.1); stroke-width: 3; }
