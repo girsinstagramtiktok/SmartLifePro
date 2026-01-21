@@ -13,13 +13,13 @@
   "icons": [
     {
       "src": "./logo.png",
-      "sizes": "512x579",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
       "src": "./logo.png",
-      "sizes": "512x579",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
@@ -30,17 +30,18 @@
       "short_name": "Lista",
       "description": "Crear nueva lista de compras",
       "url": "./index.html?action=new_list",
-      "icons": [{ "src": "./logo.png", "sizes": "512x579" }]
+      "icons": [{ "src": "./logo.png", "sizes": "512x512" }]
     },
     {
       "name": "Registrar Gasto",
       "short_name": "Gasto",
       "description": "Añadir un gasto rápido",
       "url": "./index.html?action=new_expense",
-      "icons": [{ "src": "./logo.png", "sizes": "512x579" }]
+      "icons": [{ "src": "./logo.png", "sizes": "512x512" }]
     }
   ]
 }
+
 
 
 
