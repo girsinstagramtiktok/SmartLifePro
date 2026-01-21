@@ -67,6 +67,9 @@ const Main = {
         const lockScreen = document.getElementById('lock-screen');
         if (lockScreen) lockScreen.classList.add('hidden');
 
+
+// Inicializar botón inteligente
+        if (typeof Finance !== 'undefined') Finance.initSmartButton();
         // Ir al inicio
         this.router('home');
     },

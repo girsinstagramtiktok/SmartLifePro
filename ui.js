@@ -970,52 +970,328 @@ msg_bio_inactive: "Lock Disabled 🔓"
         });
     },
 
-    showSnackbar(msg) {
-        const sb = document.getElementById('snackbar');
-        const txt = document.getElementById('snackbar-text');
-        if (sb && txt) {
-            txt.innerText = msg;
-            sb.classList.add('show');
-            setTimeout(() => { sb.classList.remove('show'); }, 3000);
-        }
+        // EN UI.JS (Búscala al final)
+
+    showSnackbar(message) {
+        const sb = document.getElementById("snackbar");
+        if (!sb) return;
+
+        // CAMBIO AQUÍ: Usar innerHTML para que lea el SVG
+        sb.innerHTML = message; 
+
+        sb.className = "show";
+        
+        // Reiniciar el timer si ya había uno
+        if (this.snackbarTimer) clearTimeout(this.snackbarTimer);
+        
+        this.snackbarTimer = setTimeout(() => { 
+            sb.className = sb.className.replace("show", ""); 
+        }, 3000);
     },
 
-    // --- GUÍA DE AYUDA ---
-    toggleGuide() {
-        const modal = document.getElementById('guide-modal');
-        const content = document.getElementById('guide-content');
-        
-        if (modal.classList.contains('open')) {
-            modal.classList.remove('open');
-        } else {
-            content.innerHTML = `
-                <div style="text-align:center; margin-bottom:15px;">
-                    <img src="logo.png" style="width:150px; height:150px; margin-bottom:15px; filter:drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
-                    <p style="color:var(--text-sec); font-size:15px; line-height:1.5;">${this.t('guide_intro')}</p>
-                </div>
-                
-                <div class="glass-card" style="padding:15px; margin-bottom:10px;">
-                    <div style="color:var(--primary); font-weight:bold; margin-bottom:5px;">${this.t('app_name')}</div>
-                    <div style="font-size:13px; color:var(--text-sec);">${this.t('guide_home')}</div>
-                </div>
-                
-                <div class="glass-card" style="padding:15px; margin-bottom:10px;">
-                    <div style="color:var(--success); font-weight:bold; margin-bottom:5px;">${this.t('title_lists')}</div>
-                    <div style="font-size:13px; color:var(--text-sec);">${this.t('guide_lists')}</div>
-                </div>
-                
-                <div class="glass-card" style="padding:15px; margin-bottom:10px;">
-                    <div style="color:var(--warning); font-weight:bold; margin-bottom:5px;">${this.t('title_finance')}</div>
-                    <div style="font-size:13px; color:var(--text-sec);">${this.t('guide_fin')}</div>
-                </div>
 
-                <div class="glass-card" style="padding:15px;">
-                    <div style="color:var(--purple); font-weight:bold; margin-bottom:5px;">Bot</div>
-                    <div style="font-size:13px; color:var(--text-sec);">${this.t('guide_mascot')}</div>
+    // --- GUÍA DE AYUDA ---
+    // --- EN UI.JS (VERSIÓN FINAL V2.1) ---
+
+    toggleGuide() {
+        // 1. BANCO DE ICONOS (SVGs Ajustados)
+        const ICONS = {
+            home: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
+            list: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`,
+            add: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+            finance: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
+            // NUEVO ICONO DE AJUSTES (Más simétrico y limpio)
+            settings: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+            voice: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>`,
+            profile: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
+            dots: `<svg class="guide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`
+        };
+
+        // 2. TEXTOS (NOMBRE "SMARTY" Y REGLAS DE VOZ CLARAS)
+        const guideData = {
+            es: {
+                title: "Manual de Smarty",
+                intro: "Bienvenido a Smarty, colega. Aquí no solo anotamos números, aquí tomamos el control. Vamos a ver cómo exprimir esta herramienta al máximo.",
+                sections: [
+                    {
+                        title: "El Tablero Principal",
+                        icon: ICONS.home,
+                        text: `
+                            Lo primero que ves es tu salud financiera.
+                            <br><br>
+                            <b>El Anillo de Poder:</b> Ese círculo verde es tu presupuesto. Si se pone rojo, cuidado. Mantenlo verde, Master.
+                            <br><br>
+                            <b>Tu Asistente:</b> Arriba está tu mascota (Skin). Si gastas a lo loco, se pondrá triste. Si ahorras, estará feliz. ¡Cuidala!
+                            <br><br>
+                            <b>Perfil ${ICONS.profile}:</b> Toca tu foto para ver tu <b>Nivel</b>, tu <b>Racha de Fuego 🔥</b> y cambiar de Skins.
+                        `
+                    },
+                    {
+                        title: "Smart Voice: Háblale a Smarty",
+                        icon: ICONS.voice,
+                        text: `
+                            Olvida escribir. Smarty te escucha.
+                            <br><br>
+                            <b>¿Cómo funciona?</b>
+                            <br>
+                            Mantén presionado el botón central ${ICONS.add} hasta que vibre y veas a tu mascota escuchando.
+                            <br><br>
+                            <b>⚠️ REGLA DE ORO:</b>
+                            <br>
+                            Para que funcione perfecto, debes decir 3 cosas:
+                            <br>
+                            1. <b>El Monto</b> (ej: 500)
+                            <br>
+                            2. <b>El Producto</b> (ej: Gasolina)
+                            <br>
+                            3. <b>La Categoría</b> (ej: "Categoría Transporte")
+                            <br><br>
+                            <i>Ejemplo: "Gasté 500 pesos en gasolina categoría transporte"</i>. Smarty detectará todo y limpiará la frase sola.
+                        `
+                    },
+                    {
+                        title: "Compras y Precios Reales",
+                        icon: ICONS.list,
+                        text: `
+                            En la sección ${ICONS.list} controlas la inflación.
+                            <br><br>
+                            <b>El Truco Secreto:</b>
+                            <br>
+                            Cuando completas una compra, Smarty guarda el precio. Ve al historial, busca el producto y toca los tres puntos ${ICONS.dots}.
+                            <br><br>
+                            ¡Boom! Verás una gráfica real con la evolución del precio. Que no te engañen con ofertas falsas.
+                        `
+                    },
+                    {
+                        title: "Finanzas y Suscripciones",
+                        icon: ICONS.finance,
+                        text: `
+                            En la sección ${ICONS.finance} tienes el control total.
+                            <br><br>
+                            <b>Pestaña Gastos:</b> El día a día. Comida, vicios, etc.
+                            <br><br>
+                            <b>Pestaña Suscripciones:</b> Aquí metes lo fijo (Netflix, Gym). Smarty lo suma a tu proyección mensual para que sepas cuánto dinero ya está "comprometido".
+                        `
+                    },
+                    {
+                        title: "Seguridad Blindada",
+                        icon: ICONS.settings,
+                        text: `
+                            En ${ICONS.settings} Ajustes > Seguridad, activa el <b>Bloqueo con PIN</b>.
+                            <br><br>
+                            Tus datos son tuyos. Todo se guarda en tu teléfono (Local). No tenemos servidores espiándote. Ve a "Datos" y descarga tu <b>Copia de Seguridad</b> de vez en cuando.
+                        `
+                    }
+                ]
+            },
+            en: {
+                title: "Smarty Manual",
+                intro: "Welcome to Smarty, Master. We don't just track numbers here, we take control. Let's maximize this tool.",
+                sections: [
+                    {
+                        title: "The Dashboard",
+                        icon: ICONS.home,
+                        text: `
+                            First thing you see is your financial health.
+                            <br><br>
+                            <b>The Power Ring:</b> That green circle is your budget. If it turns red, watch out. Keep it green.
+                            <br><br>
+                            <b>Your Assistant:</b> Your mascot (Skin) reacts to your money. Spend crazy? It cries. Save well? It celebrates.
+                            <br><br>
+                            <b>Profile ${ICONS.profile}:</b> Tap your pic to check your <b>Level</b>, <b>Fire Streak 🔥</b> and swap Skins.
+                        `
+                    },
+                    {
+                        title: "Smart Voice: Talk to Smarty",
+                        icon: ICONS.voice,
+                        text: `
+                            Forget typing. Smarty listens.
+                            <br><br>
+                            <b>How?</b>
+                            <br>
+                            Long-press the center button ${ICONS.add} until it vibrates and you see your mascot listening.
+                            <br><br>
+                            <b>⚠️ GOLDEN RULE:</b>
+                            <br>
+                            For perfect detection, you must say 3 things:
+                            <br>
+                            1. <b>Amount</b> (e.g., 50)
+                            <br>
+                            2. <b>Product</b> (e.g., Gas)
+                            <br>
+                            3. <b>Category</b> (e.g., "Category Transport")
+                            <br><br>
+                            <i>Example: "Spent 50 dollars on gas category transport"</i>. Smarty will detect and clean everything automatically.
+                        `
+                    },
+                    {
+                        title: "Shopping & Real Prices",
+                        icon: ICONS.list,
+                        text: `
+                            In section ${ICONS.list}, you track inflation.
+                            <br><br>
+                            <b>Secret Trick:</b>
+                            <br>
+                            When you finish shopping, Smarty saves the price. Go to history, find the item, and tap the three dots ${ICONS.dots}.
+                            <br><br>
+                            Boom! A real graph showing price evolution. Don't get fooled by fake sales.
+                        `
+                    },
+                    {
+                        title: "Finance & Subs",
+                        icon: ICONS.finance,
+                        text: `
+                            In section ${ICONS.finance} you have full control.
+                            <br><br>
+                            <b>Expenses Tab:</b> Daily stuff. Food, fun.
+                            <br><br>
+                            <b>Subscriptions Tab:</b> Fixed stuff (Netflix, Gym). Smarty adds this to your monthly projection so you know what's already "committed".
+                        `
+                    },
+                    {
+                        title: "Ironclad Security",
+                        icon: ICONS.settings,
+                        text: `
+                            In ${ICONS.settings} Settings > Security, enable <b>PIN Lock</b>.
+                            <br><br>
+                            Your data lives on your phone (Local). No spying servers. Go to "Data" and export a <b>Backup</b> occasionally.
+                        `
+                    }
+                ]
+            },
+            pt: {
+                title: "Manual do Smarty",
+                intro: "Bem-vindo ao Smarty, parceiro. Aqui assumimos o controle. Vamos ver como usar essa ferramenta ao máximo.",
+                sections: [
+                    {
+                        title: "O Painel Principal",
+                        icon: ICONS.home,
+                        text: `
+                            A primeira coisa que você vê é sua saúde financeira.
+                            <br><br>
+                            <b>O Anel do Poder:</b> Aquele círculo verde é seu orçamento. Se ficar vermelho, cuidado. Mantenha verde.
+                            <br><br>
+                            <b>Seu Assistente:</b> Seu mascote (Skin) reage ao dinheiro. Gasta muito? Ele chora. Economiza? Ele festeja.
+                            <br><br>
+                            <b>Perfil ${ICONS.profile}:</b> Toque na foto para ver seu <b>Nível</b>, <b>Ofensiva 🔥</b> e trocar Skins.
+                        `
+                    },
+                    {
+                        title: "Smart Voice: Fale com o Smarty",
+                        icon: ICONS.voice,
+                        text: `
+                            Esqueça digitar. Smarty te ouve.
+                            <br><br>
+                            <b>Como funciona?</b>
+                            <br>
+                            Segure o botão central ${ICONS.add} até vibrar e ver seu mascote ouvindo.
+                            <br><br>
+                            <b>⚠️ REGRA DE OURO:</b>
+                            <br>
+                            Para funcionar perfeito, diga 3 coisas:
+                            <br>
+                            1. <b>Valor</b> (ex: 50)
+                            <br>
+                            2. <b>Produto</b> (ex: Gasolina)
+                            <br>
+                            3. <b>Categoria</b> (ex: "Categoria Transporte")
+                            <br><br>
+                            <i>Exemplo: "Gastei 50 reais em gasolina categoria transporte"</i>. Smarty detecta e limpa tudo sozinho.
+                        `
+                    },
+                    {
+                        title: "Compras e Preços Reais",
+                        icon: ICONS.list,
+                        text: `
+                            Na seção ${ICONS.list}, você controla a inflação.
+                            <br><br>
+                            <b>O Truque Secreto:</b>
+                            <br>
+                            Quando finaliza uma compra, o Smarty salva o preço. Vá no histórico, ache o item e toque nos três pontos ${ICONS.dots}.
+                            <br><br>
+                            Boom! Um gráfico real com a evolução do preço. Não seja enganado.
+                        `
+                    },
+                    {
+                        title: "Finanças e Assinaturas",
+                        icon: ICONS.finance,
+                        text: `
+                            Na seção ${ICONS.finance} você tem controle total.
+                            <br><br>
+                            <b>Aba Gastos:</b> Coisas do dia a dia.
+                            <br><br>
+                            <b>Aba Assinaturas:</b> Custos fixos (Netflix, Academia). O Smarty soma isso à projeção mensal para você saber quanto já está "comprometido".
+                        `
+                    },
+                    {
+                        title: "Segurança Blindada",
+                        icon: ICONS.settings,
+                        text: `
+                            Em ${ICONS.settings} Ajustes > Segurança, ative o <b>Bloqueio por PIN</b>.
+                            <br><br>
+                            Seus dados ficam no celular (Local). Sem servidores espionando. Vá em "Dados" e exporte um <b>Backup</b> de vez em quando.
+                        `
+                    }
+                ]
+            }
+        };
+
+        // 3. SELECCIONAR DATOS
+        const lang = Data.store.settings.lang || 'es';
+        const data = guideData[lang] || guideData.es;
+
+        // 4. RENDERIZAR HTML
+        let html = `
+            <div style="padding-bottom:30px;">
+                <div style="text-align:center; margin-bottom:25px; padding:0 15px;">
+                    <div style="font-size:14px; opacity:0.8; line-height:1.5;">${data.intro}</div>
+                </div>
+        `;
+
+        data.sections.forEach((sec, idx) => {
+            html += `
+                <div class="guide-card" style="animation: slideUp 0.4s ease backwards ${idx * 0.1}s;">
+                    <div class="guide-card-header">
+                        <div class="guide-card-icon">${sec.icon}</div>
+                        <div class="guide-card-title">${sec.title}</div>
+                    </div>
+                    <div class="guide-card-body">
+                        ${sec.text}
+                    </div>
                 </div>
             `;
-            modal.classList.add('open');
-        }
+        });
+
+        html += `
+            <div style="text-align:center; margin-top:40px; opacity:0.5; font-size:11px; font-family:'Roboto Mono', monospace;">
+                SMARTY v10.5<br>DEV: MASTER A_TRUE_ALPHA
+            </div>
+        </div>`;
+
+        // 5. MOSTRAR MODAL
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay open';
+        overlay.style.zIndex = '12000';
+        
+        overlay.innerHTML = `
+            <div class="settings-card full-width-guide" onclick="event.stopPropagation()">
+                <div class="guide-modal-header">
+                    <h2 style="margin:0; font-size:20px; font-weight:800; color:var(--text-color);">${data.title}</h2>
+                    <button class="icon-btn" id="guide-close" style="background:var(--input-bg);">✕</button>
+                </div>
+                <div class="guide-scroll-area">
+                    ${html}
+                </div>
+                <div class="guide-modal-footer">
+                    <button class="btn-full" id="guide-ok" style="margin:0;">Entendido, Master</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        const close = () => { overlay.classList.remove('open'); setTimeout(() => overlay.remove(), 300); };
+        overlay.querySelector('#guide-close').onclick = close;
+        overlay.querySelector('#guide-ok').onclick = close;
     },
         // --- NUEVO: SELECTOR DE MONEDA (MODAL PRO) ---
         // --- FUNCIÓN CORREGIDA: SELECTOR DE MONEDA ---

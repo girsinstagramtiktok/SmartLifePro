@@ -901,5 +901,308 @@ const Finance = {
 
         // 5. Abrir Modal
         document.getElementById('modal-expense-detail').classList.add('open');
-    }
+    },
+    
+        // --- SMART VOICE (LONG PRESS EN DOCK) ---
+    
+      // --- SMART VOICE (CON OVERLAY VISUAL) ---
+    initSmartButton() {
+        const btn = document.getElementById('dock-plus-btn');
+        const overlay = document.getElementById('listening-overlay');
+        const mascotImg = document.getElementById('listening-mascot-img');
+        
+        if (!btn) return;
+
+        let pressTimer;
+        let isLongPress = false;
+        let recognition = null;
+
+        // Configurar Voz
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            const lang = (Data.store.settings && Data.store.settings.lang === 'pt') ? 'pt-BR' : ((Data.store.settings && Data.store.settings.lang === 'en') ? 'en-US' : 'es-ES');
+            recognition.lang = lang;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                this.processSmartText(text);
+            };
+            
+            recognition.onerror = (e) => {
+                console.log("Error voz:", e.error);
+                if(e.error !== 'aborted' && e.error !== 'no-speech') UI.showSnackbar("No te escuché bien ");
+                stopListeningUI(); // Cerrar overlay si hay error
+            };
+            
+            recognition.onend = () => {
+                // Asegurar que se cierre si el navegador corta solo
+                if(overlay && overlay.classList.contains('active')) stopListeningUI();
+            };
+        }
+
+        // --- FUNCIONES UI VISUALES ---
+        const startListeningUI = () => {
+            if (!recognition) {
+                UI.showSnackbar("Tu navegador no soporta voz ");
+                return;
+            }
+
+            isLongPress = true;
+            
+            // 1. OBTENER SKIN ACTUAL
+            // Accedemos a Assistant para ver la ruta, o fallback a default
+            let skinPath = '';
+            if (typeof Assistant !== 'undefined' && Data.store.gamification) {
+                const currentId = Data.store.gamification.currentSkin || 'default';
+                const skinDef = Assistant.skinsDef.find(s => s.id === currentId);
+                if (skinDef) skinPath = skinDef.path;
+            }
+            
+            // 2. MOSTRAR OVERLAY CON IMAGEN
+            if (mascotImg) {
+                mascotImg.src = skinPath + 'listening.png';
+                // Fallback si no existe la imagen (opcional, usa un onerror inline en HTML mejor)
+                mascotImg.onerror = function() { this.src = 'idle.png'; }; 
+            }
+            
+            if (overlay) overlay.classList.add('active');
+            
+            if(navigator.vibrate) navigator.vibrate(50);
+            try { recognition.start(); } catch(e) {}
+        };
+
+        const stopListeningUI = () => {
+            clearTimeout(pressTimer);
+            
+            // Ocultar Overlay
+            if (overlay) overlay.classList.remove('active');
+            
+            if (isLongPress) {
+                // Era voz -> Detener reconocimiento
+                if (recognition) {
+                    try { recognition.stop(); } catch(e) {}
+                    if(navigator.vibrate) navigator.vibrate([30, 30]);
+                }
+            } else {
+                // Era toque corto -> Abrir menú normal
+                Main.openAddMenu();
+            }
+            isLongPress = false;
+        };
+
+        // --- EVENTOS ---
+        const startEvent = (e) => {
+            if(e.cancelable) e.preventDefault(); // Evitar menú contextual
+            isLongPress = false;
+            // Esperar 600ms para activar el modo escucha
+            pressTimer = setTimeout(startListeningUI, 600); 
+        };
+
+        // Móvil
+        btn.addEventListener('touchstart', startEvent, {passive: false});
+        btn.addEventListener('touchend', stopListeningUI);
+        
+        // PC
+        btn.addEventListener('mousedown', startEvent);
+        btn.addEventListener('mouseup', stopListeningUI);
+        btn.addEventListener('mouseleave', () => {
+            if(isLongPress) stopListeningUI(); // Si sacas el dedo/mouse del botón, cancelar
+            else clearTimeout(pressTimer);
+        });
+    },
+
+
+       processSmartText(text) {
+        console.log("Voz Original:", text);
+        
+        // 1. NORMALIZACIÓN TOTAL (La clave del éxito)
+        // .normalize("NFD"): Separa las letras de los acentos (é -> e + ´)
+        // .replace(/[\u0300-\u036f]/g, ""): Borra esos acentos flotantes
+        // .replace(...): Borra la puntuación y signos
+        let cleanText = text
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+            .replace(/[.,:;?!¡¿"'-]/g, ' ');
+
+        // Ahora cleanText es plano: "gaste 500 pesos en transporte" (sin tildes, sin comas)
+
+        // 2. DETECTAR Y BORRAR MONTO
+        const amountMatch = cleanText.match(/(\d+([.,]\d+)?)/);
+        let amount = 0;
+        
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[0].replace(',', '.'));
+            cleanText = cleanText.replace(amountMatch[0], '');
+        }
+
+        // 3. DETECTAR Y BORRAR CATEGORÍA
+        let categoryId = 'cat_other'; 
+        
+        if (typeof UI !== 'undefined' && UI.categories) {
+            for (const cat of UI.categories) {
+                // IMPORTANTE: Normalizamos también el nombre de la categoría para comparar iguales
+                // Ejemplo: Si la categoría es "Música", aquí se convierte en "musica"
+                const catName = UI.t(cat.id).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                
+                if (cleanText.includes(catName)) {
+                    categoryId = cat.id;
+                    cleanText = cleanText.replace(catName, '');
+                    break; 
+                }
+            }
+        }
+
+        // 4. EL FILTRO (LISTA NEGRA SIN TILDES)
+        // Como el texto de entrada ya no tiene tildes, aquí SOLO ponemos palabras SIN TILDE.
+         const blackList = [
+            // ================= ESPAÑOL =================
+            // Pronombres
+            'me', 'te', 'se', 'le', 'nos', 'mi', 'tu', 'su', 'mis', 'tus', 'sus',
+            'yo', 'nosotros', 'ellos', 'ellas', 'ustedes',
+            // Verbos (Sin tilde)
+            'gaste', 'gasto', 'gastamos', 'gastaron', 'gastar', 'gastado',
+            'compre', 'compro', 'compramos', 'compraron', 'comprar', 'comprado',
+            'pague', 'pago', 'pagamos', 'pagaron', 'pagar', 'pagado',
+            'registra', 'registrar', 'registro', 'anota', 'anotar', 'anote', 'agendar', 'guardar',
+            'nuevo', 'crear', 'anadir', 'agregar', 'poner',
+            'costo', 'valio', 'salio', 'cuesta', 'fue', 'es', 'son', 'fui', 'fuimos',
+            // Consumo
+            'comi', 'comimos', 'comieron', 'comer', 'comiendo', 'comida',
+            'bebi', 'bebimos', 'bebieron', 'beber', 'bebiendo',
+            'tome', 'tomamos', 'tomaron', 'tomar', 'tomando',
+            'almorce', 'almorzamos', 'almorzar', 'almuerzo',
+            'cene', 'cenamos', 'cenar', 'cena',
+            'desayune', 'desayunamos', 'desayunar', 'desayuno',
+            'merende', 'merendar', 'merienda',
+            'sali', 'salimos', 'salir', 'salida',
+            // Artículos/Conectores
+            'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas',
+            'de', 'del', 'al', 'a', 'en', 'con', 'por', 'para', 'sin', 'sobre',
+            'y', 'o', 'u', 'e', 'ni', 'que', 'pero', 'mas',
+
+            // ================= ENGLISH (AHORA COMPLETO) =================
+            // Pronouns
+            'i', 'me', 'my', 'mine', 'you', 'your', 'yours', 
+            'he', 'him', 'his', 'she', 'her', 'hers', 'it', 'its',
+            'we', 'us', 'our', 'ours', 'they', 'them', 'their', 'theirs',
+            'myself', 'yourself',
+            // Action Verbs
+            'spend', 'spent', 'spending',
+            'buy', 'bought', 'buying',
+            'pay', 'paid', 'paying', 'payment',
+            'cost', 'costs', 'costing', 'costed',
+            'get', 'got', 'gotten', 'getting', // "I got a coffee"
+            'order', 'ordered', 'ordering',    // "Ordered a pizza"
+            'purchase', 'purchased', 'purchasing',
+            'add', 'new', 'register', 'save', 'insert', 'put',
+            'go', 'went', 'gone', 'going',     // "Went to the cinema"
+            'took', 'take', 'taking',          // "Took a taxi"
+            // Consumption Verbs
+            'eat', 'ate', 'eating', 'eaten',
+            'drink', 'drank', 'drinking', 'drunk',
+            'have', 'had', 'having',           // "Had lunch"
+            'lunch', 'dinner', 'breakfast', 'snack',
+            // Articles & Connectors
+            'the', 'a', 'an', 'some', 'any', 'this', 'that', 'these', 'those',
+            'of', 'to', 'in', 'on', 'at', 'for', 'with', 'by', 'from', 'about',
+            'into', 'onto', 'off', 'out', 'up', 'down',
+            'and', 'or', 'but', 'so', 'just', 'only', 'like',
+
+            // ================= PORTUGUÊS =================
+            // Pronomes
+            'eu', 'me', 'mim', 'meu', 'minha', 'nos', 'nosso', 'nossa',
+            'tu', 'te', 'ti', 'teu', 'tua', 'voce', // sin ^
+            'ele', 'ela', 'dele', 'dela', 'eles', 'elas',
+            // Verbos
+            'gastei', 'gastou', 'gastamos', 'gastando', 'gastar',
+            'comprei', 'comprou', 'compramos', 'comprando', 'comprar',
+            'paguei', 'pagou', 'pagamos', 'pagando', 'pagar',
+            'novo', 'adicionar', 'botar', 'inserir',
+            'custou', 'custa', 'saiu', 'valeu',
+            // Consumo
+            'comeu', 'comemos', 'comendo', 'comer',
+            'bebeu', 'bebemos', 'bebendo', 'beber',
+            'tomei', 'tomou', 'tomamos', 'tomar',
+            'almocar', 'almocei', 'almocamos', 'almoco', // sin ç
+            'jantar', 'jantei', 'jantamos', 'janta',
+            'lanche', 'lanchar', 'lanchei',
+            // Artigos/Conectores
+            'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas',
+            'do', 'da', 'dos', 'das', 'no', 'na', 'nos', 'nas', 'em', 'com', 'sem', 'pelo', 'pela',
+            'e', 'ou', 'que', 'mas', 'para', 'por',
+
+            // ================= GLOBAL / MONEDAS =================
+            'reales', 'real', 'reais', 'realen', 'rs', 'brl',
+            'pesos', 'peso', 'ars', 'mxn', 'cop', 'clp', 'uyu',
+            'dolares', 'dolar', 'dollars', 'dollar', 'usd', 'bucks', 'cents',
+            'euros', 'euro', 'eur', 
+            'cup', 'cups', 'mn', 'mlc',
+            'moneda', 'dinero', 'plata', 'pasta', 'grana', 'money', 'cash', 'card',
+            'valor', 'precio', 'preco', 'price', 'monto', 'cuanto', 'amount', 'total', 'value'
+        ];
+        
+        // Palabras técnicas
+        blackList.push('categoria', 'cat', 'rubro', 'tipo', 'item', 'producto', 'category', 'type');
+
+        // 5. DIVIDE Y VENCERÁS (FILTRADO)
+        // Convertimos la frase en un ARRAY de palabras
+        let words = cleanText.split(/\s+/); 
+
+        // Solo pasan las palabras que NO están en la lista negra
+        let finalWords = words.filter(word => {
+            if (!word || blackList.includes(word)) return false;
+            return true;
+        });
+
+        // 6. RECONSTRUCCIÓN
+        let desc = finalWords.join(' ').trim();
+
+        // Si no quedó nada, ponemos algo por defecto
+        if (desc.length < 2) desc = "Gasto Rápido";
+        
+        // Capitalizar primera letra (Estética)
+        desc = desc.charAt(0).toUpperCase() + desc.slice(1);
+
+        // 7. ABRIR MODAL
+        this.openSmartExpenseModal(amount, desc, categoryId);
+    },
+
+
+
+
+    openSmartExpenseModal(amount, desc, categoryId) {
+        // Abrir modal normal
+        this.openExpenseModal();
+
+        // Rellenar campos (con un pequeño delay para asegurar que el DOM cargó)
+        setTimeout(() => {
+            const amountInput = document.getElementById('exp-amount');
+            const descInput = document.getElementById('exp-desc');
+            
+            if (amountInput) amountInput.value = amount || '';
+            if (descInput) descInput.value = desc;
+
+            // Seleccionar el Chip de categoría visualmente
+            const chips = document.querySelectorAll('.cat-chip');
+            chips.forEach(chip => {
+                // Reiniciar estilos
+                chip.classList.remove('selected');
+                chip.style.background = 'var(--glass-bg)';
+                chip.style.color = 'var(--text-color)';
+                
+                // Activar el correcto
+                if (chip.dataset.id === categoryId) {
+                    chip.classList.add('selected');
+                    chip.style.background = 'var(--primary)';
+                    chip.style.color = 'white';
+                }
+            });
+            
+            UI.showSnackbar('<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>');
+        }, 100);
+    },
+
 };

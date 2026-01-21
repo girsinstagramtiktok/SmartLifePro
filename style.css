@@ -812,3 +812,151 @@ body.dark-mode.theme-purple { --bg-body: #10051a; --glass-bg: rgba(25, 10, 40, 0
     transform: translateY(-2px);
 }
 .font-btn.active span { color: var(--primary); }
+
+/* --- ANIMACIÓN DE GRABACIÓN (BOTÓN DOCK) --- */
+.dock-main-btn.listening {
+    background: var(--danger) !important; /* Se pone rojo */
+    transform: translateY(-30px) rotate(45deg) scale(1.2) !important; /* Crece un poco */
+    box-shadow: 0 0 20px rgba(255, 59, 48, 0.6) !important;
+}
+
+
+/* --- OVERLAY DE ESCUCHA --- */
+#listening-overlay {
+    position: fixed; inset: 0; 
+    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro elegante */
+    backdrop-filter: blur(5px);
+    z-index: 20000; /* Por encima de TODO */
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+#listening-overlay.active { opacity: 1; pointer-events: auto; }
+
+.listening-content {
+    display: flex; flex-direction: column; align-items: center;
+    position: relative;
+}
+
+#listening-mascot-img {
+    width: 220px; height: 220px; object-fit: contain;
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.2));
+    animation: mascotPulse 1.5s infinite ease-in-out;
+    z-index: 2;
+}
+
+/* Onda expansiva detrás de la mascota */
+.listening-pulse {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 200px; height: 200px; background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%; z-index: 1;
+    animation: ripple 2s infinite;
+}
+
+@keyframes mascotPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes ripple {
+    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* --- ESTILOS GUÍA DE USUARIO (V2.0) --- */
+
+/* Modal Específico para Guía (Ocupa más espacio) */
+.settings-card.full-width-guide {
+    width: 95% !important;
+    max-width: 500px !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+.guide-modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--glass-bg);
+    flex-shrink: 0;
+}
+
+.guide-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 25px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.guide-modal-footer {
+    padding: 20px 25px;
+    background: var(--glass-bg);
+    border-top: 1px solid rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+
+/* Tarjetas de Sección */
+.guide-card {
+    background: var(--item-bg);
+    border: 1px solid rgba(0,0,0,0.04);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.guide-card-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 15px; padding-bottom: 12px;
+    border-bottom: 1px dashed rgba(120,120,120,0.1);
+}
+
+.guide-card-icon {
+    width: 36px; height: 36px;
+    background: rgba(0, 110, 230, 0.08);
+    color: var(--primary);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+}
+/* El icono dentro del texto */
+.guide-icon {
+    width: 18px; height: 18px;
+    vertical-align: text-bottom;
+    stroke-width: 2.5;
+    margin: 0 2px;
+    color: var(--primary);
+}
+
+.guide-card-title {
+    font-size: 16px; font-weight: 800; color: var(--text-color);
+}
+
+.guide-card-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-sec);
+}
+
+.guide-card-body b {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.guide-card-body i {
+    background: rgba(120,120,120,0.08);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-style: normal;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 13px;
+    color: var(--primary);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

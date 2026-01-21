@@ -1,6 +1,6 @@
 /* =========================================
-   SMART LIFE PRO - ASSISTANT CORE (V31.1 - REAL SKINS PREVIEW)
-   Autor: A_True_Alpha | Fix: Real PNG Previews
+   SMART LIFE PRO - ASSISTANT CORE (V32.0 - MULTILANG & FIXES)
+   Autor: A_True_Alpha | Fix: Badges Visual & Full Translation
    ========================================= */
 
 const Assistant = {
@@ -19,7 +19,7 @@ const Assistant = {
         { id: 'gold', name: 'Golden', level: 20, path: 'skins/Gold/' }
     ],
 
-        // --- 1. NUEVO BANCO DE FRASES INTELIGENTES ---
+    // --- 1. BANCO DE FRASES INTELIGENTES (YA TRADUCIDO) ---
     smartPhrases: {
         // CONTEXTO: CRÍTICO (Menos del 10% del presupuesto)
         critical: {
@@ -142,36 +142,33 @@ const Assistant = {
             ]
         }
     },
-    // ---------------------------------------------------------
-    // PEGA AQUÍ EL BLOQUE "POOL DE REACCIONES" Y LAS FUNCIONES
-    // ---------------------------------------------------------
 
-    // --- POOL DE REACCIONES ---
+    // --- POOL DE REACCIONES (YA TRADUCIDO) ---
     reactionPool: {
         list_cheaper: {
-            es: ["\u00A1Genial! Gastaste menos que la \u00FAltima vez \uD83D\uDCC9", "Ahorro detectado. \u00A1Bien jugado! \uD83E\uDD11", "Tu bolsillo te agradece este respiro \uD83D\uDE0C"],
-            en: ["Great! You spent less than last time \uD83D\uDCC9", "Savings detected. Well played! \uD83E\uDD11", "Your wallet thanks you \uD83D\uDE0C"],
-            pt: ["\u00D3timo! Gastou menos que da \u00FAltima vez \uD83D\uDCC9", "Economia detectada. Bem jogado! \uD83E\uDD11", "Sua carteira agradece \uD83D\uDE0C"]
+            es: ["¡Genial! Gastaste menos que la última vez 📉", "Ahorro detectado. ¡Bien jugado! 🤑", "Tu bolsillo te agradece este respiro 😌"],
+            en: ["Great! You spent less than last time 📉", "Savings detected. Well played! 🤑", "Your wallet thanks you 😌"],
+            pt: ["Ótimo! Gastou menos que da última vez 📉", "Economia detectada. Bem jogado! 🤑", "Sua carteira agradece 😌"]
         },
         list_expensive: {
-            es: ["Opa, la cuenta subi\u00F3. \u00BFMuchos caprichos? \uD83E\uDD28", "Cuidado, gastaste m\u00E1s que la anterior \uD83D\uDCC8", "\u00BFTodo bien? El total fue alto esta vez \uD83D\uDCB8"],
-            en: ["Oops, bill went up. Too many treats? \uD83E\uDD28", "Watch out, spent more than before \uD83D\uDCC8", "Everything ok? Total was high this time \uD83D\uDCB8"],
-            pt: ["Opa, a conta subiu. Muitos caprichos? \uD83E\uDD28", "Cuidado, gastou mais que a anterior \uD83D\uDCC8", "Tudo bem? O total foi alto dessa vez \uD83D\uDCB8"]
+            es: ["Opa, la cuenta subió. ¿Muchos caprichos? 🤨", "Cuidado, gastaste más que la anterior 📈", "¿Todo bien? El total fue alto esta vez 💸"],
+            en: ["Oops, bill went up. Too many treats? 🤨", "Watch out, spent more than before 📈", "Everything ok? Total was high this time 💸"],
+            pt: ["Opa, a conta subiu. Muitos caprichos? 🤨", "Cuidado, gastou mais que a anterior 📈", "Tudo bem? O total foi alto dessa vez 💸"]
         },
         sub_added: {
-            es: ["Otra suscripci\u00F3n... \u00BFSeguro que la usar\u00E1s? \uD83D\uDC40", "Recuerda cancelar si no la usas \uD83D\uDD14", "Los gastos fijos son peligrosos... \u26A0\uFE0F"],
-            en: ["Another sub... Sure you'll use it? \uD83D\uDC40", "Remember to cancel if unused \uD83D\uDD14", "Fixed expenses are dangerous... \u26A0\uFE0F"],
-            pt: ["Outra assinatura... Vai usar mesmo? \uD83D\uDC40", "Lembre de cancelar se n\u00E3o usar \uD83D\uDD14", "Gastos fixos s\u00E3o perigosos... \u26A0\uFE0F"]
+            es: ["Otra suscripción... ¿Seguro que la usarás? 👀", "Recuerda cancelar si no la usas 🔔", "Los gastos fijos son peligrosos... ⚠️"],
+            en: ["Another sub... Sure you'll use it? 👀", "Remember to cancel if unused 🔔", "Fixed expenses are dangerous... ⚠️"],
+            pt: ["Outra assinatura... Vai usar mesmo? 👀", "Lembre de cancelar se não usar 🔔", "Gastos fixos são perigosos... ⚠️"]
         },
         expense_high: {
-            es: ["Golpe fuerte al presupuesto \uD83E\uDD4A", "Ajusta el resto del mes, colega \uD83D\uDEA7", "\u00A1Wow! Eso fue costoso \uD83D\uDE31"],
-            en: ["Heavy hit to the budget \uD83E\uDD4A", "Adjust the rest of the month \uD83D\uDEA7", "Wow! That was expensive \uD83D\uDE31"],
-            pt: ["Golpe forte no or\u00E7amento \uD83E\uDD4A", "Ajuste o resto do m\u00EAs \uD83D\uDEA7", "Uau! Isso foi caro \uD83D\uDE31"]
+            es: ["Golpe fuerte al presupuesto 🥊", "Ajusta el resto del mes, colega 🚧", "¡Wow! Eso fue costoso 😱"],
+            en: ["Heavy hit to the budget 🥊", "Adjust the rest of the month 🚧", "Wow! That was expensive 😱"],
+            pt: ["Golpe forte no orçamento 🥊", "Ajuste o resto do mês 🚧", "Uau! Isso foi caro 😱"]
         },
-          expense_normal: {
-            es: ["Anotado \u270D\uFE0F", "Gasto registrado \u2705", "Poquito a poco... \uD83D\uDC22", "Controlando el flujo \uD83D\uDCA7", "Ok, seguimos \uD83D\uDC4D"],
-            en: ["Noted \u270D\uFE0F", "Expense saved \u2705", "Little by little... \uD83D\uDC22", "Controlling the flow \uD83D\uDCA7", "Ok, moving on \uD83D\uDC4D"],
-            pt: ["Anotado \u270D\uFE0F", "Despesa salva \u2705", "Pouco a pouco... \uD83D\uDC22", "Controlando o fluxo \uD83D\uDCA7", "Ok, seguimos \uD83D\uDC4D"]
+        expense_normal: {
+            es: ["Anotado ✍️", "Gasto registrado ✅", "Poquito a poco... 🐢", "Controlando el flujo 💧", "Ok, seguimos 👍"],
+            en: ["Noted ✍️", "Expense saved ✅", "Little by little... 🐢", "Controlling the flow 💧", "Ok, moving on 👍"],
+            pt: ["Anotado ✍️", "Despesa salva ✅", "Pouco a pouco... 🐢", "Controlando o fluxo 💧", "Ok, seguimos 👍"]
         }
     },
 
@@ -190,18 +187,15 @@ const Assistant = {
             }
         } else if (type === 'sub_added') {
             moodKey = 'sub_added';
-        }else if (type === 'expense_added') {
+        } else if (type === 'expense_added') {
             const limit = Data.store.budget.limit || 0;
-            
-            // CASO 1: Gasto Alto (> 10% del presupuesto) -> SIEMPRE AVISA
+            // CASO 1: Gasto Alto (> 10% del presupuesto)
             if (limit > 0 && data.amount > (limit * 0.1)) {
                 moodKey = 'expense_high';
             } 
-            // CASO 2: Gasto Normal -> AVISA A VECES (50% de probabilidad para no cansar)
+            // CASO 2: Gasto Normal (50% prob)
             else {
-                if (Math.random() > 0.5) { 
-                    moodKey = 'expense_normal';
-                }
+                if (Math.random() > 0.5) moodKey = 'expense_normal';
             }
         }
 
@@ -222,7 +216,8 @@ const Assistant = {
         div.style.cssText = `position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: var(--glass-bg); border: 1px solid var(--primary); box-shadow: 0 10px 40px rgba(0,0,0,0.2); backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 30px; z-index: 15000; display: flex; align-items: center; gap: 15px; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; min-width: 280px;`;
 
         const currentSkin = Data.store.gamification.currentSkin || 'default';
-        const skinPath = this.skinsDef.find(s => s.id === currentSkin).path || '';
+        const skinDef = this.skinsDef.find(s => s.id === currentSkin) || this.skinsDef[0];
+        const skinPath = skinDef.path || '';
         
         div.innerHTML = `
             <img src="${skinPath}idle.png" style="width:65px; height:65px; object-fit:contain; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.2));" onerror="this.src='idle.png'">
@@ -238,10 +233,7 @@ const Assistant = {
             if(div) { div.style.opacity = '0'; div.style.transform = 'translate(-50%, -40%) scale(0.9)'; setTimeout(() => div.remove(), 400); }
         }, 3500);
     },
-
-
-
-    // --- HELPER FUNCTIONS ---
+    // --- HELPER FUNCTIONS (Lógica Interna) ---
     countCat(catId) {
         if (!Data.store.expenses) return 0;
         const realName = (typeof UI !== 'undefined' && UI.t) ? UI.t(catId) : catId;
@@ -305,81 +297,85 @@ const Assistant = {
         return Data.store.expenses.some(e => new Date(e.date).toDateString() === t && e.desc.toLowerCase().includes(txt));
     },
 
-    // --- 3. MEDALLAS ---
+    // --- 3. MEDALLAS (TRADUCCIÓN COMPLETA) ---
     badgesDef: [
-        { id: 'b_lvl_5', icon: '🐣', name: {es:'Novato'}, desc: {es:'Alcanza el Nivel 5'}, check: () => Data.store.gamification.level >= 5 },
-        { id: 'b_lvl_10', icon: '🥉', name: {es:'Aprendiz'}, desc: {es:'Alcanza el Nivel 10'}, check: () => Data.store.gamification.level >= 10 },
-        { id: 'b_lvl_15', icon: '🥈', name: {es:'Competente'}, desc: {es:'Alcanza el Nivel 15'}, check: () => Data.store.gamification.level >= 15 },
-        { id: 'b_lvl_20', icon: '🥇', name: {es:'Experto'}, desc: {es:'Alcanza el Nivel 20'}, check: () => Data.store.gamification.level >= 20 },
-        { id: 'b_lvl_30', icon: '🚀', name: {es:'Maestro'}, desc: {es:'Alcanza el Nivel 30'}, check: () => Data.store.gamification.level >= 30 },
-        { id: 'b_lvl_40', icon: '💎', name: {es:'Magnate'}, desc: {es:'Alcanza el Nivel 40'}, check: () => Data.store.gamification.level >= 40 },
-        { id: 'b_lvl_50', icon: '👑', name: {es:'Leyenda'}, desc: {es:'Alcanza el Nivel 50'}, check: () => Data.store.gamification.level >= 50 },
-        { id: 'b_lvl_60', icon: '🪐', name: {es:'Dios'}, desc: {es:'Alcanza el Nivel 60'}, check: () => Data.store.gamification.level >= 60 },
+        // NIVELES
+        { id: 'b_lvl_5', icon: '🐣', name: {es:'Novato', en:'Novice', pt:'Novato'}, desc: {es:'Alcanza el Nivel 5', en:'Reach Level 5', pt:'Alcance o Nível 5'}, check: () => Data.store.gamification.level >= 5 },
+        { id: 'b_lvl_10', icon: '🥉', name: {es:'Aprendiz', en:'Apprentice', pt:'Aprendiz'}, desc: {es:'Alcanza el Nivel 10', en:'Reach Level 10', pt:'Alcance o Nível 10'}, check: () => Data.store.gamification.level >= 10 },
+        { id: 'b_lvl_15', icon: '🥈', name: {es:'Competente', en:'Skilled', pt:'Competente'}, desc: {es:'Alcanza el Nivel 15', en:'Reach Level 15', pt:'Alcance o Nível 15'}, check: () => Data.store.gamification.level >= 15 },
+        { id: 'b_lvl_20', icon: '🥇', name: {es:'Experto', en:'Expert', pt:'Especialista'}, desc: {es:'Alcanza el Nivel 20', en:'Reach Level 20', pt:'Alcance o Nível 20'}, check: () => Data.store.gamification.level >= 20 },
+        { id: 'b_lvl_30', icon: '🚀', name: {es:'Maestro', en:'Master', pt:'Mestre'}, desc: {es:'Alcanza el Nivel 30', en:'Reach Level 30', pt:'Alcance o Nível 30'}, check: () => Data.store.gamification.level >= 30 },
+        { id: 'b_lvl_40', icon: '💎', name: {es:'Magnate', en:'Tycoon', pt:'Magnata'}, desc: {es:'Alcanza el Nivel 40', en:'Reach Level 40', pt:'Alcance o Nível 40'}, check: () => Data.store.gamification.level >= 40 },
+        { id: 'b_lvl_50', icon: '👑', name: {es:'Leyenda', en:'Legend', pt:'Lenda'}, desc: {es:'Alcanza el Nivel 50', en:'Reach Level 50', pt:'Alcance o Nível 50'}, check: () => Data.store.gamification.level >= 50 },
+        { id: 'b_lvl_60', icon: '🪐', name: {es:'Dios', en:'Godlike', pt:'Deus'}, desc: {es:'Alcanza el Nivel 60', en:'Reach Level 60', pt:'Alcance o Nível 60'}, check: () => Data.store.gamification.level >= 60 },
         
-        { id: 'b_month_streak', icon: '🗓️', name: {es:'Superviviente'}, desc: {es:'Mes sin pasar el límite'}, check: () => (Data.store.gamification.monthStreak || 0) > 0 },
-        { id: 'b_streak_7', icon: '🔥', name: {es:'Racha Semanal'}, desc: {es:'Usa la app 7 días seguidos'}, check: () => Data.store.gamification.streak >= 7 },
-        { id: 'b_streak_30', icon: '🏆', name: {es:'Hábito de Hierro'}, desc: {es:'Usa la app 30 días seguidos'}, check: () => Data.store.gamification.streak >= 30 },
+        // RACHAS
+        { id: 'b_month_streak', icon: '🗓️', name: {es:'Superviviente', en:'Survivor', pt:'Sobrevivente'}, desc: {es:'Mes sin pasar el límite', en:'Month under budget', pt:'Mês abaixo do limite'}, check: () => (Data.store.gamification.monthStreak || 0) > 0 },
+        { id: 'b_streak_7', icon: '🔥', name: {es:'Racha Semanal', en:'Weekly Streak', pt:'Ofensiva Semanal'}, desc: {es:'Usa la app 7 días seguidos', en:'Use app 7 days in a row', pt:'Use o app 7 dias seguidos'}, check: () => Data.store.gamification.streak >= 7 },
+        { id: 'b_streak_30', icon: '🏆', name: {es:'Hábito de Hierro', en:'Iron Habit', pt:'Hábito de Ferro'}, desc: {es:'Usa la app 30 días seguidos', en:'Use app 30 days in a row', pt:'Use o app 30 dias seguidos'}, check: () => Data.store.gamification.streak >= 30 },
 
-        { id: 'b_start', icon: '🚩', name: {es:'Iniciado'}, desc: {es:'Primer uso de la app'}, check: () => true },
-        { id: 'b_budget', icon: '📊', name: {es:'Gerente'}, desc: {es:'Define un presupuesto'}, check: () => Data.store.budget.limit > 0 },
-        { id: 'b_list_5', icon: '📝', name: {es:'Planificador'}, desc: {es:'Crea 5 listas de compras'}, check: () => Data.store.lists.length >= 5 },
-        { id: 'b_list_master', icon: '📦', name: {es:'Mayorista'}, desc: {es:'Lista con +10 items'}, check: () => Data.store.lists.some(l => l.items.length >= 10) },
-        { id: 'b_subs', icon: '📺', name: {es:'Suscrito'}, desc: {es:'3 suscripciones activas'}, check: () => Data.store.subscriptions.length >= 3 },
-        { id: 'b_saver', icon: '🐷', name: {es:'Ahorrador'}, desc: {es:'Gasta < 50% del límite'}, check: () => { const l=Data.store.budget.limit; return l>0 && (Finance.calculateMonthlySpent()/l)<0.5; }},
-        { id: 'b_safe', icon: '🛡️', name: {es:'Blindado'}, desc: {es:'Gasta < 80% del límite'}, check: () => { const l=Data.store.budget.limit; return l>0 && (Finance.calculateMonthlySpent()/l)<0.8; }},
-        { id: 'b_clean_sheet', icon: '✨', name: {es:'Impecable'}, desc: {es:'Sin deudas activas'}, check: () => !Data.store.expenses.some(e=>e.isInstallment) },
+        // HITOS DE USO
+        { id: 'b_start', icon: '🚩', name: {es:'Iniciado', en:'Initiated', pt:'Iniciado'}, desc: {es:'Primer uso de la app', en:'First app usage', pt:'Primeiro uso do app'}, check: () => true },
+        { id: 'b_budget', icon: '📊', name: {es:'Gerente', en:'Manager', pt:'Gerente'}, desc: {es:'Define un presupuesto', en:'Set a budget', pt:'Definir um orçamento'}, check: () => Data.store.budget.limit > 0 },
+        { id: 'b_list_5', icon: '📝', name: {es:'Planificador', en:'Planner', pt:'Planejador'}, desc: {es:'Crea 5 listas de compras', en:'Create 5 shopping lists', pt:'Criar 5 listas de compras'}, check: () => Data.store.lists.length >= 5 },
+        { id: 'b_list_master', icon: '📦', name: {es:'Mayorista', en:'Wholesaler', pt:'Atacadista'}, desc: {es:'Lista con +10 items', en:'List with 10+ items', pt:'Lista com +10 itens'}, check: () => Data.store.lists.some(l => l.items.length >= 10) },
+        { id: 'b_subs', icon: '📺', name: {es:'Suscrito', en:'Subscribed', pt:'Assinante'}, desc: {es:'3 suscripciones activas', en:'3 active subscriptions', pt:'3 assinaturas ativas'}, check: () => Data.store.subscriptions.length >= 3 },
+        { id: 'b_saver', icon: '🐷', name: {es:'Ahorrador', en:'Saver', pt:'Poupador'}, desc: {es:'Gasta < 50% del límite', en:'Spend < 50% of limit', pt:'Gastar < 50% do limite'}, check: () => { const l=Data.store.budget.limit; return l>0 && (Finance.calculateMonthlySpent()/l)<0.5; }},
+        { id: 'b_safe', icon: '🛡️', name: {es:'Blindado', en:'Armored', pt:'Blindado'}, desc: {es:'Gasta < 80% del límite', en:'Spend < 80% of limit', pt:'Gastar < 80% do limite'}, check: () => { const l=Data.store.budget.limit; return l>0 && (Finance.calculateMonthlySpent()/l)<0.8; }},
+        { id: 'b_clean_sheet', icon: '✨', name: {es:'Impecable', en:'Flawless', pt:'Impecável'}, desc: {es:'Sin deudas activas', en:'No active debts', pt:'Sem dívidas ativas'}, check: () => !Data.store.expenses.some(e=>e.isInstallment) },
 
-        { id: 'b_market', icon: '🛒', name: {es:'Mercader'}, desc: {es:'5 gastos en Supermercado'}, check: () => Assistant.countCat('cat_market') >= 5 },
-        { id: 'b_leisure', icon: '🍕', name: {es:'Disfrutón'}, desc: {es:'5 gastos en Ocio/Comida'}, check: () => Assistant.countCat('cat_leisure') >= 5 },
-        { id: 'b_transport', icon: '🚌', name: {es:'Nómada'}, desc: {es:'5 gastos en Transporte'}, check: () => Assistant.countCat('cat_transport') >= 5 },
-        { id: 'b_clothes', icon: '👕', name: {es:'Estilista'}, desc: {es:'3 gastos en Ropa'}, check: () => Assistant.countCat('cat_clothes') >= 3 },
-        { id: 'b_health', icon: '💊', name: {es:'Saludable'}, desc: {es:'3 gastos en Salud'}, check: () => Assistant.countCat('cat_health') >= 3 },
-        { id: 'b_bills', icon: '🏠', name: {es:'Casero'}, desc: {es:'5 gastos de Hogar'}, check: () => Assistant.countCat('cat_bills') >= 5 },
-        { id: 'b_travel', icon: '✈️', name: {es:'Mochilero'}, desc: {es:'1 gasto de Viaje'}, check: () => Assistant.countCat('cat_travel') >= 1 },
-        { id: 'b_beauty', icon: '💅', name: {es:'Vanidoso'}, desc: {es:'1 gasto en Belleza'}, check: () => Assistant.countCat('cat_beauty') >= 1 },
+        // CATEGORÍAS
+        { id: 'b_market', icon: '🛒', name: {es:'Mercader', en:'Merchant', pt:'Mercador'}, desc: {es:'5 gastos en Supermercado', en:'5 Market expenses', pt:'5 despesas de Mercado'}, check: () => Assistant.countCat('cat_market') >= 5 },
+        { id: 'b_leisure', icon: '🍕', name: {es:'Disfrutón', en:'Enjoyer', pt:'Bon Vivant'}, desc: {es:'5 gastos en Ocio/Comida', en:'5 Leisure expenses', pt:'5 despesas de Lazer'}, check: () => Assistant.countCat('cat_leisure') >= 5 },
+        { id: 'b_transport', icon: '🚌', name: {es:'Nómada', en:'Nomad', pt:'Nômade'}, desc: {es:'5 gastos en Transporte', en:'5 Transport expenses', pt:'5 despesas de Transporte'}, check: () => Assistant.countCat('cat_transport') >= 5 },
+        { id: 'b_clothes', icon: '👕', name: {es:'Estilista', en:'Stylist', pt:'Estilista'}, desc: {es:'3 gastos en Ropa', en:'3 Clothes expenses', pt:'3 despesas de Roupa'}, check: () => Assistant.countCat('cat_clothes') >= 3 },
+        { id: 'b_health', icon: '💊', name: {es:'Saludable', en:'Healthy', pt:'Saudável'}, desc: {es:'3 gastos en Salud', en:'3 Health expenses', pt:'3 despesas de Saúde'}, check: () => Assistant.countCat('cat_health') >= 3 },
+        { id: 'b_bills', icon: '🏠', name: {es:'Casero', en:'Homebody', pt:'Caseiro'}, desc: {es:'5 gastos de Hogar', en:'5 Home expenses', pt:'5 despesas de Casa'}, check: () => Assistant.countCat('cat_bills') >= 5 },
+        { id: 'b_travel', icon: '✈️', name: {es:'Mochilero', en:'Backpacker', pt:'Mochileiro'}, desc: {es:'1 gasto de Viaje', en:'1 Travel expense', pt:'1 despesa de Viagem'}, check: () => Assistant.countCat('cat_travel') >= 1 },
+        { id: 'b_beauty', icon: '💅', name: {es:'Vanidoso', en:'Vain', pt:'Vaidoso'}, desc: {es:'1 gasto en Belleza', en:'1 Beauty expense', pt:'1 despesa de Beleza'}, check: () => Assistant.countCat('cat_beauty') >= 1 },
         
-        { id: 'b_coffee', icon: '☕', name: {es:'Cafetero'}, desc: {es:'Gasto con descr. "Cafe"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Cafe|Coffee/i)) },
-        { id: 'b_gamer', icon: '🎮', name: {es:'Gamer'}, desc: {es:'Gasto con descr. "Juego"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Juego|Game|Steam/i)) },
-        { id: 'b_pet', icon: '🐾', name: {es:'Amigo Fiel'}, desc: {es:'Gasto con descr. "Vet/Perro"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Perro|Gato|Vet|Mascota/i)) },
-        { id: 'b_investor', icon: '📈', name: {es:'Inversor'}, desc: {es:'Gasto con descr. "Inversion"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Inversion|Accion|Crypto/i)) },
-        { id: 'b_night', icon: '🦉', name: {es:'Nocturno'}, desc: {es:'Gasto de 00:00 a 05:00'}, check: () => Data.store.expenses.some(e=>{ const h=new Date(e.date).getHours(); return h>=0 && h<5; }) }
+        // CURIOSAS (TEXTO)
+        { id: 'b_coffee', icon: '☕', name: {es:'Cafetero', en:'Coffee Lover', pt:'Cafeinado'}, desc: {es:'Gasto con descr. "Cafe"', en:'Expense "Coffee"', pt:'Despesa "Café"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Cafe|Coffee/i)) },
+        { id: 'b_gamer', icon: '🎮', name: {es:'Gamer', en:'Gamer', pt:'Gamer'}, desc: {es:'Gasto con descr. "Juego"', en:'Expense "Game"', pt:'Despesa "Jogo"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Juego|Game|Steam/i)) },
+        { id: 'b_pet', icon: '🐾', name: {es:'Amigo Fiel', en:'Loyal Friend', pt:'Amigo Fiel'}, desc: {es:'Gasto con descr. "Vet/Perro"', en:'Expense "Pet/Dog"', pt:'Despesa "Pet/Cão"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Perro|Gato|Vet|Mascota|Pet|Dog|Cat/i)) },
+        { id: 'b_investor', icon: '📈', name: {es:'Inversor', en:'Investor', pt:'Investidor'}, desc: {es:'Gasto con descr. "Inversion"', en:'Expense "Invest"', pt:'Despesa "Investir"'}, check: () => Data.store.expenses.some(e=>e.desc.match(/Inversion|Accion|Crypto|Stock/i)) },
+        { id: 'b_night', icon: '🦉', name: {es:'Nocturno', en:'Nocturnal', pt:'Noturno'}, desc: {es:'Gasto de 00:00 a 05:00', en:'Expense 00:00 to 05:00', pt:'Despesa 00:00 às 05:00'}, check: () => Data.store.expenses.some(e=>{ const h=new Date(e.date).getHours(); return h>=0 && h<5; }) }
     ],
 
-    // --- 4. POOL DE MISIONES ---
+    // --- 4. POOL DE MISIONES (TRADUCCIÓN COMPLETA) ---
     missionPool: [
-        { id: 'm_log', xp: 50, icon: '🖊️', title: {es:"Diario"}, desc: {es:"Registra 1 gasto hoy"}, check: () => Assistant.checkExpToday() },
-        { id: 'm_zero', xp: 100, icon: '🛡️', title: {es:"Escudo"}, desc: {es:"0 gastos hoy"}, check: () => !Assistant.checkExpToday() },
-        { id: 'm_market', xp: 60, icon: '🛒', title: {es:"Súper"}, desc: {es:"Gasto en Mercado"}, check: () => Assistant.checkCatToday('cat_market') },
-        { id: 'm_leisure', xp: 60, icon: '🍕', title: {es:"Relax"}, desc: {es:"Gasto en Ocio"}, check: () => Assistant.checkCatToday('cat_leisure') },
-        { id: 'm_transport', xp: 60, icon: '🚌', title: {es:"Ruta"}, desc: {es:"Gasto Transporte"}, check: () => Assistant.checkCatToday('cat_transport') },
-        { id: 'm_bills', xp: 70, icon: '💡', title: {es:"Pagos"}, desc: {es:"Gasto Hogar"}, check: () => Assistant.checkCatToday('cat_bills') },
-        { id: 'm_health', xp: 80, icon: '💊', title: {es:"Cuidarse"}, desc: {es:"Gasto Salud"}, check: () => Assistant.checkCatToday('cat_health') },
-        { id: 'm_tiny', xp: 40, icon: '🐜', title: {es:"Micro"}, desc: {es:"Gasto < 5"}, check: () => Assistant.checkAmountToday('<', 5) },
-        { id: 'm_small', xp: 50, icon: '🪙', title: {es:"Pequeño"}, desc: {es:"Gasto 5-20"}, check: () => Assistant.checkAmountToday('range', 5, 20) },
-        { id: 'm_medium', xp: 60, icon: '💵', title: {es:"Medio"}, desc: {es:"Gasto 20-50"}, check: () => Assistant.checkAmountToday('range', 20, 50) },
-        { id: 'm_big', xp: 80, icon: '🐳', title: {es:"Macro"}, desc: {es:"Gasto > 50"}, check: () => Assistant.checkAmountToday('>', 50) },
-        { id: 'm_morning', xp: 50, icon: '☕', title: {es:"Mañanero"}, desc: {es:"Gasto antes 10AM"}, check: () => Assistant.checkHourToday('<', 10) },
-        { id: 'm_lunch', xp: 50, icon: '🍽️', title: {es:"Almuerzo"}, desc: {es:"Gasto 12PM-2PM"}, check: () => Assistant.checkHourToday('range', 12, 14) },
-        { id: 'm_afternoon', xp: 50, icon: '🌤️', title: {es:"Tarde"}, desc: {es:"Gasto 3PM-6PM"}, check: () => Assistant.checkHourToday('range', 15, 18) },
-        { id: 'm_night', xp: 60, icon: '🌙', title: {es:"Cena"}, desc: {es:"Gasto 7PM-10PM"}, check: () => Assistant.checkHourToday('range', 19, 22) },
-        { id: 'm_list_new', xp: 40, icon: '📝', title: {es:"Planear"}, desc: {es:"Crea una lista"}, check: () => { const t=new Date().toDateString(); return Data.store.lists.some(l=>new Date(l.date).toDateString()===t); }},
-        { id: 'm_list_done', xp: 80, icon: '✅', title: {es:"Cumplir"}, desc: {es:"Completa una lista"}, check: () => { const t=new Date().toDateString(); return Data.store.lists.some(l=>l.status==='completed' && new Date(l.date).toDateString()===t); }},
-        { id: 'm_txt_cafe', xp: 50, icon: '☕', title: {es:"Cafeína"}, desc: {es:'Gasto descr "Cafe"'}, check: () => Assistant.checkDescToday('cafe') },
-        { id: 'm_txt_pan', xp: 50, icon: '🥖', title: {es:"Panadería"}, desc: {es:'Gasto descr "Pan"'}, check: () => Assistant.checkDescToday('pan') },
-        { id: 'm_3_exps', xp: 100, icon: '⚡', title: {es:"Activo"}, desc: {es:"Registra 3 gastos"}, check: () => { const t=new Date().toDateString(); return Data.store.expenses.filter(e=>new Date(e.date).toDateString()===t).length >= 3; }}
+        { id: 'm_log', xp: 50, icon: '🖊️', title: {es:"Diario", en:"Daily Log", pt:"Diário"}, desc: {es:"Registra 1 gasto hoy", en:"Log 1 expense today", pt:"Registrar 1 despesa hoje"}, check: () => Assistant.checkExpToday() },
+        { id: 'm_zero', xp: 100, icon: '🛡️', title: {es:"Escudo", en:"Shield", pt:"Escudo"}, desc: {es:"0 gastos hoy", en:"0 expenses today", pt:"0 despesas hoje"}, check: () => !Assistant.checkExpToday() },
+        { id: 'm_market', xp: 60, icon: '🛒', title: {es:"Súper", en:"Groceries", pt:"Mercado"}, desc: {es:"Gasto en Mercado", en:"Market expense", pt:"Despesa em Mercado"}, check: () => Assistant.checkCatToday('cat_market') },
+        { id: 'm_leisure', xp: 60, icon: '🍕', title: {es:"Relax", en:"Chill", pt:"Relax"}, desc: {es:"Gasto en Ocio", en:"Leisure expense", pt:"Despesa em Lazer"}, check: () => Assistant.checkCatToday('cat_leisure') },
+        { id: 'm_transport', xp: 60, icon: '🚌', title: {es:"Ruta", en:"Route", pt:"Rota"}, desc: {es:"Gasto Transporte", en:"Transport expense", pt:"Despesa Transporte"}, check: () => Assistant.checkCatToday('cat_transport') },
+        { id: 'm_bills', xp: 70, icon: '💡', title: {es:"Pagos", en:"Bills", pt:"Contas"}, desc: {es:"Gasto Hogar", en:"Home expense", pt:"Despesa Casa"}, check: () => Assistant.checkCatToday('cat_bills') },
+        { id: 'm_health', xp: 80, icon: '💊', title: {es:"Cuidarse", en:"Self Care", pt:"Cuidar-se"}, desc: {es:"Gasto Salud", en:"Health expense", pt:"Despesa Saúde"}, check: () => Assistant.checkCatToday('cat_health') },
+        { id: 'm_tiny', xp: 40, icon: '🐜', title: {es:"Micro", en:"Micro", pt:"Micro"}, desc: {es:"Gasto < 5", en:"Expense < 5", pt:"Despesa < 5"}, check: () => Assistant.checkAmountToday('<', 5) },
+        { id: 'm_small', xp: 50, icon: '🪙', title: {es:"Pequeño", en:"Small", pt:"Pequeno"}, desc: {es:"Gasto 5-20", en:"Expense 5-20", pt:"Despesa 5-20"}, check: () => Assistant.checkAmountToday('range', 5, 20) },
+        { id: 'm_medium', xp: 60, icon: '💵', title: {es:"Medio", en:"Medium", pt:"Médio"}, desc: {es:"Gasto 20-50", en:"Expense 20-50", pt:"Despesa 20-50"}, check: () => Assistant.checkAmountToday('range', 20, 50) },
+        { id: 'm_big', xp: 80, icon: '🐳', title: {es:"Macro", en:"Huge", pt:"Macro"}, desc: {es:"Gasto > 50", en:"Expense > 50", pt:"Despesa > 50"}, check: () => Assistant.checkAmountToday('>', 50) },
+        { id: 'm_morning', xp: 50, icon: '☕', title: {es:"Mañanero", en:"Morning", pt:"Matinal"}, desc: {es:"Gasto antes 10AM", en:"Expense before 10AM", pt:"Despesa antes 10h"}, check: () => Assistant.checkHourToday('<', 10) },
+        { id: 'm_lunch', xp: 50, icon: '🍽️', title: {es:"Almuerzo", en:"Lunch", pt:"Almoço"}, desc: {es:"Gasto 12PM-2PM", en:"Expense 12PM-2PM", pt:"Despesa 12h-14h"}, check: () => Assistant.checkHourToday('range', 12, 14) },
+        { id: 'm_afternoon', xp: 50, icon: '🌤️', title: {es:"Tarde", en:"Afternoon", pt:"Tarde"}, desc: {es:"Gasto 3PM-6PM", en:"Expense 3PM-6PM", pt:"Despesa 15h-18h"}, check: () => Assistant.checkHourToday('range', 15, 18) },
+        { id: 'm_night', xp: 60, icon: '🌙', title: {es:"Cena", en:"Dinner", pt:"Jantar"}, desc: {es:"Gasto 7PM-10PM", en:"Expense 7PM-10PM", pt:"Despesa 19h-22h"}, check: () => Assistant.checkHourToday('range', 19, 22) },
+        { id: 'm_list_new', xp: 40, icon: '📝', title: {es:"Planear", en:"Plan", pt:"Planejar"}, desc: {es:"Crea una lista", en:"Create a list", pt:"Criar uma lista"}, check: () => { const t=new Date().toDateString(); return Data.store.lists.some(l=>new Date(l.date).toDateString()===t); }},
+        { id: 'm_list_done', xp: 80, icon: '✅', title: {es:"Cumplir", en:"Done", pt:"Feito"}, desc: {es:"Completa una lista", en:"Complete a list", pt:"Completar uma lista"}, check: () => { const t=new Date().toDateString(); return Data.store.lists.some(l=>l.status==='completed' && new Date(l.date).toDateString()===t); }},
+        { id: 'm_txt_cafe', xp: 50, icon: '☕', title: {es:"Cafeína", en:"Caffeine", pt:"Cafeína"}, desc: {es:'Gasto descr "Cafe"', en:'Exp desc "Coffee"', pt:'Desp descr "Cafe"'}, check: () => Assistant.checkDescToday('cafe') },
+        { id: 'm_txt_pan', xp: 50, icon: '🥖', title: {es:"Panadería", en:"Bakery", pt:"Padaria"}, desc: {es:'Gasto descr "Pan"', en:'Exp desc "Bread"', pt:'Desp descr "Pao"'}, check: () => Assistant.checkDescToday('pan') },
+        { id: 'm_3_exps', xp: 100, icon: '⚡', title: {es:"Activo", en:"Active", pt:"Ativo"}, desc: {es:"Registra 3 gastos", en:"Log 3 expenses", pt:"Registrar 3 despesas"}, check: () => { const t=new Date().toDateString(); return Data.store.expenses.filter(e=>new Date(e.date).toDateString()===t).length >= 3; }}
     ],
-
     init() {
-        console.log("Assistant v31.1 (Skin IMG Previews) Online");
+        console.log("Assistant v32.0 (Full Logic) Online");
         this.injectStyles();
         
         if (!Data.store.gamification) Data.store.gamification = { xp: 0, level: 1, badges: [], streak: 0, lastLogin: null, monthStreak: 0, lastSummary: null };
         if (!Data.store.gamification.dailyQuests) Data.store.gamification.dailyQuests = { date: null, quests: [] };
         if (Data.store.gamification.selectedAura) delete Data.store.gamification.selectedAura;
         
-        // Inicializar skin por defecto si no existe
         if (!Data.store.gamification.currentSkin) Data.store.gamification.currentSkin = 'default';
 
+        // Limpieza de medallas viejas
         const validBadgeIds = this.badgesDef.map(b => b.id);
         Data.store.gamification.badges = Data.store.gamification.badges.filter(id => validBadgeIds.includes(id));
 
@@ -439,18 +435,24 @@ const Assistant = {
             const monthlySpent = Finance.calculateMonthlySpent();
             const limit = Data.store.budget.limit || 0;
             const remaining = limit - monthlySpent;
+            const lang = Data.store.settings.lang || 'es';
             
+            const txt = {
+                es: { title: "📊 Resumen Semanal", spend: "Gasto Semana", top: "Top Gasto", rest: "Restante Mes" },
+                en: { title: "📊 Weekly Summary", spend: "Weekly Spend", top: "Top Expense", rest: "Month Left" },
+                pt: { title: "📊 Resumo Semanal", spend: "Gasto Semanal", top: "Top Gasto", rest: "Restante Mês" }
+            }[lang];
+
             const fmt = (v) => (typeof UI !== 'undefined' ? UI.formatMoney(v) : `$${v}`);
             
-            const title = "\uD83D\uDCCA Resumen Semanal";
             const contentHTML = `
                 <div style="display:flex; flex-direction:column; gap:12px;">
                     <div class="glass-card" style="margin:0; padding:15px; text-align:center;">
-                        <div style="font-size:11px; color:var(--text-sec); text-transform:uppercase; font-weight:700;">Gasto Semana</div>
+                        <div style="font-size:11px; color:var(--text-sec); text-transform:uppercase; font-weight:700;">${txt.spend}</div>
                         <div style="font-size:26px; font-weight:800; color:var(--text-color);">${fmt(wStats.total)}</div>
                     </div>
                     <div style="background:rgba(120,120,120,0.05); padding:12px; border-radius:12px;">
-                        <div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">Top Gasto:</div>
+                        <div style="font-size:12px; color:var(--text-sec); margin-bottom:4px;">${txt.top}:</div>
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="font-weight:700; color:var(--primary);">${wStats.topCategory}</span>
                             <span style="font-weight:600;">${fmt(wStats.topAmount)}</span>
@@ -458,17 +460,14 @@ const Assistant = {
                     </div>
                     <div style="border-top:1px solid rgba(120,120,120,0.1); padding-top:10px; margin-top:5px;">
                         <div style="display:flex; justify-content:space-between; font-size:13px;">
-                            <span style="color:var(--text-sec);">Restante Mes:</span>
+                            <span style="color:var(--text-sec);">${txt.rest}:</span>
                             <span style="font-weight:800; color:${remaining > 0 ? 'var(--success)' : 'var(--danger)'};">${fmt(remaining)}</span>
                         </div>
                     </div>
                 </div>
             `;
 
-            setTimeout(() => {
-                this.showReportModal(title, contentHTML);
-            }, 2000);
-            
+            setTimeout(() => { this.showReportModal(txt.title, contentHTML); }, 2000);
             g.lastSummary = key;
             Data.save();
         }
@@ -478,17 +477,14 @@ const Assistant = {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay open';
         overlay.style.zIndex = '12000';
-        
         overlay.innerHTML = `
             <div class="settings-card" onclick="event.stopPropagation()" style="animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h2 style="margin:0; font-size:20px; color:var(--primary);">${title}</h2>
-                    <button class="icon-btn" id="temp-close-btn">&#10005;</button>
+                    <button class="icon-btn" id="temp-close-btn">✕</button>
                 </div>
-                <div style="width:100%;">
-                    ${htmlContent}
-                </div>
-                <button class="btn-full" id="temp-ok-btn" style="margin-top:20px;">Entendido</button>
+                <div style="width:100%;">${htmlContent}</div>
+                <button class="btn-full" id="temp-ok-btn" style="margin-top:20px;">OK</button>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -498,12 +494,11 @@ const Assistant = {
         overlay.querySelector('#temp-ok-btn').onclick = close;
     },
 
-    // --- LÓGICA DE IMAGEN Y ESTADOS ACTUALIZADA ---
+    // --- LÓGICA DE IMAGEN Y ESTADOS ---
     updateMood(forceState = null) {
         const img = document.getElementById('mascot-img');
         if (!img) return;
         
-        // 1. Obtener Skin Actual
         const currentSkinId = Data.store.gamification.currentSkin || 'default';
         const skinDef = this.skinsDef.find(s => s.id === currentSkinId) || this.skinsDef[0];
         const path = skinDef.path; 
@@ -512,43 +507,33 @@ const Assistant = {
         img.style = ""; 
         img.className = 'mascot-restore'; 
 
-        // 2. Determinar Estado
         if (forceState) {
-            // Estado forzado (ej: thinking)
             img.src = path + forceState;
-            img.style.animation = "floatMascot 3s ease-in-out infinite"; // Animación suave para thinking
+            img.style.animation = "floatMascot 3s ease-in-out infinite";
             return;
         }
 
-        // 3. Cálculos de Salud y Alerta
         const health = this.analyzeFinancialHealth();
-        const spent = health.spent;
-        const limit = health.limit;
-        const ratio = limit > 0 ? (spent / limit) : 0;
+        const ratio = health.limit > 0 ? (health.spent / health.limit) : 0;
 
-        // 4. Lógica de selección de imagen
-        if (limit > 0 && ratio > 0.9) {
-            // ALERTA: Más del 90% gastado
+        if (health.limit > 0 && ratio > 0.9) {
             img.src = path + 'alert.png';
             img.style.animation = "shake 0.5s infinite";
         } else if (health.score < 30) {
-            // PREOCUPADO: Score bajo
             img.src = path + 'worried.png';
             img.style.animation = "shake 0.5s infinite";
         } else if (health.score > 80) {
-            // FELIZ: Score alto
             img.src = path + 'happy.png';
             img.style.animation = "floatMascot 5s ease-in-out infinite";
         } else {
-            // IDLE: Normal
             img.src = path + 'idle.png';
             img.style.animation = "floatMascot 5s ease-in-out infinite";
         }
-        
         img.onclick = () => this.giveTip();
     },
 
-        renderProfile() {
+    // --- RENDERIZADO DEL PERFIL (CORREGIDO Y TRADUCIDO) ---
+    renderProfile() {
         const modal = document.getElementById('modal-profile');
         if(!modal) return;
 
@@ -564,49 +549,45 @@ const Assistant = {
             } else { return; }
         }
 
-        // Ocultar header viejo del HTML estático si existe
         const oldHeader = document.querySelector('.profile-header');
         if (oldHeader) oldHeader.style.display = 'none';
 
         const g = Data.store.gamification;
         const lang = Data.store.settings.lang || 'es';
         
-        // --- 1. DATOS: RACHA Y XP ---
+        // DICCIONARIO INTERNO DEL PERFIL
+        const t = {
+            es: { lvl: 'NIVEL', xp: 'XP Actual', days: 'Días', skins: 'Skins', analysis: 'Análisis', missions: 'Misiones', badges: 'Medallas', health: 'Salud', leaks: 'Fugas', future: 'Futuro', locked: 'Bloqueado', skin_applied: 'Skin aplicada', lvl_req: 'Nivel' },
+            en: { lvl: 'LEVEL', xp: 'Current XP', days: 'Days', skins: 'Skins', analysis: 'Analysis', missions: 'Quests', badges: 'Badges', health: 'Health', leaks: 'Leaks', future: 'Future', locked: 'Locked', skin_applied: 'Skin applied', lvl_req: 'Level' },
+            pt: { lvl: 'NÍVEL', xp: 'XP Atual', days: 'Dias', skins: 'Skins', analysis: 'Análise', missions: 'Missões', badges: 'Medalhas', health: 'Saúde', leaks: 'Fugas', future: 'Futuro', locked: 'Bloqueado', skin_applied: 'Skin aplicada', lvl_req: 'Nível' }
+        }[lang];
+
         const streak = (g.streak && g.streak > 0) ? g.streak : 1; 
         const nextLevelXP = this.config.baseXP * Math.pow(this.config.difficulty, g.level);
         const pct = Math.min(100, (g.xp / nextLevelXP) * 100).toFixed(1);
 
         container.innerHTML = '';
 
-        // --- 2. HEADER CON CÍRCULO SVG Y RACHA 🔥 ---
-        // Recuperamos el SVG original para el círculo
+        // HEADER
         const headerHTML = `
             <div style="display:flex; align-items:center; margin-bottom:20px; background:var(--input-bg); padding:15px; border-radius:16px; border:1px solid rgba(0,0,0,0.05);">
-                
                 <div style="position:relative; width:60px; height:60px; margin-right:15px; flex-shrink:0;">
                     <svg viewBox="0 0 36 36" style="display:block; width:100%; height:100%;">
-                        <path stroke="var(--text-sec)" stroke-opacity="0.1" stroke-width="3" fill="none" 
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path stroke="var(--primary)" stroke-dasharray="${pct}, 100" stroke-width="3" fill="none" stroke-linecap="round" 
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path stroke="var(--text-sec)" stroke-opacity="0.1" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path stroke="var(--primary)" stroke-dasharray="${pct}, 100" stroke-width="3" fill="none" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     </svg>
                     <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                         <span style="font-size:7px; text-transform:uppercase; color:var(--text-sec); font-weight:700;">NIVEL</span>
+                         <span style="font-size:7px; text-transform:uppercase; color:var(--text-sec); font-weight:700;">${t.lvl}</span>
                          <span style="font-size:22px; font-weight:900; color:var(--primary); line-height:1;">${g.level}</span>
                     </div>
                 </div>
-
                 <div style="flex:1;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                         <span style="font-weight:800; font-size:18px; color:var(--text-color);">Master</span>
-                        
-                        <span style="background:rgba(255,59,48,0.1); color:#FF3B30; font-size:11px; font-weight:800; padding:4px 10px; border-radius:12px; display:flex; align-items:center; gap:4px; border:1px solid rgba(255,59,48,0.2);">
-                            🔥 ${streak} Días
-                        </span>
+                        <span style="background:rgba(255,59,48,0.1); color:#FF3B30; font-size:11px; font-weight:800; padding:4px 10px; border-radius:12px; display:flex; align-items:center; gap:4px; border:1px solid rgba(255,59,48,0.2);">🔥 ${streak} ${t.days}</span>
                     </div>
-                    
                     <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-sec);">
-                        <span>XP Actual</span>
+                        <span>${t.xp}</span>
                         <span>${Math.floor(g.xp)} / ${Math.floor(nextLevelXP)}</span>
                     </div>
                 </div>
@@ -614,28 +595,28 @@ const Assistant = {
         `;
         container.innerHTML += headerHTML;
 
-        // --- 3. SKINS ---
+        // SKINS
         const currentSkin = g.currentSkin || 'default';
-        let skinsHTML = `<div class="section-label" style="margin-top:0;">Skins</div><div class="skins-scroll-container">`;
+        let skinsHTML = `<div class="section-label" style="margin-top:0;">${t.skins}</div><div class="skins-scroll-container">`;
         this.skinsDef.forEach(skin => {
             const isUnlocked = g.level >= skin.level;
             const activeClass = (currentSkin === skin.id) ? 'active' : '';
             const lockState = isUnlocked ? '' : 'locked';
             const imgPath = skin.path + 'idle.png';
-            const action = isUnlocked ? `Assistant.setSkin('${skin.id}')` : `UI.showSnackbar('Nivel ${skin.level}')`;
+            const action = isUnlocked ? `Assistant.setSkin('${skin.id}')` : `UI.showSnackbar('${t.lvl_req} ${skin.level}')`;
             skinsHTML += `<div class="skin-card ${activeClass} ${lockState}" onclick="${action}"><img src="${imgPath}" class="skin-preview-img" onerror="this.src='idle.png'"><div class="skin-name">${skin.name}</div>${!isUnlocked ? `<div class="skin-lvl-req">Lv.${skin.level}</div>` : ''}</div>`;
         });
         skinsHTML += `</div>`;
         container.innerHTML += skinsHTML;
 
-        // --- 4. ANÁLISIS ---
+        // ANÁLISIS
         const analysisHTML = `
-            <div class="section-label" style="margin-top:10px;">Análisis</div>
+            <div class="section-label" style="margin-top:10px;">${t.analysis}</div>
             <div class="analysis-box" style="padding:0; overflow:hidden;">
                 <div style="display:flex; border-bottom:1px solid rgba(0,0,0,0.05);">
-                    <button id="tab-health" class="analysis-tab ${this.config.currentAnalysisTab === 'health' ? 'active' : ''}" onclick="Assistant.setAnalysisTab('health')">📊 Salud</button>
-                    <button id="tab-leaks" class="analysis-tab ${this.config.currentAnalysisTab === 'leaks' ? 'active' : ''}" onclick="Assistant.setAnalysisTab('leaks')">🐜 Fugas</button>
-                    <button id="tab-future" class="analysis-tab ${this.config.currentAnalysisTab === 'future' ? 'active' : ''}" onclick="Assistant.setAnalysisTab('future')">🔮 Futuro</button>
+                    <button id="tab-health" class="analysis-tab ${this.config.currentAnalysisTab === 'health' ? 'active' : ''}" onclick="Assistant.setAnalysisTab('health')">📊 ${t.health}</button>
+                    <button id="tab-leaks" class="analysis-tab ${this.config.currentAnalysisTab === 'leaks' ? 'active' : ''}" onclick="Assistant.setAnalysisTab('leaks')">🐜 ${t.leaks}</button>
+                    <button id="tab-future" class="analysis-tab ${this.config.currentAnalysisTab === 'future' ? 'active' : ''}" onclick="Assistant.setAnalysisTab('future')">🔮 ${t.future}</button>
                 </div>
                 <div id="analysis-inject-area" style="padding:15px;"></div>
             </div>
@@ -643,100 +624,63 @@ const Assistant = {
         container.innerHTML += analysisHTML;
         setTimeout(() => this.renderAnalysisContent(), 10); 
 
-        // --- 5. MISIONES ---
+        // MISIONES
         const qData = g.dailyQuests || { refreshUsed: false, quests: [] };
         const canRefresh = !qData.refreshUsed && !qData.quests.some(q => q.completed);
         const refreshOpacity = canRefresh ? '1' : '0.3';
         
         container.innerHTML += `
             <div style="display:flex; justify-content:space-between; align-items:center; padding-right:10px;">
-                <div class="section-label" style="margin-bottom:0;">Misiones</div>
+                <div class="section-label" style="margin-bottom:0;">${t.missions}</div>
                 <button onclick="Assistant.refreshMissions()" style="background:none; border:none; cursor:pointer; opacity:${refreshOpacity}; transition:0.2s; padding:5px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-sec)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M23 4v6h-6"></path>
-                        <path d="M1 20v-6h6"></path>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-sec)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 </button>
             </div>
             ${this.renderQuestsHTML(g, lang)}
         `;
         
-        // --- 6. MEDALLAS ---
-        let badgesHTML = `<div class="section-label">Medallas (${g.badges.length}/${this.badgesDef.length})</div><div class="badges-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;">`;
+        // MEDALLAS (FIX VISUAL APLICADO: filter:none)
+        let badgesHTML = `<div class="section-label">${t.badges} (${g.badges.length}/${this.badgesDef.length})</div><div class="badges-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;">`;
         this.badgesDef.forEach(b => {
             const isOwned = g.badges.includes(b.id);
-            const style = isOwned ? 'opacity:1; background:var(--glass-bg); box-shadow:0 4px 10px rgba(0,0,0,0.05);' : 'opacity:0.4; filter:grayscale(1); background:rgba(0,0,0,0.03);';
-            badgesHTML += `<div class="badge-card" style="${style} padding:10px 5px; min-height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="UI.showSnackbar('${isOwned ? b.name[lang]||b.name.es : 'Bloqueado'}')"><span style="font-size:26px;">${b.icon}</span><div style="font-size:10px; font-weight:800;">${b.name[lang]||b.name.es}</div></div>`;
+            // AQUÍ ESTÁ EL FIX: filter:none para forzar el color
+            const style = isOwned 
+                ? 'opacity:1; background:var(--glass-bg); box-shadow:0 4px 10px rgba(0,0,0,0.05); filter:none; color:var(--text-color);' 
+                : 'opacity:0.4; filter:grayscale(1); background:rgba(0,0,0,0.03);';
+            const name = b.name[lang] || b.name.es;
+            badgesHTML += `<div class="badge-card" style="${style} padding:10px 5px; min-height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="UI.showSnackbar('${isOwned ? name : t.locked}')"><span style="font-size:26px;">${b.icon}</span><div style="font-size:10px; font-weight:800;">${name}</div></div>`;
         });
         badgesHTML += `</div>`;
         container.innerHTML += badgesHTML;
     },
 
-
-    // --- NUEVA FUNCIÓN: SELECCIONAR SKIN ---
     setSkin(skinId) {
         Data.store.gamification.currentSkin = skinId;
         Data.save();
-        this.updateMood(); // Actualizar home
-        this.renderProfile(); // Actualizar selector visualmente
+        this.updateMood(); 
+        this.renderProfile();
         if(navigator.vibrate) navigator.vibrate(20);
         if(typeof UI !== 'undefined') UI.showSnackbar("Skin aplicada");
     },
 
-            renderAnalysisContent() {
+    renderAnalysisContent() {
         const container = document.getElementById('analysis-inject-area');
         if(!container) return;
         const data = this.getAnalysisData();
         let html = '';
         
-        // --- TRADUCCIÓN TÉCNICA (INTEL HUD) ---
         const lang = (Data.store.settings && Data.store.settings.lang) ? Data.store.settings.lang : 'es';
-        
-        const intelText = {
-            es: {
-                status_opt: 'ÓPTIMO', status_warn: 'ALERTA', status_crit: 'CRÍTICO',
-                lbl_score: 'PUNTUACIÓN', lbl_sys: 'ESTADO SISTEMA', lbl_util: 'Presupuesto Utilizado',
-                lbl_burn: 'GASTO DIARIO', lbl_avg: 'Promedio diario',
-                lbl_runway: 'COBERTURA', lbl_days: 'DÍAS', lbl_est: 'Estimación',
-                lbl_micro: 'MICRO-GASTOS', lbl_proj: 'PROYECCIÓN ANUAL', lbl_anom: 'SIN ANOMALÍAS',
-                lbl_insight: 'ANÁLISIS', lbl_insight_txt: 'Estos gastos representan el',
-                lbl_curr: 'GASTO ACTUAL', lbl_end: 'FIN DE MES (EST)',
-                lbl_cap: 'CAPACIDAD LÍMITE', lbl_safe: 'ZONA SEGURA', lbl_over: 'DESBORDAMIENTO',
-                lbl_cycle: 'DÍAS RESTANTES DE CICLO'
-            },
-            en: {
-                status_opt: 'OPTIMAL', status_warn: 'WARNING', status_crit: 'CRITICAL',
-                lbl_score: 'SCORE', lbl_sys: 'SYSTEM STATUS', lbl_util: 'Budget Utilized',
-                lbl_burn: 'DAILY BURN', lbl_avg: 'Daily average',
-                lbl_runway: 'RUNWAY', lbl_days: 'DAYS', lbl_est: 'Estimated coverage',
-                lbl_micro: 'MICRO-SPEND', lbl_proj: 'ANNUAL PROJECTION', lbl_anom: 'NO ANOMALIES',
-                lbl_insight: 'INTEL INSIGHT', lbl_insight_txt: 'These expenses represent',
-                lbl_curr: 'CURRENT SPEND', lbl_end: 'MONTH END (EST)',
-                lbl_cap: 'LIMIT CAPACITY', lbl_safe: 'SAFE ZONE', lbl_over: 'OVERFLOW',
-                lbl_cycle: 'DAYS REMAINING IN CYCLE'
-            },
-            pt: {
-                status_opt: 'ÓTIMO', status_warn: 'ALERTA', status_crit: 'CRÍTICO',
-                lbl_score: 'PONTUAÇÃO', lbl_sys: 'STATUS SISTEMA', lbl_util: 'Orçamento Utilizado',
-                lbl_burn: 'GASTO DIÁRIO', lbl_avg: 'Média diária',
-                lbl_runway: 'COBERTURA', lbl_days: 'DIAS', lbl_est: 'Estimativa',
-                lbl_micro: 'MICRO-GASTOS', lbl_proj: 'PROJEÇÃO ANUAL', lbl_anom: 'SEM ANOMALIAS',
-                lbl_insight: 'ANÁLISE', lbl_insight_txt: 'Estes gastos representam',
-                lbl_curr: 'GASTO ATUAL', lbl_end: 'FIM DO MÊS (EST)',
-                lbl_cap: 'CAPACIDADE', lbl_safe: 'ZONA SEGURA', lbl_over: 'ESTOURO',
-                lbl_cycle: 'DIAS RESTANTES DO CICLO'
-            }
-        };
+        const t = {
+            es: { status_opt: 'ÓPTIMO', status_warn: 'ALERTA', status_crit: 'CRÍTICO', lbl_score: 'PUNTUACIÓN', lbl_sys: 'ESTADO SISTEMA', lbl_util: 'Presupuesto Utilizado', lbl_burn: 'GASTO DIARIO', lbl_avg: 'Promedio diario', lbl_runway: 'COBERTURA', lbl_days: 'DÍAS', lbl_est: 'Estimación', lbl_micro: 'MICRO-GASTOS', lbl_proj: 'PROYECCIÓN ANUAL', lbl_anom: 'SIN ANOMALÍAS', lbl_insight: 'ANÁLISIS', lbl_insight_txt: 'Estos gastos representan el', lbl_curr: 'GASTO ACTUAL', lbl_end: 'FIN DE MES (EST)', lbl_cap: 'CAPACIDAD LÍMITE', lbl_safe: 'ZONA SEGURA', lbl_over: 'DESBORDAMIENTO', lbl_cycle: 'DÍAS RESTANTES DE CICLO' },
+            en: { status_opt: 'OPTIMAL', status_warn: 'WARNING', status_crit: 'CRITICAL', lbl_score: 'SCORE', lbl_sys: 'SYSTEM STATUS', lbl_util: 'Budget Utilized', lbl_burn: 'DAILY BURN', lbl_avg: 'Daily average', lbl_runway: 'RUNWAY', lbl_days: 'DAYS', lbl_est: 'Estimated coverage', lbl_micro: 'MICRO-SPEND', lbl_proj: 'ANNUAL PROJECTION', lbl_anom: 'NO ANOMALIES', lbl_insight: 'INTEL INSIGHT', lbl_insight_txt: 'These expenses represent', lbl_curr: 'CURRENT SPEND', lbl_end: 'MONTH END (EST)', lbl_cap: 'LIMIT CAPACITY', lbl_safe: 'SAFE ZONE', lbl_over: 'OVERFLOW', lbl_cycle: 'DAYS REMAINING IN CYCLE' },
+            pt: { status_opt: 'ÓTIMO', status_warn: 'ALERTA', status_crit: 'CRÍTICO', lbl_score: 'PONTUAÇÃO', lbl_sys: 'STATUS SISTEMA', lbl_util: 'Orçamento Utilizado', lbl_burn: 'GASTO DIÁRIO', lbl_avg: 'Média diária', lbl_runway: 'COBERTURA', lbl_days: 'DIAS', lbl_est: 'Estimativa', lbl_micro: 'MICRO-GASTOS', lbl_proj: 'PROJEÇÃO ANUAL', lbl_anom: 'SEM ANOMALIAS', lbl_insight: 'ANÁLISE', lbl_insight_txt: 'Estes gastos representam', lbl_curr: 'GASTO ATUAL', lbl_end: 'FIM DO MÊS (EST)', lbl_cap: 'CAPACIDADE', lbl_safe: 'ZONA SEGURA', lbl_over: 'ESTOURO', lbl_cycle: 'DIAS RESTANTES DO CICLO' }
+        }[lang];
 
-        const t = intelText[lang] || intelText['es'];
         const fmt = (v) => (typeof UI !== 'undefined' ? UI.formatMoney(v) : v);
 
         if (this.config.currentAnalysisTab === 'health') {
-            // --- TAB 1: STATUS (HUD) ---
             const color = data.score > 80 ? 'var(--success)' : (data.score > 40 ? 'var(--warning)' : 'var(--danger)');
             const statusText = data.score > 80 ? t.status_opt : (data.score > 40 ? t.status_warn : t.status_crit);
-            
             html = `
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
                     <div style="position:relative; width:80px; height:80px; display:flex; align-items:center; justify-content:center; border:4px solid ${color}; border-radius:50%; box-shadow:0 0 15px ${color}40;">
@@ -750,115 +694,51 @@ const Assistant = {
                         <div class="intel-sub" style="margin-top:5px;">${data.percent.toFixed(1)}% ${t.lbl_util}</div>
                     </div>
                 </div>
-                
                 <div class="intel-grid">
-                    <div class="intel-card">
-                        <div class="intel-label">${t.lbl_burn}</div>
-                        <div class="intel-value">${fmt(data.dailyBurn)}</div>
-                        <div class="intel-sub">${t.lbl_avg}</div>
-                    </div>
-                    <div class="intel-card">
-                        <div class="intel-label">${t.lbl_runway}</div>
-                        <div class="intel-value">${Math.floor(data.daysLeftMoney)} <span style="font-size:10px;">${t.lbl_days}</span></div>
-                        <div class="intel-sub">${t.lbl_est}</div>
-                    </div>
-                </div>
-            `;
-
+                    <div class="intel-card"><div class="intel-label">${t.lbl_burn}</div><div class="intel-value">${fmt(data.dailyBurn)}</div><div class="intel-sub">${t.lbl_avg}</div></div>
+                    <div class="intel-card"><div class="intel-label">${t.lbl_runway}</div><div class="intel-value">${Math.floor(data.daysLeftMoney)} <span style="font-size:10px;">${t.lbl_days}</span></div><div class="intel-sub">${t.lbl_est}</div></div>
+                </div>`;
         } else if (this.config.currentAnalysisTab === 'leaks') {
-            // --- TAB 2: ANOMALY DETECTION (LOGS) ---
             const totalAnts = data.topAnts.reduce((sum, item) => sum + item[1], 0);
             const projection = totalAnts * 12;
-
             html = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; border-bottom:1px solid rgba(120,120,120,0.1); padding-bottom:10px;">
-                    <div>
-                        <div class="intel-label">${t.lbl_micro}</div>
-                        <div class="intel-value" style="color:var(--danger);">${fmt(totalAnts)}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div class="intel-label">${t.lbl_proj}</div>
-                        <div class="log-mono" style="opacity:0.6;">-${fmt(projection)}</div>
-                    </div>
+                    <div><div class="intel-label">${t.lbl_micro}</div><div class="intel-value" style="color:var(--danger);">${fmt(totalAnts)}</div></div>
+                    <div style="text-align:right;"><div class="intel-label">${t.lbl_proj}</div><div class="log-mono" style="opacity:0.6;">-${fmt(projection)}</div></div>
                 </div>
-                
                 <div style="max-height:120px; overflow-y:auto;">
-                    ${data.topAnts.length ? data.topAnts.map(a => `
-                        <div class="log-row">
-                            <span style="display:flex; align-items:center; gap:6px;">
-                                <span style="width:4px; height:4px; background:var(--danger); border-radius:50%;"></span>
-                                ${a[0].toUpperCase()}
-                            </span>
-                            <span class="log-mono">${fmt(a[1])}</span>
-                        </div>
-                    `).join('') : `<div style="padding:10px; text-align:center; font-size:11px; opacity:0.5;">${t.lbl_anom}</div>`}
+                    ${data.topAnts.length ? data.topAnts.map(a => `<div class="log-row"><span style="display:flex; align-items:center; gap:6px;"><span style="width:4px; height:4px; background:var(--danger); border-radius:50%;"></span>${a[0].toUpperCase()}</span><span class="log-mono">${fmt(a[1])}</span></div>`).join('') : `<div style="padding:10px; text-align:center; font-size:11px; opacity:0.5;">${t.lbl_anom}</div>`}
                 </div>
-                <div class="intel-card" style="margin-top:10px; background:rgba(255, 59, 48, 0.05); border-color:rgba(255, 59, 48, 0.2);">
-                    <div class="scan-line"></div>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <div style="font-size:18px;">🐜</div>
-                        <div>
-                            <div class="intel-label" style="color:var(--danger);">${t.lbl_insight}</div>
-                            <div style="font-size:10px; line-height:1.3;">${t.lbl_insight_txt} <b>${((totalAnts/(data.spent||1))*100).toFixed(1)}%</b></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
+                <div class="intel-card" style="margin-top:10px; background:rgba(255, 59, 48, 0.05); border-color:rgba(255, 59, 48, 0.2);"><div class="scan-line"></div><div style="display:flex; gap:10px; align-items:center;"><div style="font-size:18px;">🐜</div><div><div class="intel-label" style="color:var(--danger);">${t.lbl_insight}</div><div style="font-size:10px; line-height:1.3;">${t.lbl_insight_txt} <b>${((totalAnts/(data.spent||1))*100).toFixed(1)}%</b></div></div></div></div>`;
         } else {
-            // --- TAB 3: FUTURO (AHORA EN ESPAÑOL) ---
             const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
             const today = new Date().getDate();
             const daysRemaining = daysInMonth - today;
             const safe = data.limit > 0 && data.projectedTotal <= data.limit;
             const statusColor = safe ? 'var(--success)' : 'var(--danger)';
-            
-            const limitWidth = 100;
             const projectedWidth = data.limit > 0 ? Math.min(100, (data.projectedTotal / data.limit) * 100) : 100;
-
             html = `
                 <div class="intel-grid" style="margin-top:0;">
-                    <div class="intel-card">
-                        <div class="intel-label">${t.lbl_curr}</div>
-                        <div class="intel-value">${fmt(data.spent)}</div>
-                    </div>
-                    <div class="intel-card">
-                        <div class="intel-label">${t.lbl_end}</div>
-                        <div class="intel-value" style="color:${statusColor}">${fmt(data.projectedTotal)}</div>
-                    </div>
+                    <div class="intel-card"><div class="intel-label">${t.lbl_curr}</div><div class="intel-value">${fmt(data.spent)}</div></div>
+                    <div class="intel-card"><div class="intel-label">${t.lbl_end}</div><div class="intel-value" style="color:${statusColor}">${fmt(data.projectedTotal)}</div></div>
                 </div>
-
                 <div class="intel-card" style="margin-top:10px; padding:15px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <div class="intel-label">${t.lbl_cap}</div>
-                        <div class="log-mono" style="font-size:10px;">${fmt(data.limit)}</div>
-                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><div class="intel-label">${t.lbl_cap}</div><div class="log-mono" style="font-size:10px;">${fmt(data.limit)}</div></div>
                     <div style="position:relative; height:8px; background:rgba(120,120,120,0.1); border-radius:4px; overflow:hidden;">
                          <div style="position:absolute; left:0; top:0; height:100%; width:${projectedWidth}%; background:${statusColor}; opacity:0.3;"></div>
                          <div style="position:absolute; left:0; top:0; height:100%; width:${Math.min(100, (data.spent/data.limit)*100)}%; background:${statusColor}; box-shadow:0 0 10px ${statusColor};"></div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-top:5px;">
-                        <div class="intel-label">${Math.round(projectedWidth)}% PROJ.</div>
-                        <div class="intel-label" style="color:${statusColor}">${safe ? t.lbl_safe : t.lbl_over}</div>
-                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:5px;"><div class="intel-label">${Math.round(projectedWidth)}% PROJ.</div><div class="intel-label" style="color:${statusColor}">${safe ? t.lbl_safe : t.lbl_over}</div></div>
                 </div>
-
-                <div style="margin-top:10px; font-size:10px; color:var(--text-sec); text-align:center; font-family:'Roboto Mono', monospace;">
-                    [ T-${daysRemaining} ${t.lbl_cycle} ]
-                </div>
-            `;
+                <div style="margin-top:10px; font-size:10px; color:var(--text-sec); text-align:center; font-family:'Roboto Mono', monospace;">[ T-${daysRemaining} ${t.lbl_cycle} ]</div>`;
         }
-        
         container.innerHTML = html;
     },
 
-
-
-        getAnalysisData() {
+    getAnalysisData() {
         const d = Data.store;
         const limit = (d.budget && d.budget.limit) ? parseFloat(d.budget.limit) : 0;
         const spent = typeof Finance !== 'undefined' ? Finance.calculateMonthlySpent() : 0;
-        
         let score = 100;
         const now = new Date();
         const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -866,39 +746,21 @@ const Assistant = {
 
         if (limit > 0) { 
             const percent = (spent / limit) * 100; 
-            const expectedPercent = (day / totalDays) * 100; // Porcentaje que deberías llevar hoy
-            
-            // --- CORRECCIÓN LÓGICA DE PUNTUACIÓN ---
-            
-            // 1. NIVEL CRÍTICO: ¿Te pasaste del presupuesto?
-            if (percent >= 100) {
-                score = 0; // Suspenso inmediato
-            } 
-            // 2. NIVEL PELIGRO: ¿Estás gastando MUY rápido? (+15% de lo esperado)
-            else if (percent > expectedPercent + 15) {
-                score -= 50; // Golpe duro a la puntuación
-            }
-            // 3. NIVEL ALERTA: ¿Te estás desviando un poco? (+5% de lo esperado)
-            else if (percent > expectedPercent + 5) {
-                score -= 20; // Advertencia leve
-            }
-            // Si vas por debajo (ahorrando), se mantiene el 100.
-            
+            const expectedPercent = (day / totalDays) * 100; 
+            if (percent >= 100) score = 0; 
+            else if (percent > expectedPercent + 15) score -= 50; 
+            else if (percent > expectedPercent + 5) score -= 20; 
         } else { 
-            score = 50; // Sin presupuesto no hay nota alta
+            score = 50; 
         }
 
-        // Lógica de hormigas (se mantiene igual para la pestaña de Fugas)
         const frequencyMap = {};
         d.expenses.forEach(e => { if (e.amount < 10) { const key = e.desc.toLowerCase().trim(); frequencyMap[key] = (frequencyMap[key] || 0) + e.amount; }});
         const topAnts = Object.entries(frequencyMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
         const dailyBurn = day > 0 ? spent / day : 0;
         const daysLeftMoney = (limit - spent) / (dailyBurn || 1);
-        
-        // Devolvemos score asegurando que no sea negativo ni mayor a 100
         return { score: Math.max(0, Math.min(100, score)), spent, limit, dailyBurn, projectedTotal: dailyBurn * totalDays, topAnts, daysLeftMoney, percent: limit > 0 ? (spent/limit)*100 : 0 };
     },
-
 
     setAnalysisTab(tab) {
         this.config.currentAnalysisTab = tab;
@@ -923,7 +785,7 @@ const Assistant = {
         let html = '';
         if(g.dailyQuests && g.dailyQuests.quests) {
             g.dailyQuests.quests.forEach((q, idx) => {
-                const def = Assistant.missionPool.find(m => m.id === q.id); // USE Assistant.
+                const def = Assistant.missionPool.find(m => m.id === q.id);
                 if(def) {
                     html += `<div class="profile-quest-row"><div class="pq-icon">${def.icon}</div><div class="pq-info"><div class="pq-title">${def.title[lang] || def.title['es']}</div><div class="pq-desc" style="font-size:10px; opacity:0.6;">${def.desc[lang] || def.desc['es']}</div></div><button class="pq-btn ${q.completed ? 'done' : ''}" onclick="Assistant.verifyQuest(${idx})">${q.completed ? '✓' : 'Go'}</button></div>`;
                 }
@@ -932,82 +794,39 @@ const Assistant = {
         return html;
     },
 
-        generateDailyQuests() {
+    generateDailyQuests() {
         const today = new Date().toDateString(); 
         const g = Data.store.gamification; 
-        
-        // Si ya existen misiones de hoy, no hacemos nada (salvo que falten propiedades)
         if (g.dailyQuests && g.dailyQuests.date === today && g.dailyQuests.quests.length >= 3) return;
-        
-        // Generamos nuevas misiones
         const shuffled = this.missionPool.sort(() => 0.5 - Math.random()); 
-        
-        g.dailyQuests = { 
-            date: today, 
-            refreshUsed: false, // <--- NUEVO: Bandera para controlar el refresco
-            quests: shuffled.slice(0, 3).map(q => ({ id: q.id, completed: false })) 
-        }; 
-        
+        g.dailyQuests = { date: today, refreshUsed: false, quests: shuffled.slice(0, 3).map(q => ({ id: q.id, completed: false })) }; 
         Data.save();
     },
-    // --- NUEVO: REFRESCAR MISIONES (REROLL) ---
+
     refreshMissions() {
         const g = Data.store.gamification;
-        
-        // 1. Validaciones
-        if (g.dailyQuests.refreshUsed) {
-            return UI.showSnackbar("Solo 1 vez por día ⏳");
-        }
-        
-        const hasProgress = g.dailyQuests.quests.some(q => q.completed);
-        if (hasProgress) {
-            return UI.showSnackbar("Ya completaste misiones hoy 🚫");
-        }
-
-        // 2. Vibración y confirmación visual
+        if (g.dailyQuests.refreshUsed) return UI.showSnackbar("Solo 1 vez por día ⏳");
+        if (g.dailyQuests.quests.some(q => q.completed)) return UI.showSnackbar("Ya completaste misiones hoy 🚫");
         if(navigator.vibrate) navigator.vibrate(20);
-
-        // 3. Reroll (Generar nuevas)
         const shuffled = this.missionPool.sort(() => 0.5 - Math.random());
         g.dailyQuests.quests = shuffled.slice(0, 3).map(q => ({ id: q.id, completed: false }));
-        g.dailyQuests.refreshUsed = true; // Quemamos el cartucho
-        
+        g.dailyQuests.refreshUsed = true; 
         Data.save();
-        
-        // 4. Actualizar UI
         this.renderProfile();
         UI.showSnackbar("♻️ Misiones actualizadas");
     },
 
-
-    // --- FIX CRÍTICO EN VERIFICACIÓN ---
     verifyQuest(idx) {
         const g = Data.store.gamification; 
         const q = g.dailyQuests.quests[idx]; 
-        
-        // 1. Verificar si la misión existe en el pool actual
         const def = Assistant.missionPool.find(m => m.id === q.id);
-        
-        if (!def) {
-            if(typeof UI !== 'undefined') UI.showSnackbar("Actualizando misiones...");
-            this.generateDailyQuests(); 
-            this.renderProfile(); 
-            return;
-        }
-
+        if (!def) { if(typeof UI !== 'undefined') UI.showSnackbar("Actualizando misiones..."); this.generateDailyQuests(); this.renderProfile(); return; }
         if (q.completed) return;
-
-        // 2. Ejecutar chequeo
         if (def.check()) { 
-            q.completed = true; 
-            this.addXP(def.xp); 
-            Data.save(); 
-            this.renderProfile(); 
+            q.completed = true; this.addXP(def.xp); Data.save(); this.renderProfile(); 
             if(typeof UI !== 'undefined') UI.showSnackbar(`+${def.xp} XP`); 
             if(navigator.vibrate) navigator.vibrate([50, 50]);
-        } else {
-            if(typeof UI !== 'undefined') UI.showSnackbar("Aún no completada.");
-        }
+        } else { if(typeof UI !== 'undefined') UI.showSnackbar("Aún no completada."); }
     },
 
     checkBadges() {
@@ -1037,9 +856,7 @@ const Assistant = {
     analyzeFinancialHealth() { return this.getAnalysisData(); },
 
     giveTip() {
-        // 1. Mostrar 'Thinking' momentáneamente
         this.updateMood('thinking.png');
-
         const tip = this.getSmartTip();
         let bubble = document.getElementById('mascot-bubble');
         if(!bubble) {
@@ -1048,84 +865,39 @@ const Assistant = {
             const img = document.getElementById('mascot-img'); if(img && img.parentElement) img.parentElement.appendChild(bubble);
         }
         bubble.innerText = tip; bubble.style.opacity = '1'; bubble.style.transform = 'scale(1)';
-        
-        // 2. Restaurar estado normal después de 5 segs (cuando desaparece la burbuja)
-        setTimeout(() => { 
-            bubble.style.opacity = '0'; 
-            bubble.style.transform = 'scale(0.8)'; 
-            this.updateMood(); // Vuelve a calcular el estado según finanzas
-        }, 5000);
+        setTimeout(() => { bubble.style.opacity = '0'; bubble.style.transform = 'scale(0.8)'; this.updateMood(); }, 5000);
     },
 
-        // --- 2. LÓGICA CONTEXTUAL REAL ---
     getSmartTip() {
         const lang = (Data.store.settings && Data.store.settings.lang) ? Data.store.settings.lang : 'es';
-        const d = this.getAnalysisData(); // Usamos tu función de análisis existente
-        const limit = d.limit;
-        const spent = d.spent;
-        const remaining = limit - spent;
-        const percent = limit > 0 ? (spent / limit) * 100 : 0;
-        
-        // Datos de fecha
+        const d = this.getAnalysisData();
+        const limit = d.limit; const spent = d.spent; const percent = limit > 0 ? (spent / limit) * 100 : 0;
         const today = new Date();
-        const dayOfWeek = today.getDay(); // 0=Dom, 6=Sab
-        const isWeekend = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0); // Vie, Sab, Dom
-        const dayOfMonth = today.getDate();
         const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-        
-        // 1. PRIORIDAD MÁXIMA: ALERTA CRÍTICA
-        // Si queda menos del 10% del presupuesto
-        if (limit > 0 && percent >= 90) {
-            return this.getRandomPhrase('critical', lang);
-        }
+        const expectedPercent = (today.getDate() / totalDays) * 100;
 
-        // 2. PROYECCIÓN NEGATIVA (Fast Burn)
-        // Si estamos a mitad de mes (día 15) y ya gastamos más del 65%, o día 10 y más del 45%
-        // Cálculo simple: Deberíamos gastar ~3.3% al día. Si vamos un 15% por encima de lo esperado.
-        const expectedPercent = (dayOfMonth / totalDays) * 100;
-        if (limit > 0 && percent > (expectedPercent + 15)) {
-            return this.getRandomPhrase('fast_burn', lang);
-        }
-
-        // 3. CONTEXTO FIN DE SEMANA
-        // Si es Finde y la salud no es crítica, recordamos el ocio
-        if (isWeekend && Math.random() > 0.4) { // 60% prob en finde
-            return this.getRandomPhrase('weekend', lang);
-        }
-
-        // 4. BUEN RITMO
-        // Si vamos un 10% por DEBAJO de lo esperado (ahorrando)
-        if (limit > 0 && percent < (expectedPercent - 10)) {
-             return this.getRandomPhrase('good_pace', lang);
-        }
-
-        // 5. DEFAULT / GENERAL
-        // Si no pasa nada extraordinario, soltamos sabiduría financiera
+        if (limit > 0 && percent >= 90) return this.getRandomPhrase('critical', lang);
+        if (limit > 0 && percent > (expectedPercent + 15)) return this.getRandomPhrase('fast_burn', lang);
+        if ((today.getDay() === 5 || today.getDay() === 6 || today.getDay() === 0) && Math.random() > 0.4) return this.getRandomPhrase('weekend', lang);
+        if (limit > 0 && percent < (expectedPercent - 10)) return this.getRandomPhrase('good_pace', lang);
         return this.getRandomPhrase('general', lang);
     },
 
-    // Helper para sacar frase aleatoria
     getRandomPhrase(category, lang) {
         const list = this.smartPhrases[category][lang] || this.smartPhrases[category]['es'];
         return list[Math.floor(Math.random() * list.length)];
     },
 
-
-            injectStyles() {
+    injectStyles() {
         if (document.getElementById('assistant-styles')) return;
         const style = document.createElement('style');
         style.id = 'assistant-styles';
         style.innerHTML = `
-            /* ANIMACIONES */
             @keyframes floatMascot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
             @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 25% { transform: translate(-3px, 0px) rotate(1deg); } 75% { transform: translate(3px, 1px) rotate(-1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
             @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-
-            /* MASCOTA & BURBUJA */
             .mascot-restore { width: auto !important; height: 180px !important; max-width: 80% !important; object-fit: contain; display: block; margin: 0 auto; }
             .mascot-bubble-side { background: var(--glass-bg); padding: 10px 15px; border-radius: 12px; border-bottom-left-radius: 2px; font-weight: 600; font-size: 12px; color: var(--text-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--glass-border); }
-
-            /* --- MISIONES (RESTAURADO) --- */
             .profile-quest-row { display: flex; align-items: center; justify-content: space-between; background: rgba(120,120,120,0.05); padding: 10px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--glass-border); }
             .pq-icon { font-size: 20px; margin-right: 12px; }
             .pq-info { flex: 1; margin-right: 10px; }
@@ -1133,43 +905,20 @@ const Assistant = {
             .pq-desc { font-size: 10px; opacity: 0.7; }
             .pq-btn { background: var(--input-bg); border: none; padding: 6px 12px; border-radius: 8px; color: var(--primary); font-weight: 700; font-size: 11px; cursor: pointer; white-space: nowrap; }
             .pq-btn.done { background: var(--success); color: white; pointer-events: none; }
-
-            /* --- INTEL DASHBOARD STYLES --- */
-            .analysis-box { 
-                background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.0) 100%); 
-                border: 1px solid rgba(120,120,120,0.15); 
-                border-radius: 16px; margin-bottom: 20px; overflow: hidden; 
-                box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
-            }
+            .analysis-box { background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.0) 100%); border: 1px solid rgba(120,120,120,0.15); border-radius: 16px; margin-bottom: 20px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.02); }
             .dark-mode .analysis-box { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); }
-
-            .analysis-tab { 
-                flex: 1; background: transparent; border: none; padding: 12px; 
-                font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-                cursor: pointer; opacity: 0.6; transition: 0.2s; 
-                border-bottom: 2px solid transparent; color: var(--text-sec);
-            }
+            .analysis-tab { flex: 1; background: transparent; border: none; padding: 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; opacity: 0.6; transition: 0.2s; border-bottom: 2px solid transparent; color: var(--text-sec); }
             .analysis-tab.active { opacity: 1; border-bottom-color: var(--primary); color: var(--primary); background: rgba(120,120,120,0.05); }
-
             .intel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-            .intel-card {
-                background: var(--input-bg); border-radius: 10px; padding: 10px;
-                display: flex; flex-direction: column; justify-content: center;
-                border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden;
-            }
+            .intel-card { background: var(--input-bg); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(0,0,0,0.03); position: relative; overflow: hidden; }
             .intel-label { font-size: 9px; text-transform: uppercase; color: var(--text-sec); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px; }
             .intel-value { font-family: 'Roboto Mono', monospace; font-size: 16px; font-weight: 700; color: var(--text-color); }
             .intel-sub { font-size: 9px; opacity: 0.7; margin-top: 2px; }
-
             .tech-bar-bg { height: 6px; background: rgba(120,120,120,0.1); border-radius: 3px; overflow: hidden; margin-top: 5px; }
             .tech-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; position: relative; }
-            
             .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); animation: scanline 2s infinite linear; pointer-events: none; }
-
             .log-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed rgba(120,120,120,0.1); font-size: 11px; }
             .log-mono { font-family: 'Roboto Mono', monospace; font-weight: 700; }
-
-            /* SKINS */
             .skins-scroll-container { display: flex; gap: 12px; overflow-x: auto; padding: 5px 5px 15px 5px; margin-bottom: 10px; scrollbar-width: none; }
             .skins-scroll-container::-webkit-scrollbar { display: none; }
             .skin-card { min-width: 80px; background: var(--input-bg); border: 2px solid transparent; border-radius: 16px; padding: 12px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; }
