@@ -30,15 +30,16 @@
       "short_name": "Lista",
       "description": "Crear nueva lista de compras",
       "url": "./index.html?action=new_list",
-      "icons": [{ "src": "./logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "./logo.png", "sizes": "512x512" }]
     },
     {
       "name": "Registrar Gasto",
       "short_name": "Gasto",
       "description": "Añadir un gasto rápido",
       "url": "./index.html?action=new_expense",
-      "icons": [{ "src": "./logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "./logo.png", "sizes": "512x512" }]
     }
   ]
 }
+
 
