@@ -18,7 +18,8 @@ const Main = {
 
     continueLoadingApp() {
         // Inicializar módulos
-        if (typeof Finance !== 'undefined') Finance.checkMonthTransition();
+        if (typeof Finance !== 'undefined') {Finance.checkMonthTransition();
+        Finance.initSmartButton();}
         if (typeof Assistant !== 'undefined') Assistant.init();
 
         // --- NUEVO: REFRESCAR AL VOLVER A LA APP ---
@@ -68,8 +69,7 @@ const Main = {
         if (lockScreen) lockScreen.classList.add('hidden');
 
 
-// Inicializar botón inteligente
-        if (typeof Finance !== 'undefined') Finance.initSmartButton();
+
         // Ir al inicio
         this.router('home');
     },

@@ -420,14 +420,42 @@ input, textarea {
 }
 .dock-btn.active { color: var(--primary); transform: translateY(-3px); }
 .dock-btn svg { width: 24px; height: 24px; stroke-width: 2px; }
+/* --- REEMPLAZA TU BLOQUE POR ESTE --- */
+
+/* 1. El botón (Ahora es un cuadrado redondeado azul, sin rotar) */
 .dock-main-btn {
-    background: var(--primary-grad); color: white; width: 62px; height: 62px;
-    border-radius: 22px; box-shadow: 0 15px 35px -5px rgba(0,110,230,0.4);
-    display: grid; place-items: center; transform: translateY(-30px) rotate(45deg);
-    transition: transform 0.2s;
+    width: 50px;
+    height: 50px;
+    background: var(--primary); /* Azul sólido */
+    border-radius: 15px;
+    color: white;
+    
+    /* Quitamos la rotación y la elevación */
+    transform: none; 
+    margin-bottom: 5px; /* Ajuste para centrar en la barra */
+    
+    display: grid;
+    place-items: center;
+    box-shadow: 0 5px 15px rgba(0, 110, 230, 0.3);
+    
+    /* Optimización para el A15 */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
-.dock-main-btn svg { transform: rotate(-45deg); width: 26px; height: 26px; }
-.dock-main-btn:active { transform: translateY(-25px) rotate(45deg) scale(0.95); }
+
+/* 2. El ícono (Ya no necesita contra-rotación) */
+.dock-main-btn svg { 
+    width: 24px; 
+    height: 24px; 
+    transform: none; /* Importante: quitamos el rotate(-45deg) antiguo */
+    pointer-events: none; 
+}
+
+/* 3. Al tocar (Solo se encoge un poco, no se mueve) */
+.dock-main-btn:active { 
+    transform: scale(0.90); 
+}
+
 
 /* --- MODALES Y AJUSTES (INTEGRADO Y CORREGIDO) --- */
 .modal-overlay {
@@ -814,11 +842,19 @@ body.dark-mode.theme-purple { --bg-body: #10051a; --glass-bg: rgba(25, 10, 40, 0
 .font-btn.active span { color: var(--primary); }
 
 /* --- ANIMACIÓN DE GRABACIÓN (BOTÓN DOCK) --- */
+/* --- ANIMACIÓN DE GRABACIÓN (MODERNIZADA) --- */
 .dock-main-btn.listening {
-    background: var(--danger) !important; /* Se pone rojo */
-    transform: translateY(-30px) rotate(45deg) scale(1.2) !important; /* Crece un poco */
-    box-shadow: 0 0 20px rgba(255, 59, 48, 0.6) !important;
+    background: var(--primary) !important; /* Se mantiene AZUL, no rojo */
+    transform: scale(1.15) !important; /* Crece un poco sin moverse de sitio */
+    box-shadow: 0 0 30px rgba(0, 110, 230, 0.8) !important; /* Brillo Azul intenso */
+    border: 2px solid white;
+    z-index: 200;
 }
+/* Aseguramos que el icono NO gire */
+.dock-main-btn.listening svg {
+    transform: none !important; 
+}
+
 
 
 /* --- OVERLAY DE ESCUCHA --- */
