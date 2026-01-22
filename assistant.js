@@ -776,10 +776,17 @@ const Assistant = {
         const pct = required > 0 ? Math.min(100, (g.xp / required) * 100) : 0; bar.style.height = `${pct}%`;
     },
 
-    validateDailyQuests() {
+        validateDailyQuests() {
         const g = Data.store.gamification;
-        if (!g.dailyQuests || g.dailyQuests.quests.length < 3) { this.generateDailyQuests(); }
+        const today = new Date().toDateString(); // 1. Sacamos la fecha de hoy
+        
+        // 2. AÑADIMOS: "O si la fecha guardada NO es hoy" ( || g.dailyQuests.date !== today )
+        if (!g.dailyQuests || g.dailyQuests.quests.length < 3 || g.dailyQuests.date !== today) { 
+            console.log("Misiones caducadas o insuficientes. Generando nuevas...");
+            this.generateDailyQuests(); 
+        }
     },
+
     
     renderQuestsHTML(g, lang) {
         let html = '';
