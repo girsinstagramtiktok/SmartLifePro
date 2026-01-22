@@ -780,7 +780,7 @@ const Assistant = {
         const g = Data.store.gamification;
         if (!g.dailyQuests || g.dailyQuests.quests.length < 3) { this.generateDailyQuests(); }
     },
-
+    
     renderQuestsHTML(g, lang) {
         let html = '';
         if(g.dailyQuests && g.dailyQuests.quests) {
