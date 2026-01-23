@@ -628,18 +628,35 @@ activeLists.forEach(l => {
     },
 
 
-    addItem(val) {
+        addItem(val) {
         const input = document.getElementById('shop-input');
         const rawVal = val || input.value.trim();
         if(!rawVal) return;
+        
         const list = Data.store.lists.find(l => l.id === Data.store.currentId);
         const { name, qty } = this.parseItem(rawVal);
         const cleanName = this.normalize(name);
-        const knownPrice = Object.keys(Data.store.prices).find(k => this.normalize(k) === cleanName);
-        const price = knownPrice ? Data.store.prices[knownPrice] : 0;
+        
+        // --- CORRECCIÓN AQUÍ ---
+        // 1. Prioridad absoluta: Buscar la clave normalizada exacta (donde guardas los precios nuevos)
+        let price = Data.store.prices[cleanName]; 
+
+        // 2. Fallback: Si no existe (es un producto viejo guardado con mayúsculas), buscamos la clave sucia
+        if (price === undefined) {
+            const dirtyKey = Object.keys(Data.store.prices).find(k => this.normalize(k) === cleanName);
+            if (dirtyKey) price = Data.store.prices[dirtyKey];
+        }
+        
+        // Asegurar que sea numérico
+        price = parseFloat(price) || 0;
+        // -----------------------
+
         list.items.push({ name, qty, checked: false, price });
         Data.save();
-        input.value = ''; document.getElementById('add-btn').innerHTML = `
+        
+        input.value = ''; 
+        // Restaurar icono original
+        document.getElementById('add-btn').innerHTML = `
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -647,6 +664,7 @@ activeLists.forEach(l => {
         input.focus();
         this.renderShoppingItems();
     },
+
 
     toggle(i) {
         const list = Data.store.lists.find(l => l.id === Data.store.currentId);
@@ -1197,26 +1215,42 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         this.filterProducts('');
     },
 
-    filterProducts(query) {
+      filterProducts(query) {
         const container = document.getElementById('prod-list-container');
         if(!container) return;
         
         const q = this.normalize(query);
-        const products = Object.keys(Data.store.prices).sort();
+        // Ordenamos alfabéticamente
+        const products = Object.keys(Data.store.prices).sort((a, b) => a.localeCompare(b));
         const fragment = document.createDocumentFragment();
         
+        // --- CORRECCIÓN AQUÍ: Set para evitar duplicados visuales ---
+        const shownItems = new Set(); 
+
         products.forEach(p => {
-            if(this.normalize(p).includes(q)) {
+            const normalizedP = this.normalize(p);
+            
+            // Si coincide la búsqueda Y NO lo hemos mostrado ya
+            if(normalizedP.includes(q) && !shownItems.has(normalizedP)) {
+                
+                // Lo marcamos como mostrado
+                shownItems.add(normalizedP);
+
                 const row = document.createElement('div');
                 row.className = 'glass-card';
                 row.style.cssText = 'padding:15px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin-bottom:10px;';
+                
+                // Usamos p (nombre original) para mostrar, o podrías usar normalizedP capitalizado si prefieres uniformidad
+                const displayName = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+
                 row.innerHTML = `
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:20px;">${this.getEmoji(p)}</span>
-                        <span style="font-weight:600; text-transform:capitalize; color:var(--text-color);">${p}</span>
+                        <span style="font-weight:600; text-transform:capitalize; color:var(--text-color);">${displayName}</span>
                     </div>
                     <div style="color:var(--primary);">\uD83D\uDCC8</div>
                 `;
+                // Al hacer click, pasamos el nombre. Tu función openProductStats ya normaliza internamente, así que funcionará bien.
                 row.onclick = () => this.openProductStats(p);
                 fragment.appendChild(row);
             }
@@ -1225,6 +1259,7 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         container.innerHTML = '';
         container.appendChild(fragment);
     },
+
 
     openProductStats(prodName) {
         const modal = document.getElementById('product-modal');
@@ -1296,3 +1331,4 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
 
     closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }
 };
+
