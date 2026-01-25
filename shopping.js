@@ -213,19 +213,30 @@ const Shopping = {
         return { name: name.charAt(0).toUpperCase() + name.slice(1), qty };
     },
 
-    // En shopping.js
 parseQtyValue(qtyString) {
     if (!qtyString) return 1;
     
-    // Si la cantidad contiene letras de unidades (kg, g, l, ml, lbs), 
-    // asumimos que el precio ingresado es por esa unidad completa.
-    const hasUnit = /[a-zA-Z]/.test(qtyString);
-    if (hasUnit) return 1; 
+    // Normalizamos
+    const str = qtyString.toLowerCase().trim();
 
-    // Si es solo un número (ej: "2"), extraemos el valor para multiplicar
-    const match = qtyString.match(/(\d+(\.\d+)?)/);
-    return match ? parseFloat(match[0]) : 1;
+    // EXPRESIÓN REGULAR CORREGIDA:
+    // ^       -> Inicio
+    // x?      -> Puede tener una 'x' o no
+    // \s* -> Puede tener espacio o no
+    // \d+     -> DEBE tener números
+    // (\.\d+)? -> Puede tener decimales
+    // $       -> Fin de la cadena
+    // Traducción: "Si es solo X y números (ej: 'x2', '2', 'x 5.5'), entra aquí"
+    if (/^x?\s*\d+(\.\d+)?$/.test(str)) {
+        const match = str.match(/(\d+(\.\d+)?)/);
+        return match ? parseFloat(match[0]) : 1;
+    }
+
+    // Si no coincide con lo de arriba, es porque tiene letras "raras" (kg, ml, lbs, etc.)
+    // En ese caso devolvemos 1.
+    return 1; 
 },
+
 
 
     // --- GESTIÓN DE LISTAS ---
@@ -1331,4 +1342,5 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
 
     closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }
 };
+
 
