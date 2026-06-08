@@ -6,25 +6,25 @@
 const Finance = {
     // --- ESTADO INTERNO ---
     selectedHistoryMonth: null, 
-    selectedCategoryFilter: 'ALL', // Estado del filtro de categorÌas
-    
+    selectedCategoryFilter: 'ALL', // Estado del filtro de categorÔøΩas
+    chartDisplayMode: 'percent',
     // Variable temporal para la foto (NUEVO)
     tempPhotoData: null, 
 
-    // --- NAVEGACI”N DE PESTA—AS (TABS) ---
+    // --- NAVEGACIÔøΩN DE PESTAÔøΩAS (TABS) ---
     setTab(tab) {
-        // 1. Ocultar todas las pestaÒas primero
+        // 1. Ocultar todas las pestaÔøΩas primero
         document.querySelectorAll('.finance-tab-content').forEach(el => {
             el.classList.add('hidden');
             el.style.display = 'none';
         });
 
-        // 2. Desactivar botones de navegaciÛn
+        // 2. Desactivar botones de navegaciÔøΩn
         document.querySelectorAll('.segment-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // 3. Activar la pestaÒa seleccionada
+        // 3. Activar la pestaÔøΩa seleccionada
         const btn = document.getElementById(`fin-tab-${tab}`);
         const content = document.getElementById(`finance-content-${tab}`);
         
@@ -34,7 +34,7 @@ const Finance = {
             content.style.display = 'block'; 
         }
 
-        // 4. Renderizar el contenido especÌfico
+        // 4. Renderizar el contenido especÔøΩfico
         if (tab === 'subs') {
             this.renderSubscriptions();
         } else if (tab === 'installments') {
@@ -57,7 +57,7 @@ const Finance = {
         const allActive = this.selectedCategoryFilter === 'ALL' ? 'active' : '';
         html += `<div class="filter-chip ${allActive}" onclick="Finance.setCategoryFilter('ALL')">Todo</div>`;
 
-        // 2. Chips de CategorÌas (Desde UI.categories)
+        // 2. Chips de CategorÔøΩas (Desde UI.categories)
         if (typeof UI !== 'undefined' && UI.categories) {
             UI.categories.forEach(cat => {
                 const isActive = this.selectedCategoryFilter === cat.id ? 'active' : '';
@@ -72,14 +72,19 @@ const Finance = {
         return html;
     },
 
-    // AcciÛn al tocar un filtro
+    // AcciÔøΩn al tocar un filtro
     setCategoryFilter(catId) {
         this.selectedCategoryFilter = catId;
         if(navigator.vibrate) navigator.vibrate(5);
         this.renderExpensesHistory(); 
     },
+    toggleChartMode() {
+        this.chartDisplayMode = this.chartDisplayMode === 'percent' ? 'amount' : 'percent';
+        if(navigator.vibrate) navigator.vibrate(10);
+        this.renderExpensesHistory(); 
+    },
 
-    // --- L”GICA DE CIERRE DE MES (AUTOM¡TICO) ---
+    // --- LÔøΩGICA DE CIERRE DE MES (AUTOMÔøΩTICO) ---
     checkMonthTransition() {
         const now = new Date();
         const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -109,7 +114,7 @@ const Finance = {
         }
     },
 
-    // --- C¡LCULOS FINANCIEROS (CORE) ---
+    // --- CÔøΩLCULOS FINANCIEROS (CORE) ---
     calculateMonthlySpent() {
         let total = 0;
         const now = new Date();
@@ -248,7 +253,7 @@ const Finance = {
             }
         }
         
-        // 2. TOP CATEGORÕAS
+        // 2. TOP CATEGORÔøΩAS
         const catContainer = document.getElementById('home-top-categories');
         if (catContainer) {
             catContainer.innerHTML = '';
@@ -318,7 +323,7 @@ const Finance = {
         }
     },
 
-    // --- GR¡FICO DONUT + LEYENDA ---
+    // --- GRÔøΩFICO DONUT + LEYENDA ---
     renderCategoryChart(container) {
         const categories = {};
         const [selYear, selMonth] = this.selectedHistoryMonth.split('-').map(Number);
@@ -387,6 +392,9 @@ const Finance = {
                 const col = colors[i % colors.length];
                 const icon = this.getCategoryIcon(cat); 
 
+                // <--- NUEVO: Valor a mostrar seg√∫n el modo seleccionado --->
+                const displayValue = this.chartDisplayMode === 'percent' ? `${Math.round(pct)}%` : UI.formatMoney(amount);
+
                 gradientParts.push(`${col} ${currentDeg}deg ${currentDeg + deg}deg`);
                 currentDeg += deg;
 
@@ -402,15 +410,24 @@ const Finance = {
                             <div style="height:100%; width:${pct}%; background:${col}; border-radius:3px;"></div>
                         </div>
                         
-                        <div style="font-weight:800; color:var(--text-sec); width:14%; text-align:right;">${Math.round(pct)}%</div>
+                        <div style="font-weight:800; color:var(--text-sec); text-align:right;">${displayValue}</div>
                     </div>
                 `;
             });
             legendHTML += '</div>';
 
+            // <--- NUEVO: T√≠tulo con bot√≥n para alternar --->
+            const toggleText = this.chartDisplayMode === 'percent' ? 'Ver Montos' : 'Ver %';
+
             const chartHTML = `
                 <div class="glass-card" style="padding:25px; margin-bottom:20px; display:flex; flex-direction:column; align-items:center;">
-                    <div style="font-size:12px; font-weight:700; color:var(--text-sec); margin-bottom:20px; text-transform:uppercase; letter-spacing:1px;">${UI.t('cat_distribution')}</div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:20px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:1px;">${UI.t('cat_distribution')}</div>
+                        <button class="text-btn-small" onclick="Finance.toggleChartMode()" style="background:var(--input-bg); padding:4px 10px; font-size:11px; border-radius:8px;">
+                            ${toggleText} üîÅ
+                        </button>
+                    </div>
                     
                     <div style="position:relative; width:160px; height:160px; border-radius:50%; background: conic-gradient(${gradientParts.join(', ')});">
                         <div style="position:absolute; inset:22px; background:var(--glass-bg); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:inset 0 2px 10px rgba(0,0,0,0.05);">
@@ -610,7 +627,7 @@ const Finance = {
         if (isInstall) div.classList.remove('hidden'); else div.classList.add('hidden');
     },
     
-    // --- L”GICA DE FOTOS CON COMPRESI”N ---
+    // --- LÔøΩGICA DE FOTOS CON COMPRESIÔøΩN ---
     handlePhotoSelect(input) {
         const file = input.files[0];
         if (file) {
@@ -626,7 +643,7 @@ const Finance = {
                 const container = document.getElementById('exp-photo-preview-container');
                 if(container) container.classList.remove('hidden');
                 
-                // Icono de "…xito" (Check)
+                // Icono de "ÔøΩxito" (Check)
                 if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
             }).catch(err => {
                 console.error("Error foto", err);
@@ -645,7 +662,7 @@ const Finance = {
         if(container) container.classList.add('hidden');
         
         const icon = document.getElementById('exp-photo-icon');
-        // RESTAURAR LA C¡MARA ORIGINAL (IMPORTANTE)
+        // RESTAURAR LA CÔøΩMARA ORIGINAL (IMPORTANTE)
         if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
     },
 
@@ -774,14 +791,19 @@ const Finance = {
         }
     },
 
-    renderSubscriptions() {
+   renderSubscriptions() {
         const container = document.getElementById('subs-list');
         container.innerHTML = '';
         if (!Data.store.subscriptions || Data.store.subscriptions.length === 0) {
             container.innerHTML = `<div style="text-align:center; padding:30px; opacity:0.5;">${UI.t('empty_subs')}</div>`;
             return;
         }
+
+        let totalCost = 0; // <--- NUEVO: Variable para el total
+
         Data.store.subscriptions.forEach(sub => {
+            totalCost += parseFloat(sub.cost); // <--- NUEVO: Sumar al total
+            
             const div = document.createElement('div');
             div.className = 'glass-card item-row';
             div.innerHTML = `
@@ -795,7 +817,18 @@ const Finance = {
             div.querySelector('button').onclick = () => this.deleteSub(sub.id);
             container.appendChild(div);
         });
+
+        // --- NUEVO: Tarjeta de TOTAL ---
+        const totalDiv = document.createElement('div');
+        totalDiv.className = 'glass-card';
+        totalDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:15px; margin-top:15px; border:2px solid var(--primary);';
+        totalDiv.innerHTML = `
+            <div style="font-weight:800; color:var(--text-color);">Total Mensual</div>
+            <div style="font-size:18px; font-weight:900; color:var(--primary);">${UI.formatMoney(totalCost)}</div>
+        `;
+        container.appendChild(totalDiv);
     },
+
 
     async deleteSub(id) {
         if (await UI.confirm("confirm_del_exp", "confirm_desc")) {
@@ -851,12 +884,12 @@ const Finance = {
         const expense = Data.store.expenses.find(e => e.id === id);
         if (!expense) return;
 
-        // 1. Rellenar Textos B·sicos
+        // 1. Rellenar Textos BÔøΩsicos
         document.getElementById('det-exp-desc').innerText = expense.desc;
         document.getElementById('det-exp-amount').innerText = UI.formatMoney(expense.amount);
         document.getElementById('det-exp-date').innerText = new Date(expense.date).toLocaleString();
         
-        // CategorÌa (con emoji si es posible)
+        // CategorÔøΩa (con emoji si es posible)
         const catName = expense.category || UI.t('cat_other');
         const icon = this.getCategoryIcon(catName);
         document.getElementById('det-exp-cat').innerText = `${icon} ${catName}`;
@@ -892,7 +925,7 @@ const Finance = {
             linkBtn.classList.add('hidden');
         }
 
-        // 4. Configurar BotÛn de Borrar
+        // 4. Configurar BotÔøΩn de Borrar
         const delBtn = document.getElementById('det-exp-delete-btn');
         delBtn.onclick = () => {
             this.deleteExpense(id);
@@ -909,7 +942,7 @@ const Finance = {
         // 1. Abrir modal normal
         this.openExpenseModal();
 
-        // 2. Rellenar campos con un pequeÒo delay
+        // 2. Rellenar campos con un pequeÔøΩo delay
         setTimeout(() => {
             const amountInput = document.getElementById('exp-amount');
             const descInput = document.getElementById('exp-desc');
@@ -917,7 +950,7 @@ const Finance = {
             if (amountInput) amountInput.value = amount || '';
             if (descInput) descInput.value = desc;
 
-            // 3. Seleccionar el Chip de categorÌa visualmente
+            // 3. Seleccionar el Chip de categorÔøΩa visualmente
             const chips = document.querySelectorAll('.cat-chip');
             chips.forEach(chip => {
                 chip.classList.remove('selected');
@@ -935,8 +968,8 @@ const Finance = {
         }, 100);
     },
 
-    // --- FUNCI”N DEL BOT”N (BOT”N DOCK) ---
-        // --- FUNCI”N DEL BOT”N (L”GICA RESTAURADA DE LA VERSI”N ANTIGUA) ---
+    // --- FUNCIÔøΩN DEL BOTÔøΩN (BOTÔøΩN DOCK) ---
+        // --- FUNCIÔøΩN DEL BOTÔøΩN (LÔøΩGICA RESTAURADA DE LA VERSIÔøΩN ANTIGUA) ---
     initSmartButton() {
         const btn = document.getElementById('dock-plus-btn');
         const overlay = document.getElementById('listening-overlay');
@@ -953,7 +986,7 @@ const Finance = {
         let isLongPress = false;
         let recognition = null;
 
-        // 2. CONFIGURACI”N DE VOZ (Igual que antes)
+        // 2. CONFIGURACIÔøΩN DE VOZ (Igual que antes)
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
@@ -981,7 +1014,7 @@ const Finance = {
             }
             isLongPress = true; // Marcamos que es voz
             
-            // LÛgica visual (Mascota y Overlay)
+            // LÔøΩgica visual (Mascota y Overlay)
             let skinPath = '';
             if (typeof Assistant !== 'undefined' && Data.store && Data.store.gamification) {
                 const currentId = Data.store.gamification.currentSkin || 'default';
@@ -1008,17 +1041,17 @@ const Finance = {
                 // Si era toque largo (Voz), paramos el reconocimiento
                 if (recognition) try { recognition.stop(); } catch(e) {}
             } else {
-                // --- AQUÕ EST¡ LA CLAVE RESTAURADA ---
+                // --- AQUÔøΩ ESTÔøΩ LA CLAVE RESTAURADA ---
                 // Si NO fue toque largo, significa que fue un CLIC CORTO.
-                // Abrimos el men˙ manualmente aquÌ.
+                // Abrimos el menÔøΩ manualmente aquÔøΩ.
                 Main.openAddMenu(); 
             }
             isLongPress = false;
         };
 
-        // 4. EVENTOS (LA L”GICA ANTIGUA QUE FUNCIONABA)
+        // 4. EVENTOS (LA LÔøΩGICA ANTIGUA QUE FUNCIONABA)
         const startEvent = (e) => {
-            // ESTA LÕNEA ES LA MAGIA: Evita conflictos y men˙s contextuales
+            // ESTA LÔøΩNEA ES LA MAGIA: Evita conflictos y menÔøΩs contextuales
             if(e.cancelable) e.preventDefault(); 
             
             isLongPress = false;
@@ -1026,9 +1059,9 @@ const Finance = {
             pressTimer = setTimeout(startListeningUI, 600); 
         };
 
-        // Asignamos los eventos tal cual estaban en tu versiÛn vieja
+        // Asignamos los eventos tal cual estaban en tu versiÔøΩn vieja
         
-        // MÛvil
+        // MÔøΩvil
         activeBtn.addEventListener('touchstart', startEvent, {passive: false});
         activeBtn.addEventListener('touchend', stopListeningUI);
         
@@ -1036,13 +1069,13 @@ const Finance = {
         activeBtn.addEventListener('mousedown', startEvent);
         activeBtn.addEventListener('mouseup', stopListeningUI);
         
-        // Seguridad: Si sacas el dedo/mouse del botÛn, cancelamos todo
+        // Seguridad: Si sacas el dedo/mouse del botÔøΩn, cancelamos todo
         activeBtn.addEventListener('mouseleave', () => {
             clearTimeout(pressTimer);
             if(isLongPress) stopListeningUI();
         });
         
-        console.log("BotÛn Smarty restaurado con lÛgica cl·sica.");
+        console.log("BotÔøΩn Smarty restaurado con lÔøΩgica clÔøΩsica.");
     },
 
 
@@ -1050,12 +1083,12 @@ const Finance = {
 
 
     // --- PROCESADOR DE TEXTO ---
-        // --- PROCESADOR DE TEXTO (VERSI”N COMPLETA ORIGINAL) ---
+        // --- PROCESADOR DE TEXTO (VERSIÔøΩN COMPLETA ORIGINAL) ---
     processSmartText(text) {
         console.log("Voz Original:", text);
         
         // 1. Limpieza inicial
-        let cleanText = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.,:;?!°ø"'-]/g, ' ');
+        let cleanText = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.,:;?!ÔøΩÔøΩ"'-]/g, ' ');
 
         // 2. Extraer Monto
         const amountMatch = cleanText.match(/(\d+([.,]\d+)?)/);
@@ -1065,7 +1098,7 @@ const Finance = {
             cleanText = cleanText.replace(amountMatch[0], '');
         }
 
-        // 3. Detectar CategorÌa
+        // 3. Detectar CategorÔøΩa
         let categoryId = 'cat_other'; 
         if (typeof UI !== 'undefined' && UI.categories) {
             for (const cat of UI.categories) {
@@ -1080,7 +1113,7 @@ const Finance = {
 
         // 4. LA LISTA NEGRA EXTENSA (RESTAURADA)
         const blackList = [
-            // ================= ESPA—OL =================
+            // ================= ESPAÔøΩOL =================
             // Pronombres
             'me', 'te', 'se', 'le', 'nos', 'mi', 'tu', 'su', 'mis', 'tus', 'sus',
             'yo', 'nosotros', 'ellos', 'ellas', 'ustedes',
@@ -1100,7 +1133,7 @@ const Finance = {
             'desayune', 'desayunamos', 'desayunar', 'desayuno',
             'merende', 'merendar', 'merienda',
             'sali', 'salimos', 'salir', 'salida',
-            // ArtÌculos/Conectores
+            // ArtÔøΩculos/Conectores
             'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas',
             'de', 'del', 'al', 'a', 'en', 'con', 'por', 'para', 'sin', 'sobre',
             'y', 'o', 'u', 'e', 'ni', 'que', 'pero', 'mas',
@@ -1133,7 +1166,7 @@ const Finance = {
             'into', 'onto', 'off', 'out', 'up', 'down',
             'and', 'or', 'but', 'so', 'just', 'only', 'like',
 
-            // ================= PORTUGU S =================
+            // ================= PORTUGUÔøΩS =================
             // Pronomes
             'eu', 'me', 'mim', 'meu', 'minha', 'nos', 'nosso', 'nossa',
             'tu', 'te', 'ti', 'teu', 'tua', 'voce', 
@@ -1166,7 +1199,7 @@ const Finance = {
             'valor', 'precio', 'preco', 'price', 'monto', 'cuanto', 'amount', 'total', 'value'
         ];
         
-        // Palabras tÈcnicas adicionales
+        // Palabras tÔøΩcnicas adicionales
         blackList.push('categoria', 'cat', 'rubro', 'tipo', 'item', 'producto', 'category', 'type');
 
         // 5. Filtrado
@@ -1176,9 +1209,9 @@ const Finance = {
             return true;
         });
 
-        // 6. ConstrucciÛn Final
+        // 6. ConstrucciÔøΩn Final
         let desc = finalWords.join(' ').trim();
-        if (desc.length < 2) desc = "Gasto R·pido";
+        if (desc.length < 2) desc = "Gasto RÔøΩpido";
         desc = desc.charAt(0).toUpperCase() + desc.slice(1);
 
         this.openSmartExpenseModal(amount, desc, categoryId);
