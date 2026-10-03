@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - ASSISTANT CORE (V32.0 - MULTILANG & FIXES)
+   SMART LIFE PRO - ASSISTANT CORE (V32.0 - MULTILANG & FIXES + SMARTY AI)
    Autor: A_True_Alpha | Fix: Badges Visual & Full Translation
    ========================================= */
 
@@ -331,7 +331,7 @@ const Assistant = {
         { id: 'b_clothes', icon: '👕', name: {es:'Estilista', en:'Stylist', pt:'Estilista'}, desc: {es:'3 gastos en Ropa', en:'3 Clothes expenses', pt:'3 despesas de Roupa'}, check: () => Assistant.countCat('cat_clothes') >= 3 },
         { id: 'b_health', icon: '💊', name: {es:'Saludable', en:'Healthy', pt:'Saudável'}, desc: {es:'3 gastos en Salud', en:'3 Health expenses', pt:'3 despesas de Saúde'}, check: () => Assistant.countCat('cat_health') >= 3 },
         { id: 'b_bills', icon: '🏠', name: {es:'Casero', en:'Homebody', pt:'Caseiro'}, desc: {es:'5 gastos de Hogar', en:'5 Home expenses', pt:'5 despesas de Casa'}, check: () => Assistant.countCat('cat_bills') >= 5 },
-        { id: 'b_travel', icon: '✈️', name: {es:'Mochilero', en:'Backpacker', pt:'Mochileiro'}, desc: {es:'1 gasto de Viaje', en:'1 Travel expense', pt:'1 despesa de Viagem'}, check: () => Assistant.countCat('cat_travel') >= 1 },
+        { id: 'b_travel', icon: '✈️️', name: {es:'Mochilero', en:'Backpacker', pt:'Mochileiro'}, desc: {es:'1 gasto de Viaje', en:'1 Travel expense', pt:'1 despesa de Viagem'}, check: () => Assistant.countCat('cat_travel') >= 1 },
         { id: 'b_beauty', icon: '💅', name: {es:'Vanidoso', en:'Vain', pt:'Vaidoso'}, desc: {es:'1 gasto en Belleza', en:'1 Beauty expense', pt:'1 despesa de Beleza'}, check: () => Assistant.countCat('cat_beauty') >= 1 },
         
         // CURIOSAS (TEXTO)
@@ -595,6 +595,14 @@ const Assistant = {
         `;
         container.innerHTML += headerHTML;
 
+        // NUEVO BOTON DE CHAT IA
+        const aiButtonHTML = `
+            <button class="btn-full" onclick="Assistant.openSmartyChat()" style="margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #BF5AF2 0%, #AF52DE 100%); border-radius: 18px;">
+                <span style="font-size:22px;">🤖</span> Hablar con Smarty AI
+            </button>
+        `;
+        container.innerHTML += aiButtonHTML;
+
         // SKINS
         const currentSkin = g.currentSkin || 'default';
         let skinsHTML = `<div class="section-label" style="margin-top:0;">${t.skins}</div><div class="skins-scroll-container">`;
@@ -639,11 +647,10 @@ const Assistant = {
             ${this.renderQuestsHTML(g, lang)}
         `;
         
-        // MEDALLAS (FIX VISUAL APLICADO: filter:none)
+        // MEDALLAS
         let badgesHTML = `<div class="section-label">${t.badges} (${g.badges.length}/${this.badgesDef.length})</div><div class="badges-grid" style="grid-template-columns: repeat(3, 1fr); gap:8px;">`;
         this.badgesDef.forEach(b => {
             const isOwned = g.badges.includes(b.id);
-            // AQUÍ ESTÁ EL FIX: filter:none para forzar el color
             const style = isOwned 
                 ? 'opacity:1; background:var(--glass-bg); box-shadow:0 4px 10px rgba(0,0,0,0.05); filter:none; color:var(--text-color);' 
                 : 'opacity:0.4; filter:grayscale(1); background:rgba(0,0,0,0.03);';
@@ -778,9 +785,8 @@ const Assistant = {
 
         validateDailyQuests() {
         const g = Data.store.gamification;
-        const today = new Date().toDateString(); // 1. Sacamos la fecha de hoy
+        const today = new Date().toDateString(); 
         
-        // 2. AÑADIMOS: "O si la fecha guardada NO es hoy" ( || g.dailyQuests.date !== today )
         if (!g.dailyQuests || g.dailyQuests.quests.length < 3 || g.dailyQuests.date !== today) { 
             console.log("Misiones caducadas o insuficientes. Generando nuevas...");
             this.generateDailyQuests(); 
@@ -937,4 +943,177 @@ const Assistant = {
         `;
         document.head.appendChild(style);
     },
+
+    // --- LÓGICA DEL CHAT INTELIGENTE (SMARTY AI) ---
+
+    openSmartyChat() {
+        if(typeof Main !== 'undefined') Main.closeProfile();
+        
+        const chatBox = document.getElementById('smarty-chat-box');
+        const input = document.getElementById('smarty-chat-input');
+        chatBox.innerHTML = ''; 
+        input.value = '';
+        
+        // Mensaje de bienvenida
+        this.appendChatMessage("Hola Master. Soy Smarty. Estoy conectado a tus finanzas locales. Que quieres saber o en que te ayudo?", 'bot');
+        
+        // Boton de analisis rapido (Sugerencia)
+        const quickBtn = document.createElement('div');
+        quickBtn.innerHTML = `<button onclick="document.getElementById('smarty-chat-input').value='Hazme un analisis rapido de mi mes'; Assistant.sendSmartyMessage(); this.style.display='none';" style="background:var(--primary-grad); color:white; border:none; padding:10px 15px; border-radius:15px; font-size:12px; font-weight:bold; cursor:pointer; margin-top:5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">📊 Analisis Rapido</button>`;
+        chatBox.appendChild(quickBtn);
+
+        document.getElementById('modal-smarty-chat').classList.add('open');
+        
+        // Soporte para tecla Enter
+        input.onkeypress = (e) => {
+            if(e.key === 'Enter') this.sendSmartyMessage();
+        };
+    },
+
+    closeSmartyChat() {
+        document.getElementById('modal-smarty-chat').classList.remove('open');
+    },
+
+    getFinancialContext() {
+        const limit = Data.store.budget.limit || 0;
+        const spent = typeof Finance !== 'undefined' ? Finance.calculateMonthlySpent() : 0;
+        const remaining = limit - spent;
+        
+        // Sumar por categorias para sacar el Top 3
+        const catTotals = {};
+        Data.store.expenses.forEach(e => {
+            const cat = e.category || 'Otros';
+            catTotals[cat] = (catTotals[cat] || 0) + parseFloat(e.amount);
+        });
+        const topCats = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,3).map(c => `${c[0]}: $${c[1]}`).join(', ');
+
+        // Ultimos 8 gastos
+        const recentExp = Data.store.expenses.slice(-8).map(e => `${e.desc}: $${e.amount}`).join(', ');
+        
+        return `Contexto financiero del usuario:
+- Limite mensual: $${limit}
+- Gastado este mes: $${spent}
+- Restante: $${remaining}
+- Top categorias: ${topCats}
+- Ultimos gastos: ${recentExp}
+
+Instrucciones: Eres Smarty, el asesor financiero directo, util y algo sarcastico del usuario.
+Reglas estrictas:
+1. NUNCA uses tildes ni la letra eñe (usa n en su lugar).
+2. Tus respuestas deben ser cortas, claras y al grano (como un WhatsApp, maximo 3 o 4 oraciones). No hagas listas largas.
+3. Usa los datos de contexto matematicamente para aconsejar, felicitar o regañar segun corresponda. 
+4. Usa emojis para darle personalidad.`;
+    },
+
+    async sendSmartyMessage() {
+        const input = document.getElementById('smarty-chat-input');
+        const text = input.value.trim();
+        if(!text) return;
+
+        // 1. Mostrar mensaje del usuario
+        this.appendChatMessage(text, 'user');
+        input.value = '';
+
+        // 2. Mostrar "Escribiendo..."
+        const typingId = 'typing-' + Date.now();
+        this.appendChatMessage("Pensando...", 'bot', typingId);
+
+        let apiKey = Data.store.settings.geminiApiKey;
+        if (!apiKey) {
+            const key = prompt("Ingresa tu clave de Google AI Studio:");
+            if (!key) return;
+            Data.store.settings.geminiApiKey = key.trim();
+            apiKey = Data.store.settings.geminiApiKey;
+            Data.save();
+        }
+
+        try {
+            const context = this.getFinancialContext();
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: context + "\n\nPregunta del usuario: " + text }
+                    ]
+                }]
+            };
+
+            let data;
+            let retries = 3;
+            let success = false;
+
+            // Bucle de reintentos con 3.8-flash
+            for (let i = 0; i < retries; i++) {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                data = await response.json();
+
+                if (!data.error) {
+                    success = true;
+                    break;
+                }
+
+                if (data.error.message.includes("high demand") && i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                } else {
+                    throw new Error(data.error.message);
+                }
+            }
+
+            if (!success) throw new Error("Servidores saturados.");
+
+            const botReply = data.candidates[0].content.parts[0].text;
+            
+            // 3. Remover "Pensando..." y mostrar respuesta final
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
+
+            this.appendChatMessage(botReply, 'bot');
+
+        } catch(err) {
+            console.error(err);
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
+            this.appendChatMessage("Ups, tuve un problema procesando los datos. Los servidores deben estar saturados, intenta de nuevo.", 'bot');
+        }
+    },
+
+    appendChatMessage(text, sender, id = '') {
+        const chatBox = document.getElementById('smarty-chat-box');
+        const msgDiv = document.createElement('div');
+        if(id) msgDiv.id = id;
+        
+        const isUser = sender === 'user';
+        
+        msgDiv.style.cssText = `
+            max-width: 85%;
+            padding: 12px 18px;
+            border-radius: 22px;
+            font-size: 14px;
+            line-height: 1.45;
+            font-weight: 500;
+            align-self: ${isUser ? 'flex-end' : 'flex-start'};
+            background: ${isUser ? 'var(--primary-grad)' : 'var(--glass-bg)'};
+            color: ${isUser ? 'white' : 'var(--text-color)'};
+            border: ${isUser ? 'none' : '1px solid var(--glass-border)'};
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border-bottom-right-radius: ${isUser ? '4px' : '22px'};
+            border-bottom-left-radius: ${isUser ? '22px' : '4px'};
+        `;
+        
+        // Formatear negritas de markdown
+        let formattedText = text.replace(/\n/g, '<br>');
+        formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<b style="font-weight:800;">$1</b>');
+        
+        msgDiv.innerHTML = formattedText;
+        chatBox.appendChild(msgDiv);
+        
+        // Bajar el scroll al ultimo mensaje automaticamente
+        setTimeout(() => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 50);
+    }
 };
