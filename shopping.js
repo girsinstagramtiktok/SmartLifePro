@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - SHOPPING MODULE (V7.7 - UI & LOGIC FIX + GEMINI AI)
+   SMART LIFE PRO - SHOPPING MODULE (V7.7 - UI & LOGIC FIX + GEMINI AI PRO)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -168,7 +168,7 @@ const Shopping = {
         'esponja': '🧽', 'sponge': '🧽', 'bucha': '🧽', 'trapo': '🧽', 'pano': '🧽',
         'escoba': '🧹', 'broom': '🧹', 'vassoura': '🧹',
         'limpiador': '🪣', 'cleaner': '🪣', 'balde': '🪣', 'cubo': '🪣',
-        'basura': '🗑️', 'trash': '🗑️', 'lixo': '🗑️',
+        'basura': '🗑️', 'trash': '🗑️', 'lixo': '🗑️️',
         'bolsa': '🛍️', 'bag': '🛍️', 'sacola': '🛍️',
 
         // --- HIGIENE / PERSONAL CARE ---
@@ -240,25 +240,13 @@ parseQtyValue(qtyString) {
     // Normalizamos
     const str = qtyString.toLowerCase().trim();
 
-    // EXPRESIÓN REGULAR CORREGIDA:
-    // ^       -> Inicio
-    // x?      -> Puede tener una 'x' o no
-    // \s* -> Puede tener espacio o no
-    // \d+     -> DEBE tener números
-    // (\.\d+)? -> Puede tener decimales
-    // $       -> Fin de la cadena
-    // Traducción: "Si es solo X y números (ej: 'x2', '2', 'x 5.5'), entra aquí"
     if (/^x?\s*\d+(\.\d+)?$/.test(str)) {
         const match = str.match(/(\d+(\.\d+)?)/);
         return match ? parseFloat(match[0]) : 1;
     }
 
-    // Si no coincide con lo de arriba, es porque tiene letras "raras" (kg, ml, lbs, etc.)
-    // En ese caso devolvemos 1.
     return 1; 
 },
-
-
 
     // --- GESTIÓN DE LISTAS ---
     openCreationMenu() { Main.openAddMenu(); },
@@ -335,14 +323,11 @@ parseQtyValue(qtyString) {
 
         const fragment = document.createDocumentFragment();
 
-// En shopping.js -> renderLists()
-
 activeLists.forEach(l => {
     const card = document.createElement('div');
     card.className = 'item-row'; 
     card.style.justifyContent = 'space-between';
     
-    // CAMBIO 1: Estructura HTML separando Texto (Info) y Botón (Borrar)
     card.innerHTML = `
         <div class="swipe-bg">${UI.t('swipe_delete')}</div>
         <div class="item-content-wrap" style="width:100%; display:flex; justify-content:space-between; align-items:center;">
@@ -361,23 +346,20 @@ activeLists.forEach(l => {
         </div>
     `;
     
-    // CAMBIO 2: Evento SOLO en el área de texto para ABRIR
     const infoArea = card.querySelector('.list-info-area');
     infoArea.onclick = (e) => {
-        e.stopPropagation(); // Evita conflictos
+        e.stopPropagation(); 
         Data.store.currentId = l.id;
         Data.save();
         this.openShoppingView();
     };
 
-    // CAMBIO 3: Evento en el botón para BORRAR
     const delBtn = card.querySelector('.delete-btn-list');
     delBtn.onclick = (e) => {
-        e.stopPropagation(); // Evita que se abra la lista al borrar
+        e.stopPropagation(); 
         this.deleteList(l.id);
     };
 
-    // Mantenemos la lógica de deslizar
     this.addSwipeLogic(card, () => this.deleteList(l.id));
     
     fragment.appendChild(card);
@@ -434,7 +416,6 @@ activeLists.forEach(l => {
         const container = document.getElementById('shopping-ui-container');
         if(!container || !list) return;
 
-        // FIXED: Usando SVGs para Back, Sort y Micrófono
         container.innerHTML = `
             <div class="top-bar glass-pill">
                 <div class="progress-track"><div id="shop-progress-bar" class="progress-fill"></div></div>
@@ -488,7 +469,6 @@ activeLists.forEach(l => {
         const input = document.getElementById('shop-input');
         const btn = document.getElementById('add-btn');
         
-        // Guardamos el HTML del icono SVG original para restaurarlo luego
         const originalPlusIcon = `
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -499,13 +479,12 @@ activeLists.forEach(l => {
             input.focus();
             input.addEventListener('input', () => {
                 const em = this.getEmoji(input.value);
-                // Si hay emoji, usamos innerText. Si no, restauramos el SVG con innerHTML
                 if (em !== '🛒') {
                     btn.innerText = em;
-                    btn.style.fontSize = '22px'; // Ajuste visual para el emoji
+                    btn.style.fontSize = '22px'; 
                 } else {
                     btn.innerHTML = originalPlusIcon;
-                    btn.style.fontSize = ''; // Reset
+                    btn.style.fontSize = ''; 
                 }
             });
             input.addEventListener('keypress', (e) => { 
@@ -611,50 +590,40 @@ activeLists.forEach(l => {
 
         addSwipeLogic(element, actionCallback) {
         let startX = 0;
-        let currentX = null; // IMPORTANTE: Iniciamos en null para saber si hubo movimiento real
+        let currentX = null; 
         const content = element.querySelector('.item-content-wrap');
 
-        // Al tocar, guardamos el inicio y reseteamos currentX
         element.addEventListener('touchstart', (e) => { 
             startX = e.touches[0].clientX;
             currentX = startX; 
         }, {passive: true});
 
-        // Al mover, actualizamos currentX
         element.addEventListener('touchmove', (e) => {
             currentX = e.touches[0].clientX;
             const diff = currentX - startX;
-            // Solo animamos si se desliza a la izquierda (diff negativo)
             if (diff < 0) {
                 content.style.transform = `translateX(${diff}px)`;
                 element.classList.add('swiping');
             }
         }, {passive: true});
 
-        // Al soltar
         element.addEventListener('touchend', () => {
-            // VERIFICACIÓN CLAVE: 
-            // Si currentX es null (nunca se movió) o la distancia es menor a 10px (temblor de dedo)
-            // entonces es un CLICK, no un SWIPE.
             if (currentX === null || Math.abs(currentX - startX) < 10) {
                 content.style.transform = `translateX(0)`;
                 element.classList.remove('swiping');
-                return; // Salimos sin ejecutar borrar, permitiendo que ocurra el 'onclick'
+                return; 
             }
 
             const diff = currentX - startX;
             
-            // Solo si deslizó más de 100px a la izquierda activamos el borrado
             if (diff < -100) {
                 content.style.transform = `translateX(-100%)`;
                 actionCallback();
             } else {
-                // Si no llegó al tope, rebota
                 content.style.transform = `translateX(0)`;
                 element.classList.remove('swiping');
             }
             
-            // Limpieza final
             startX = 0; 
             currentX = null;
         });
@@ -670,25 +639,19 @@ activeLists.forEach(l => {
         const { name, qty } = this.parseItem(rawVal);
         const cleanName = this.normalize(name);
         
-        // --- CORRECCIÓN AQUÍ ---
-        // 1. Prioridad absoluta: Buscar la clave normalizada exacta (donde guardas los precios nuevos)
         let price = Data.store.prices[cleanName]; 
 
-        // 2. Fallback: Si no existe (es un producto viejo guardado con mayúsculas), buscamos la clave sucia
         if (price === undefined) {
             const dirtyKey = Object.keys(Data.store.prices).find(k => this.normalize(k) === cleanName);
             if (dirtyKey) price = Data.store.prices[dirtyKey];
         }
         
-        // Asegurar que sea numérico
         price = parseFloat(price) || 0;
-        // -----------------------
 
         list.items.push({ name, qty, checked: false, price });
         Data.save();
         
         input.value = ''; 
-        // Restaurar icono original
         document.getElementById('add-btn').innerHTML = `
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -729,7 +692,6 @@ activeLists.forEach(l => {
             Data.save();
             this.renderLists();
             if(Data.store.currentId === id) Main.router('lists');
-                  // --- ACTUALIZAR TODO (SISTEMA Y ASISTENTE) ---
             if (typeof Finance !== 'undefined') Finance.renderHomeWidgets();
             if (typeof UI !== 'undefined') UI.renderBudgetChart();
             
@@ -862,12 +824,11 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         list.status = 'completed';
         list.date = Date.now(); 
 
-        // Lógica de nombres por idioma
         const d = new Date();
         const lang = (Data.store.settings && Data.store.settings.lang) ? Data.store.settings.lang : 'es';
         let namePrefix = "Compra"; 
 
-        if (lang === 'es') namePrefix = "Compra del d\u00EDa"; // Compra del día
+        if (lang === 'es') namePrefix = "Compra del d\u00EDa"; 
         if (lang === 'en') namePrefix = "Shopping list";
         if (lang === 'pt') namePrefix = "Compra do dia";
 
@@ -875,16 +836,14 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         list.name = `${namePrefix} ${dateStr}`;
 
         Data.save();
-                // >>> HOOK SMARTY: Reacción al finalizar lista
         if (typeof Assistant !== 'undefined') {
             Assistant.addXP(50, "Lista Completada");
             Assistant.updateMood();
             Assistant.reactToEvent('list_completed', { total: list.total }); 
         }
 
-
-if (typeof Finance !== 'undefined') Finance.renderHomeWidgets(); // Actualiza Gastos Recientes
-if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo de presupuesto
+if (typeof Finance !== 'undefined') Finance.renderHomeWidgets(); 
+if (typeof UI !== 'undefined') UI.renderBudgetChart(); 
         if (typeof Assistant !== 'undefined') {
             Assistant.addXP(50, "Lista Completada");
             Assistant.updateMood();
@@ -927,7 +886,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
     },
 
     renderHistoryLists(container) {
-        // FIXED: Limpiar contenedor antes de pintar para evitar duplicados visuales
         container.innerHTML = '';
 
         const allCompleted = Data.store.lists.filter(l => l.status === 'completed').sort((a, b) => b.date - a.date);
@@ -1007,7 +965,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
             return d.getFullYear() === selYear && (d.getMonth() + 1) === selMonth;
         });
 
-        // 1. Calcular Gasto Diario
         const groups = {};
         monthLists.forEach(l => {
             const d = new Date(l.date);
@@ -1016,7 +973,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
             groups[day] += l.total;
         });
 
-        // 2. Renderizar Gráfico
         chartContainer.innerHTML = '';
         const keys = Object.keys(groups).map(Number).sort((a,b)=>a-b);
         
@@ -1030,7 +986,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
                 const h = (val / maxVal) * 85; 
                 const isMax = val === maxVal; 
 
-                // HTML compatible con el CSS nuevo
                 chartContainer.innerHTML += `
                     <div class="bar-wrapper">
                         <div class="chart-value">${UI.formatMoney(val).replace('.00','')}</div>
@@ -1040,7 +995,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
             });
         }
 
-        // 3. Renderizar Lista Top Productos
         const productStats = {};
         monthLists.forEach(l => {
             l.items.forEach(i => {
@@ -1121,10 +1075,8 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
         const items = list.items.filter(i => i.checked);
         const fragment = document.createDocumentFragment();
         
-        // GUARDAR ESTADO ORIGINAL (Deep Copy)
         this.originalDetailValues = JSON.parse(JSON.stringify(items));
         
-        // Desactivar botón guardar al abrir
         const saveBtn = document.getElementById('hist-save-btn');
         if(saveBtn) saveBtn.disabled = true;
 
@@ -1169,10 +1121,8 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
             if(currentVal !== originalVal) hasChanges = true;
         });
         
-        // Actualizar total visualmente
         this.updateDetailTotal();
         
-        // Activar/Desactivar botón
         const saveBtn = document.getElementById('hist-save-btn');
         if(saveBtn) saveBtn.disabled = !hasChanges;
     },
@@ -1217,7 +1167,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart(); // Actualiza el círculo 
         Data.save();
         this.closeDetailModal();
         
-        // Renderizar correctamente (ya limpiamos contenedor en la función render)
         this.renderHistoryLists(document.getElementById('history-box'));
         
         if(typeof UI.renderBudgetChart === 'function') UI.renderBudgetChart();
@@ -1257,27 +1206,22 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         if(!container) return;
         
         const q = this.normalize(query);
-        // Ordenamos alfabéticamente
         const products = Object.keys(Data.store.prices).sort((a, b) => a.localeCompare(b));
         const fragment = document.createDocumentFragment();
         
-        // --- CORRECCIÓN AQUÍ: Set para evitar duplicados visuales ---
         const shownItems = new Set(); 
 
         products.forEach(p => {
             const normalizedP = this.normalize(p);
             
-            // Si coincide la búsqueda Y NO lo hemos mostrado ya
             if(normalizedP.includes(q) && !shownItems.has(normalizedP)) {
                 
-                // Lo marcamos como mostrado
                 shownItems.add(normalizedP);
 
                 const row = document.createElement('div');
                 row.className = 'glass-card';
                 row.style.cssText = 'padding:15px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin-bottom:10px;';
                 
-                // Usamos p (nombre original) para mostrar, o podrías usar normalizedP capitalizado si prefieres uniformidad
                 const displayName = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
 
                 row.innerHTML = `
@@ -1287,7 +1231,6 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
                     </div>
                     <div style="color:var(--primary);">\uD83D\uDCC8</div>
                 `;
-                // Al hacer click, pasamos el nombre. Tu función openProductStats ya normaliza internamente, así que funcionará bien.
                 row.onclick = () => this.openProductStats(p);
                 fragment.appendChild(row);
             }
@@ -1366,14 +1309,14 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         modal.classList.add('open');
     },
 
-    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }, 
+    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); },
 
     // --- ESCANEO DE RECIBO CON IA ---
     async handleReceiptPhoto(input) {
         const file = input.files[0];
         if (!file) return;
 
-        // Verificar API Key
+        // Verificar API Key sin tildes
         let apiKey = Data.store.settings.geminiApiKey;
         if (!apiKey) {
             const key = prompt("Ingresa tu clave de Google AI Studio:");
@@ -1383,8 +1326,14 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
             Data.save();
         }
 
-        const statusLabel = document.getElementById('receipt-scan-status');
-        if (statusLabel) statusLabel.innerText = "⏳ Analizando recibo... espera unos segundos.";
+        // Mostrar mensaje no bloqueante
+        if (typeof UI !== 'undefined') UI.showSnackbar("Procesando en segundo plano, puede seguir...");
+        
+        // Limpiar inputs para permitir re-uso inmediato
+        const camInput = document.getElementById('receipt-photo-cam');
+        const galInput = document.getElementById('receipt-photo-gal');
+        if(camInput) camInput.value = '';
+        if(galInput) galInput.value = '';
 
         try {
             // 1. Comprimir imagen
@@ -1393,120 +1342,92 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
 
             // 2. Extraer productos pendientes
             const list = Data.store.lists.find(l => l.id === Data.store.currentId);
+            if (!list) return;
             const targetItems = list.items.filter(i => i.checked).map(i => i.name);
 
-            // 3. Enviar a Gemini (Usando el modelo más avanzado)
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: `Analiza este recibo de compra.
-Lista de productos que compré: ${JSON.stringify(targetItems)}.
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: `Analiza este recibo de compra.
+Lista de productos: ${JSON.stringify(targetItems)}.
 
-Tu tarea:
-1. Extrae los precios unitarios o finales de cada producto que coincida con la lista.
-2. Si en el recibo hay productos con precio que NO lograste asociar con seguridad a ninguno de la lista, colócalos en "unmatched".
-
-Responde ÚNICAMENTE un JSON válido con este formato:
+Tarea: Extrae precios unitarios o finales de la lista.
+Responde UNICAMENTE un JSON valido:
 {
-  "matches": [
-    { "listName": "Nombre exacto de la lista", "price": 10.50 }
-  ],
-  "unmatched": [
-    { "receiptText": "Texto en el ticket", "price": 5.20 }
-  ]
+  "matches": [ { "listName": "Nombre", "price": 10.50 } ],
+  "unmatched": [ { "receiptText": "Texto", "price": 5.20 } ]
 }` },
-                            {
-                                inline_data: {
-                                    mime_type: "image/jpeg",
-                                    data: rawBase64
-                                }
-                            }
-                        ]
-                    }]
-                })
-            });
+                        { inline_data: { mime_type: "image/jpeg", data: rawBase64 } }
+                    ]
+                }]
+            };
 
-            const data = await response.json();
-            if(data.error) {
-                throw new Error(data.error.message);
+            let data;
+            let retries = 3;
+            let success = false;
+
+            // 3. Enviar a Gemini (Usando 3.8-flash) con reintentos
+            for (let i = 0; i < retries; i++) {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                data = await response.json();
+
+                if (!data.error) {
+                    success = true;
+                    break;
+                }
+
+                // Esperar si hay alta demanda
+                if (data.error.message.includes("high demand") && i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 3000)); 
+                } else {
+                    throw new Error(data.error.message);
+                }
             }
 
-            // Extracción de JSON a prueba de fallos (Filtro Inteligente)
+            if (!success) throw new Error("Servidores saturados.");
+
+            // Extraccion de JSON a prueba de fallos
             const rawText = data.candidates[0].content.parts[0].text;
             const jsonMatch = rawText.match(/\{[\s\S]*\}/); 
             
             if (!jsonMatch) {
-                throw new Error("La IA no devolvió un formato válido.");
+                throw new Error("Formato invalido.");
             }
             
             const result = JSON.parse(jsonMatch[0]);
 
-            // 4. Asignar precios asociados automáticamente
+            // 4. Asignar precios asociados automaticamente
+            let matchedCount = 0;
             if (result.matches && result.matches.length > 0) {
                 result.matches.forEach(m => {
                     const inputEl = document.querySelector(`#finish-items-list .receipt-input[data-name="${m.listName}"]`);
                     if (inputEl && m.price > 0) {
                         inputEl.value = parseFloat(m.price).toFixed(2);
+                        matchedCount++;
                     }
                 });
                 this.updateFinishTotal();
             }
 
-            // 5. Resolver no asociados manualmente
-            if (result.unmatched && result.unmatched.length > 0) {
-                this.resolveUnmatchedReceiptItems(result.unmatched);
-            } else {
-                if (typeof UI !== 'undefined') UI.showSnackbar("Precios asociados con éxito ✅");
+            // 5. Mensajes de resultado sin tildes ni alerts
+            if (typeof UI !== 'undefined') {
+                if (result.unmatched && result.unmatched.length > 0) {
+                    UI.showSnackbar("Precios extraidos. Faltaron algunos items.");
+                } else if (matchedCount > 0) {
+                    UI.showSnackbar("Todos los precios extraidos con exito.");
+                } else {
+                    UI.showSnackbar("No se detectaron precios de la lista.");
+                }
             }
 
         } catch (err) {
             console.error("Error al procesar el recibo:", err);
-            alert("Error de procesamiento: " + err.message); 
-            if (typeof UI !== 'undefined') UI.showSnackbar("Error al procesar el recibo ❌");
-        } finally {
-            if (statusLabel) statusLabel.innerText = "";
-            
-            const camInput = document.getElementById('receipt-photo-cam');
-            const galInput = document.getElementById('receipt-photo-gal');
-            if(camInput) camInput.value = '';
-            if(galInput) galInput.value = '';
+            if (typeof UI !== 'undefined') UI.showSnackbar("Error al procesar el recibo. Intente luego.");
         }
-    },
-
-    // --- RESOLUCIÓN MANUAL DE ÍTEMS DUDOSOS ---
-    resolveUnmatchedReceiptItems(unmatchedList) {
-        const list = Data.store.lists.find(l => l.id === Data.store.currentId);
-        const inputs = document.querySelectorAll('#finish-items-list .receipt-input');
-        const emptyInputs = Array.from(inputs).filter(inp => !inp.value || parseFloat(inp.value) === 0);
-
-        if (emptyInputs.length === 0) return;
-
-        unmatchedList.forEach(unmatched => {
-            const itemNames = emptyInputs.map(inp => inp.getAttribute('data-name'));
-            if (itemNames.length === 0) return;
-
-            const promptMsg = `Ticket: "${unmatched.receiptText}" ($${unmatched.price}).\n¿A cuál producto de tu lista pertenece?\n\nOpciones:\n` +
-                              itemNames.map((name, i) => `${i + 1}. ${name}`).join('\n') +
-                              `\n(Escribe el número, o deja vacío para ignorar)`;
-
-            const choice = prompt(promptMsg);
-            const index = parseInt(choice) - 1;
-
-            if (!isNaN(index) && itemNames[index]) {
-                const selectedName = itemNames[index];
-                const targetInput = document.querySelector(`#finish-items-list .receipt-input[data-name="${selectedName}"]`);
-                if (targetInput) {
-                    targetInput.value = parseFloat(unmatched.price).toFixed(2);
-                    const pos = emptyInputs.findIndex(inp => inp.getAttribute('data-name') === selectedName);
-                    if (pos !== -1) emptyInputs.splice(pos, 1);
-                }
-            }
-        });
-
-        this.updateFinishTotal();
-        if (typeof UI !== 'undefined') UI.showSnackbar("Precios actualizados");
     }
 };
