@@ -329,13 +329,13 @@
                     </div>
                 
                 <div class="manual-total-row"><label for="finish-manual-total">Total pagado (opcional)</label><input id="finish-manual-total" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Usar suma por artículo" oninput="Shopping.updateFinishTotal()"></div>
-                <!-- NUEVO: Botón de escaneo con cámara -->
-<div style="margin-top: 15px; margin-bottom: 10px; display: flex; gap: 8px;">
-    <label class="btn-data" style="margin: 0; padding: 12px; flex: 1; cursor: pointer; border-style: dashed; border-color: var(--primary);">
-        <input type="file" id="receipt-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="Shopping.handleReceiptPhoto(this)">
-        <span id="receipt-scan-status">📸 Escanear Recibo / Ticket</span>
-    </label>
-</div>
+                <!-- NUEVO: Botón de escaneo con cámara y galería -->
+                <div style="margin-top: 15px; margin-bottom: 10px; display: flex; gap: 8px;">
+                    <label class="btn-data" style="margin: 0; padding: 12px; flex: 1; cursor: pointer; border-style: dashed; border-color: var(--primary);">
+                        <input type="file" id="receipt-photo-input" accept="image/*" style="display:none;" onchange="Shopping.handleReceiptPhoto(this)">
+                        <span id="receipt-scan-status">📸 Escanear / Subir Recibo</span>
+                    </label>
+                </div>
                                 <div class="receipt-total">
                     <span data-i18n="receipt_est">TOTAL</span> <b id="finish-total-val">$0.00</b>
                 </div>
