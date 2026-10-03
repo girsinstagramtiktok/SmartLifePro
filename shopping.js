@@ -17,7 +17,7 @@ const Shopping = {
         'pera asiatica': '\uD83C\uDF50', 'ciruela': '\uD83C\uDF51', 'ciruelas': '\uD83C\uDF51',
         'arveja': '\uD83E\uDED8', 'guisante': '\uD83E\uDED8', 'chicharo': '\uD83E\uDED8',
         'coliflor': '\u{1F966}', 'coliflor fresca': '\u{1F966}',
-        'yuca': '\uD83E\uDD54', 'mandioca': '\uD83E\uDD54', '�ame': '\uD83E\uDD54',
+        'yuca': '\uD83E\uDD54', 'mandioca': '\uD83E\uDD54', 'ñame': '\uD83E\uDD54',
         'carne molida': '\uD83E\uDD69', 'carne picada': '\uD83E\uDD69', 'ground beef': '\uD83E\uDD69',
         'leche en polvo': '\uD83E\uDD5B', 'leche condensada': '\uD83E\uDD5B',
         'papel de cocina': '\uD83E\uDDFB', 'papel toalla': '\uD83E\uDDFB',
@@ -29,7 +29,7 @@ const Shopping = {
         'papas fritas': '\uD83C\uDF5F', 'boniato': '\uD83C\uDF60',
         'pescado congelado': '\uD83D\uDC1F', 'filete de pescado': '\uD83D\uDC1F',
         'comida para perro': '\uD83D\uDC36', 'comida para gato': '\uD83D\uDC31',
-        'pa�ales': '\uD83D\uDC76', 'toallitas humedas': '\uD83E\uDDFB',
+        'pañales': '\uD83D\uDC76', 'toallitas humedas': '\uD83E\uDDFB',
         'desinfectante': '\uD83E\uDDF4', 'limpiavidrios': '\uD83E\uDDF4',
         'focos': '\uD83D\uDCA1', 'pilas': '\uD83D\uDD0B',
 
@@ -1366,7 +1366,138 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         modal.classList.add('open');
     },
 
-    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }
+    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); },
+    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }, // <-- NO OLVIDES ESTA COMA
+
+    // --- ESCANEO DE RECIBO CON IA ---
+    async handleReceiptPhoto(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Verificar API Key
+        let apiKey = Data.store.settings.geminiApiKey;
+        if (!apiKey) {
+            const key = prompt("Ingresa tu clave gratuita de Google AI Studio (solo la primera vez):");
+            if (!key) return;
+            Data.store.settings.geminiApiKey = key.trim();
+            Data.save();
+        }
+
+        const statusLabel = document.getElementById('receipt-scan-status');
+        if (statusLabel) statusLabel.innerText = "⏳ Analizando recibo...";
+
+        try {
+            // 1. Comprimir imagen
+            const base64Data = await Finance.compressImage(file, 1200, 0.7);
+            const rawBase64 = base64Data.split(',')[1];
+
+            // 2. Extraer productos pendientes
+            const list = Data.store.lists.find(l => l.id === Data.store.currentId);
+            const targetItems = list.items.filter(i => i.checked).map(i => i.name);
+
+            // 3. Enviar a Gemini
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${Data.store.settings.geminiApiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: `Analiza este recibo de compra.
+    Lista de productos que compré: ${JSON.stringify(targetItems)}.
+
+    Tu tarea:
+    1. Extrae los precios unitarios o finales de cada producto que coincida con la lista.
+    2. Si en el recibo hay productos con precio que NO lograste asociar con seguridad a ninguno de la lista, colócalos en "unmatched".
+
+    Responde ÚNICAMENTE un JSON válido con este formato:
+    {
+      "matches": [
+        { "listName": "Nombre exacto de la lista", "price": 10.50 }
+      ],
+      "unmatched": [
+        { "receiptText": "Texto en el ticket", "price": 5.20 }
+      ]
+    }` },
+                            {
+                                inline_data: {
+                                    mime_type: "image/jpeg",
+                                    data: rawBase64
+                                }
+                            }
+                        ]
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            if(data.error) {
+                throw new Error(data.error.message);
+            }
+
+            const rawText = data.candidates[0].content.parts[0].text;
+            const cleanJSON = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const result = JSON.parse(cleanJSON);
+
+            // 4. Asignar precios asociados automáticamente
+            if (result.matches && result.matches.length > 0) {
+                result.matches.forEach(m => {
+                    const inputEl = document.querySelector(`#finish-items-list .receipt-input[data-name="${m.listName}"]`);
+                    if (inputEl && m.price > 0) {
+                        inputEl.value = parseFloat(m.price).toFixed(2);
+                    }
+                });
+                this.updateFinishTotal();
+            }
+
+            // 5. Resolver no asociados manualmente
+            if (result.unmatched && result.unmatched.length > 0) {
+                this.resolveUnmatchedReceiptItems(result.unmatched);
+            } else {
+                if (typeof UI !== 'undefined') UI.showSnackbar("Precios asociados con éxito ✅");
+            }
+
+        } catch (err) {
+            console.error("Error al procesar el recibo:", err);
+            if (typeof UI !== 'undefined') UI.showSnackbar("Error al procesar el recibo ❌");
+        } finally {
+            if (statusLabel) statusLabel.innerText = "📸 Escanear Recibo / Ticket";
+            input.value = '';
+        }
+    },
+
+    // --- RESOLUCIÓN MANUAL DE ÍTEMS DUDOSOS ---
+    resolveUnmatchedReceiptItems(unmatchedList) {
+        const list = Data.store.lists.find(l => l.id === Data.store.currentId);
+        const inputs = document.querySelectorAll('#finish-items-list .receipt-input');
+        const emptyInputs = Array.from(inputs).filter(inp => !inp.value || parseFloat(inp.value) === 0);
+
+        if (emptyInputs.length === 0) return;
+
+        unmatchedList.forEach(unmatched => {
+            const itemNames = emptyInputs.map(inp => inp.getAttribute('data-name'));
+            if (itemNames.length === 0) return;
+
+            const promptMsg = `Ticket: "${unmatched.receiptText}" ($${unmatched.price}).\n¿A cuál producto de tu lista pertenece?\n\nOpciones:\n` +
+                              itemNames.map((name, i) => `${i + 1}. ${name}`).join('\n') +
+                              `\n(Escribe el número, o deja vacío para ignorar)`;
+
+            const choice = prompt(promptMsg);
+            const index = parseInt(choice) - 1;
+
+            if (!isNaN(index) && itemNames[index]) {
+                const selectedName = itemNames[index];
+                const targetInput = document.querySelector(`#finish-items-list .receipt-input[data-name="${selectedName}"]`);
+                if (targetInput) {
+                    targetInput.value = parseFloat(unmatched.price).toFixed(2);
+                    const pos = emptyInputs.findIndex(inp => inp.getAttribute('data-name') === selectedName);
+                    if (pos !== -1) emptyInputs.splice(pos, 1);
+                }
+            }
+        });
+
+        this.updateFinishTotal();
+        if (typeof UI !== 'undefined') UI.showSnackbar("Precios actualizados");
+    }
 };
 
 

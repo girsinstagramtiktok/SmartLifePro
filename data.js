@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - DATA MANAGER (V7.6 - PIN SECURITY)
+   SMART LIFE PRO - DATA MANAGER (V7.6 - PIN SECURITY + GEMINI AI)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -14,7 +14,8 @@ const Data = {
             darkMode: false,
             currency: '$',
             theme: 'blue',
-            pin: null // <--- NUEVO CAMPO: null = desactivado, "123456" = activado
+            pin: null, // null = desactivado, "123456" = activado
+            geminiApiKey: '' // <--- NUEVO CAMPO: Clave para escanear recibos con IA
         },
         budget: { limit: 0, currency: '$' },
         subscriptions: [],
@@ -58,14 +59,15 @@ const Data = {
             dirty = true; 
         }
 
-        // 3. Configuración (Actualizada con PIN y Themes)
+        // 3. Configuración (Actualizada con PIN, Themes y Gemini AI)
         if (!this.store.settings) { 
             this.store.settings = { 
                 lang: 'es', 
                 darkMode: false, 
                 currency: '$', 
                 theme: 'blue',
-                pin: null
+                pin: null,
+                geminiApiKey: '' // <--- NUEVO CAMPO AÑADIDO AL REPARAR
             }; 
             dirty = true; 
         } else {
@@ -78,6 +80,12 @@ const Data = {
             // TRANSICIÓN A PIN: Asegurar que el campo pin exista
             if (typeof this.store.settings.pin === 'undefined') {
                 this.store.settings.pin = null;
+                dirty = true;
+            }
+
+            // TRANSICIÓN A IA: Asegurar que el campo geminiApiKey exista para usuarios viejos
+            if (typeof this.store.settings.geminiApiKey === 'undefined') {
+                this.store.settings.geminiApiKey = '';
                 dirty = true;
             }
 
@@ -116,7 +124,7 @@ const Data = {
         }
 
         if (dirty) {
-            console.log("Estructura de datos actualizada (V7.6 - PIN Ready).");
+            console.log("Estructura de datos actualizada (V7.6 - PIN + Gemini Ready).");
             this.save();
         }
     },
@@ -160,6 +168,11 @@ const Data = {
                 if(this.store.settings && typeof this.store.settings.pin === 'undefined') {
                     this.store.settings.pin = null;
                 }
+                
+                // Asegurar API Key de Gemini
+                if(this.store.settings && typeof this.store.settings.geminiApiKey === 'undefined') {
+                    this.store.settings.geminiApiKey = '';
+                }
 
                 this.repairData(); 
                 this.save();
@@ -172,7 +185,7 @@ const Data = {
         }
     },
     
-        // --- GESTIÓN DE ALMACENAMIENTO ---
+    // --- GESTIÓN DE ALMACENAMIENTO ---
     getStorageUsage() {
         let totalUsed = 0;
         // Límite típico de localStorage (5MB = 5242880 bytes). 
@@ -205,6 +218,7 @@ const Data = {
             status: status
         };
     },
+    
     cleanOldPhotos() {
         if (!this.store.expenses) return;
         const beforeCount = this.store.expenses.length;
@@ -223,11 +237,10 @@ const Data = {
             this.save();
             if(typeof UI !== 'undefined') {
                 UI.showSnackbar(`Se limpiaron ${photosRemoved} fotos antiguas.`);
-                UI.renderSettings(); // Refrescar la barra
+                UI.renderSettingsView(); // Actualizado para usar el nombre correcto del método
             }
         } else {
              if(typeof UI !== 'undefined') UI.showSnackbar("No hay fotos antiguas para borrar.");
         }
-    },
-
+    }
 };
