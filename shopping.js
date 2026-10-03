@@ -1396,7 +1396,7 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
             const targetItems = list.items.filter(i => i.checked).map(i => i.name);
 
             // 3. Enviar a Gemini (Usando el modelo más avanzado)
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
