@@ -524,18 +524,20 @@ msg_bio_inactive: "Lock Disabled 🔓"
 
     // --- CATEGORÍAS DISPONIBLES ---
     categoryIcon(id) {
-        const shapes = {
-            cat_market: '<path d="M3 4h2l2 11h12l2-8H6"/><circle cx="10" cy="19" r="1"/><circle cx="17" cy="19" r="1"/>',
-            cat_leisure: '<path d="M4 11h16l-2 8H6zM7 11l2-6h6l2 6"/>',
-            cat_transport: '<path d="M5 16V8l2-3h10l2 3v8M5 11h14M7 19h2m6 0h2"/><circle cx="7" cy="16" r="1"/><circle cx="17" cy="16" r="1"/>',
+        const icons = {
+            cat_market: '<path d="M3 3h2l2.2 11.3a2 2 0 0 0 2 1.7h8.3a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>',
+            cat_leisure: '<path d="M3 3v5a3 3 0 0 0 6 0V3M6 3v18M16 3v7a3 3 0 0 0 3 3V3M19 13v8"/>',
+            cat_transport: '<path d="M5 16V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11M5 10h14M8 20h.01M16 20h.01M5 16h14l2 4H3z"/>',
             cat_clothes: '<path d="m8 5 4-2 4 2 5 3-3 4-3-2v11H9V10l-3 2-3-4z"/>',
-            cat_health: '<path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/>',
-            cat_bills: '<path d="m3 10 9-7 9 7v10H3zM9 20v-6h6v6"/>',
-            cat_travel: '<path d="M3 12h18M12 3l6 9-6 9-6-9z"/>',
-            cat_beauty: '<path d="m4 20 11-11 4 4L8 24M14 6l4-4 4 4-4 4z"/>',
-            cat_other: '<path d="M4 7h16v14H4zM3 3h18v4H3zM9 12h6"/>'
+            cat_health: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/><path d="M3 12h5l2-3 3.5 6 2-3H21"/>',
+            cat_bills: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z"/>',
+            cat_travel: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+            cat_beauty: '<path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-2-5.8L4 11l6-2.2zM19 14l1.2 2.8L23 18l-2.8 1.2L19 22l-1.2-2.8L15 18l2.8-1.2z"/>',
+            cat_other: '<path d="m12 3 9 5v8l-9 5-9-5V8zM3.5 8.5 12 13l8.5-4.5M12 13v8"/>',
+            cat_subs: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>'
         };
-        return '<svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(shapes[id]||shapes.cat_other)+'</svg>';
+        const colors = { cat_market:'mint', cat_leisure:'coral', cat_transport:'sky', cat_clothes:'violet', cat_health:'rose', cat_bills:'amber', cat_travel:'blue', cat_beauty:'pink', cat_other:'slate', cat_subs:'sky' };
+        return '<span class="category-icon-shell tone-' + (colors[id] || 'slate') + '"><svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (icons[id] || icons.cat_other) + '</svg></span>';
     },
 
     categories: [

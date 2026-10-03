@@ -6,26 +6,26 @@
 const Finance = {
     // --- ESTADO INTERNO ---
     selectedHistoryMonth: null, 
-    selectedCategoryFilter: 'ALL', // Estado del filtro de categor�as
+    selectedCategoryFilter: 'ALL', // Estado del filtro de categorías
     chartDisplayMode: 'percent',
     subscriptionSort: 'date',
     // Variable temporal para la foto (NUEVO)
     tempPhotoData: null, 
 
-    // --- NAVEGACI�N DE PESTA�AS (TABS) ---
+    // --- NAVEGACIÓN DE PESTAÑAS (TABS) ---
     setTab(tab) {
-        // 1. Ocultar todas las pesta�as primero
+        // 1. Ocultar todas las pestañas primero
         document.querySelectorAll('.finance-tab-content').forEach(el => {
             el.classList.add('hidden');
             el.style.display = 'none';
         });
 
-        // 2. Desactivar botones de navegaci�n
+        // 2. Desactivar botones de navegación
         document.querySelectorAll('.segment-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // 3. Activar la pesta�a seleccionada
+        // 3. Activar la pestaña seleccionada
         const btn = document.getElementById(`fin-tab-${tab}`);
         const content = document.getElementById(`finance-content-${tab}`);
         
@@ -35,7 +35,7 @@ const Finance = {
             content.style.display = 'block'; 
         }
 
-        // 4. Renderizar el contenido espec�fico
+        // 4. Renderizar el contenido específico
         if (tab === 'subs') {
             this.renderSubscriptions();
         } else if (tab === 'installments') {
@@ -58,7 +58,7 @@ const Finance = {
         const allActive = this.selectedCategoryFilter === 'ALL' ? 'active' : '';
         html += `<div class="filter-chip ${allActive}" onclick="Finance.setCategoryFilter('ALL')">Todo</div>`;
 
-        // 2. Chips de Categor�as (Desde UI.categories)
+        // 2. Chips de Categorías (Desde UI.categories)
         if (typeof UI !== 'undefined' && UI.categories) {
             UI.categories.forEach(cat => {
                 const isActive = this.selectedCategoryFilter === cat.id ? 'active' : '';
@@ -73,7 +73,7 @@ const Finance = {
         return html;
     },
 
-    // Acci�n al tocar un filtro
+    // Acción al tocar un filtro
     setCategoryFilter(catId) {
         this.selectedCategoryFilter = catId;
         if(navigator.vibrate) navigator.vibrate(5);
@@ -85,7 +85,7 @@ const Finance = {
         this.renderExpensesHistory(); 
     },
 
-    // --- L�GICA DE CIERRE DE MES (AUTOM�TICO) ---
+    // --- LÓGICA DE CIERRE DE MES (AUTOMÁTICO) ---
     checkMonthTransition() {
         const now = new Date();
         const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -115,7 +115,7 @@ const Finance = {
         }
     },
 
-    // --- C�LCULOS FINANCIEROS (CORE) ---
+    // --- CÁLCULOS FINANCIEROS (CORE) ---
     calculateMonthlySpent() {
         let total = 0;
         const now = new Date();
@@ -181,7 +181,7 @@ const Finance = {
     // --- HELPER PARA ICONOS ---
     getCategoryIcon(catName) {
         if (catName === 'cat_market' || catName === UI.t('cat_market')) return UI.categoryIcon('cat_market'); 
-        if (catName === 'tab_subs' || catName === 'cat_subs' || catName === UI.t('tab_subs')) return '\uD83D\uDCC5'; 
+        if (catName === 'tab_subs' || catName === 'cat_subs' || catName === UI.t('tab_subs')) return UI.categoryIcon('cat_subs'); 
 
         if (typeof UI !== 'undefined' && UI.categories) {
             let found = UI.categories.find(c => c.id === catName);
@@ -213,7 +213,7 @@ const Finance = {
                 Data.store.lists.filter(l => l.status === 'completed').forEach(l => {
                     allMovements.push({
                         type: 'list', name: l.name, amount: parseFloat(l.total),
-                        date: new Date(l.date).getTime(), icon: '\uD83D\uDED2' 
+                        date: new Date(l.date).getTime(), icon: UI.categoryIcon('cat_market') 
                     });
                 });
             }
@@ -225,7 +225,7 @@ const Finance = {
                     if (lastCharge > now) lastCharge.setMonth(lastCharge.getMonth() - 1);
                     allMovements.push({
                         type: 'sub', name: sub.name, amount: parseFloat(sub.cost),
-                        date: lastCharge.getTime(), icon: '\uD83D\uDCC5'
+                        date: lastCharge.getTime(), icon: UI.categoryIcon('cat_subs')
                     });
                 });
             }
@@ -254,7 +254,7 @@ const Finance = {
             }
         }
         
-        // 2. TOP CATEGOR�AS
+        // 2. TOP CATEGORÍAS
         const catContainer = document.getElementById('home-top-categories');
         if (catContainer) {
             catContainer.innerHTML = '';
@@ -324,7 +324,7 @@ const Finance = {
         }
     },
 
-    // --- GR�FICO DONUT + LEYENDA ---
+    // --- GRÁFICO DONUT + LEYENDA ---
     renderCategoryChart(container) {
         const categories = {};
         const [selYear, selMonth] = this.selectedHistoryMonth.split('-').map(Number);
@@ -491,7 +491,7 @@ const Finance = {
                 if(d.getMonth() === (selMonth-1) && d.getFullYear() === selYear) {
                     allItems.push({ 
                         type: 'list', id: l.id, date: l.date, amount: l.total, name: l.name, 
-                        rawCat: 'cat_market', icon: '\uD83D\uDED2' 
+                        rawCat: 'cat_market', icon: UI.categoryIcon('cat_market') 
                     });
                 }
             });
@@ -504,7 +504,7 @@ const Finance = {
                     allItems.push({ 
                         type: 'sub', id: s.id, date: new Date(selYear, selMonth-1, s.day).getTime(), 
                         amount: s.cost, name: s.name, 
-                        rawCat: 'cat_subs', icon: '\uD83D\uDCC5' 
+                        rawCat: 'cat_subs', icon: UI.categoryIcon('cat_subs') 
                     });
                 }
             });
@@ -628,7 +628,7 @@ const Finance = {
         if (isInstall) div.classList.remove('hidden'); else div.classList.add('hidden');
     },
     
-    // --- L�GICA DE FOTOS CON COMPRESI�N ---
+    // --- LÓGICA DE FOTOS CON COMPRESIÓN ---
     handlePhotoSelect(input) {
         const file = input.files[0];
         if (file) {
@@ -644,7 +644,7 @@ const Finance = {
                 const container = document.getElementById('exp-photo-preview-container');
                 if(container) container.classList.remove('hidden');
                 
-                // Icono de "�xito" (Check)
+                // Icono de "éxito" (Check)
                 if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
             }).catch(err => {
                 console.error("Error foto", err);
@@ -663,7 +663,7 @@ const Finance = {
         if(container) container.classList.add('hidden');
         
         const icon = document.getElementById('exp-photo-icon');
-        // RESTAURAR LA C�MARA ORIGINAL (IMPORTANTE)
+        // RESTAURAR LA CÁMARA ORIGINAL (IMPORTANTE)
         if(icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
     },
 
@@ -802,7 +802,7 @@ const Finance = {
 
         const sortBar = document.createElement('div');
         sortBar.className = 'subscription-sort-bar';
-        sortBar.innerHTML = `<label for="subs-sort">Ordenar por</label><select id="subs-sort" onchange="Finance.subscriptionSort=this.value; Finance.renderSubscriptions()"><option value="date">Fecha de cobro</option><option value="value">Valor</option><option value="name">Orden alfab�tico</option></select>`;
+        sortBar.innerHTML = `<label for="subs-sort">Ordenar por</label><select id="subs-sort" onchange="Finance.subscriptionSort=this.value; Finance.renderSubscriptions()"><option value="date">Fecha de cobro</option><option value="value">Valor</option><option value="name">Orden alfabético</option></select>`;
         sortBar.querySelector('select').value = this.subscriptionSort;
         container.appendChild(sortBar);
         const subscriptions = [...Data.store.subscriptions].sort((a,b) => this.subscriptionSort === 'value' ? (parseFloat(a.cost)||0)-(parseFloat(b.cost)||0) : this.subscriptionSort === 'name' ? String(a.name).localeCompare(String(b.name), undefined, {sensitivity:'base'}) : (parseInt(a.day,10)||0)-(parseInt(b.day,10)||0));
@@ -891,12 +891,12 @@ const Finance = {
         const expense = Data.store.expenses.find(e => e.id === id);
         if (!expense) return;
 
-        // 1. Rellenar Textos B�sicos
+        // 1. Rellenar Textos Básicos
         document.getElementById('det-exp-desc').innerText = expense.desc;
         document.getElementById('det-exp-amount').innerText = UI.formatMoney(expense.amount);
         document.getElementById('det-exp-date').innerText = new Date(expense.date).toLocaleString();
         
-        // Categor�a (con emoji si es posible)
+        // Categoría (con emoji si es posible)
         const catName = expense.category || UI.t('cat_other');
         const icon = this.getCategoryIcon(catName);
         document.getElementById('det-exp-cat').innerText = `${icon} ${catName}`;
@@ -932,7 +932,7 @@ const Finance = {
             linkBtn.classList.add('hidden');
         }
 
-        // 4. Configurar Bot�n de Borrar
+        // 4. Configurar Botón de Borrar
         const delBtn = document.getElementById('det-exp-delete-btn');
         delBtn.onclick = () => {
             this.deleteExpense(id);
@@ -949,7 +949,7 @@ const Finance = {
         // 1. Abrir modal normal
         this.openExpenseModal();
 
-        // 2. Rellenar campos con un peque�o delay
+        // 2. Rellenar campos con un pequeño delay
         setTimeout(() => {
             const amountInput = document.getElementById('exp-amount');
             const descInput = document.getElementById('exp-desc');
@@ -957,7 +957,7 @@ const Finance = {
             if (amountInput) amountInput.value = amount || '';
             if (descInput) descInput.value = desc;
 
-            // 3. Seleccionar el Chip de categor�a visualmente
+            // 3. Seleccionar el Chip de categoría visualmente
             const chips = document.querySelectorAll('.cat-chip');
             chips.forEach(chip => {
                 chip.classList.remove('selected');
@@ -975,8 +975,8 @@ const Finance = {
         }, 100);
     },
 
-    // --- FUNCI�N DEL BOT�N (BOT�N DOCK) ---
-        // --- FUNCI�N DEL BOT�N (L�GICA RESTAURADA DE LA VERSI�N ANTIGUA) ---
+    // --- FUNCIÓN DEL BOTÓN (BOTÓN DOCK) ---
+        // --- FUNCIÓN DEL BOTÓN (LÓGICA RESTAURADA DE LA VERSIÓN ANTIGUA) ---
     initSmartButton() {
         const btn = document.getElementById('dock-plus-btn');
         const overlay = document.getElementById('listening-overlay');
@@ -993,7 +993,7 @@ const Finance = {
         let isLongPress = false;
         let recognition = null;
 
-        // 2. CONFIGURACI�N DE VOZ (Igual que antes)
+        // 2. CONFIGURACIÓN DE VOZ (Igual que antes)
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
@@ -1021,7 +1021,7 @@ const Finance = {
             }
             isLongPress = true; // Marcamos que es voz
             
-            // L�gica visual (Mascota y Overlay)
+            // Lógica visual (Mascota y Overlay)
             let skinPath = '';
             if (typeof Assistant !== 'undefined' && Data.store && Data.store.gamification) {
                 const currentId = Data.store.gamification.currentSkin || 'default';
@@ -1048,17 +1048,17 @@ const Finance = {
                 // Si era toque largo (Voz), paramos el reconocimiento
                 if (recognition) try { recognition.stop(); } catch(e) {}
             } else {
-                // --- AQU� EST� LA CLAVE RESTAURADA ---
+                // --- AQUÍ ESTÁ LA CLAVE RESTAURADA ---
                 // Si NO fue toque largo, significa que fue un CLIC CORTO.
-                // Abrimos el men� manualmente aqu�.
+                // Abrimos el menú manualmente aquí.
                 Main.openAddMenu(); 
             }
             isLongPress = false;
         };
 
-        // 4. EVENTOS (LA L�GICA ANTIGUA QUE FUNCIONABA)
+        // 4. EVENTOS (LA LÓGICA ANTIGUA QUE FUNCIONABA)
         const startEvent = (e) => {
-            // ESTA L�NEA ES LA MAGIA: Evita conflictos y men�s contextuales
+            // ESTA LÍNEA ES LA MAGIA: Evita conflictos y menús contextuales
             if(e.cancelable) e.preventDefault(); 
             
             isLongPress = false;
@@ -1066,9 +1066,9 @@ const Finance = {
             pressTimer = setTimeout(startListeningUI, 600); 
         };
 
-        // Asignamos los eventos tal cual estaban en tu versi�n vieja
+        // Asignamos los eventos tal cual estaban en tu versión vieja
         
-        // M�vil
+        // Móvil
         activeBtn.addEventListener('touchstart', startEvent, {passive: false});
         activeBtn.addEventListener('touchend', stopListeningUI);
         
@@ -1076,13 +1076,13 @@ const Finance = {
         activeBtn.addEventListener('mousedown', startEvent);
         activeBtn.addEventListener('mouseup', stopListeningUI);
         
-        // Seguridad: Si sacas el dedo/mouse del bot�n, cancelamos todo
+        // Seguridad: Si sacas el dedo/mouse del botón, cancelamos todo
         activeBtn.addEventListener('mouseleave', () => {
             clearTimeout(pressTimer);
             if(isLongPress) stopListeningUI();
         });
         
-        console.log("Bot�n Smarty restaurado con l�gica cl�sica.");
+        console.log("Botón Smarty restaurado con lógica clásica.");
     },
 
 
@@ -1090,12 +1090,12 @@ const Finance = {
 
 
     // --- PROCESADOR DE TEXTO ---
-        // --- PROCESADOR DE TEXTO (VERSI�N COMPLETA ORIGINAL) ---
+        // --- PROCESADOR DE TEXTO (VERSIÓN COMPLETA ORIGINAL) ---
     processSmartText(text) {
         console.log("Voz Original:", text);
         
         // 1. Limpieza inicial
-        let cleanText = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.,:;?!��"'-]/g, ' ');
+        let cleanText = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.,:;?!¿¡"'-]/g, ' ');
 
         // 2. Extraer Monto
         const amountMatch = cleanText.match(/(\d+([.,]\d+)?)/);
@@ -1105,7 +1105,7 @@ const Finance = {
             cleanText = cleanText.replace(amountMatch[0], '');
         }
 
-        // 3. Detectar Categor�a
+        // 3. Detectar Categoría
         let categoryId = 'cat_other'; 
         if (typeof UI !== 'undefined' && UI.categories) {
             for (const cat of UI.categories) {
@@ -1120,7 +1120,7 @@ const Finance = {
 
         // 4. LA LISTA NEGRA EXTENSA (RESTAURADA)
         const blackList = [
-            // ================= ESPA�OL =================
+            // ================= ESPAÑOL =================
             // Pronombres
             'me', 'te', 'se', 'le', 'nos', 'mi', 'tu', 'su', 'mis', 'tus', 'sus',
             'yo', 'nosotros', 'ellos', 'ellas', 'ustedes',
@@ -1140,7 +1140,7 @@ const Finance = {
             'desayune', 'desayunamos', 'desayunar', 'desayuno',
             'merende', 'merendar', 'merienda',
             'sali', 'salimos', 'salir', 'salida',
-            // Art�culos/Conectores
+            // Artículos/Conectores
             'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas',
             'de', 'del', 'al', 'a', 'en', 'con', 'por', 'para', 'sin', 'sobre',
             'y', 'o', 'u', 'e', 'ni', 'que', 'pero', 'mas',
@@ -1173,7 +1173,7 @@ const Finance = {
             'into', 'onto', 'off', 'out', 'up', 'down',
             'and', 'or', 'but', 'so', 'just', 'only', 'like',
 
-            // ================= PORTUGU�S =================
+            // ================= PORTUGUÉS =================
             // Pronomes
             'eu', 'me', 'mim', 'meu', 'minha', 'nos', 'nosso', 'nossa',
             'tu', 'te', 'ti', 'teu', 'tua', 'voce', 
@@ -1206,7 +1206,7 @@ const Finance = {
             'valor', 'precio', 'preco', 'price', 'monto', 'cuanto', 'amount', 'total', 'value'
         ];
         
-        // Palabras t�cnicas adicionales
+        // Palabras técnicas adicionales
         blackList.push('categoria', 'cat', 'rubro', 'tipo', 'item', 'producto', 'category', 'type');
 
         // 5. Filtrado
@@ -1216,9 +1216,9 @@ const Finance = {
             return true;
         });
 
-        // 6. Construcci�n Final
+        // 6. Construcción Final
         let desc = finalWords.join(' ').trim();
-        if (desc.length < 2) desc = "Gasto R�pido";
+        if (desc.length < 2) desc = "Gasto Rápido";
         desc = desc.charAt(0).toUpperCase() + desc.slice(1);
 
         this.openSmartExpenseModal(amount, desc, categoryId);
