@@ -220,6 +220,13 @@
             <h2 style="color:var(--primary); margin:0;" data-i18n="mod_exp_title">Registrar Gasto</h2>
             <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
         </div>
+        <!-- NUEVO: Boton de Autocompletado IA -->
+        <div style="margin-bottom: 15px;">
+            <label class="btn-data" style="margin: 0; padding: 10px; cursor: pointer; border-style: dashed; border-color: var(--primary); display:flex; justify-content:center; align-items:center; gap:8px;">
+                <input type="file" accept="image/*" style="display:none;" onchange="Finance.handleExpenseAutoFill(this)">
+                <span id="exp-autofill-status">🪄 Autocompletar con Recibo</span>
+            </label>
+        </div>
 
         <div class="input-area glass-card" style="margin:0 0 15px 0; justify-content: center;">
             <span style="font-size:24px; font-weight:700; color:var(--primary);">$</span>

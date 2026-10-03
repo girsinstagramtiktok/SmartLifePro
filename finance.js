@@ -1222,6 +1222,118 @@ const Finance = {
         desc = desc.charAt(0).toUpperCase() + desc.slice(1);
 
         this.openSmartExpenseModal(amount, desc, categoryId);
+    },
+    // --- AUTOCOMPLETADO DE GASTOS CON IA ---
+    async handleExpenseAutoFill(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        let apiKey = Data.store.settings.geminiApiKey;
+        if (!apiKey) {
+            const key = prompt("Ingresa tu clave de Google AI Studio:");
+            if (!key) return;
+            Data.store.settings.geminiApiKey = key.trim();
+            apiKey = Data.store.settings.geminiApiKey;
+            Data.save();
+        }
+
+        const statusLabel = document.getElementById('exp-autofill-status');
+        if (statusLabel) statusLabel.innerText = "⏳ Extrayendo datos...";
+        if (typeof UI !== 'undefined') UI.showSnackbar("Analizando gasto en segundo plano...");
+
+        // Limpiar input
+        input.value = '';
+
+        try {
+            // 1. Comprimir imagen
+            const base64Data = await this.compressImage(file, 1200, 0.7);
+            const rawBase64 = base64Data.split(',')[1];
+
+            // 2. Lista de categorias disponibles en tu app
+            const categories = ["cat_market", "cat_leisure", "cat_transport", "cat_clothes", "cat_health", "cat_bills", "cat_travel", "cat_beauty", "cat_other"];
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: `Analiza este recibo/factura.
+Extrae el monto total pagado, el nombre del comercio (para la descripcion) y clasificalo en UNA de estas categorias exactas: ${categories.join(', ')}.
+Si no estas seguro de la categoria, usa "cat_other".
+Responde UNICAMENTE con un JSON valido:
+{
+  "amount": 25.50,
+  "desc": "Nombre del Comercio o Producto",
+  "category": "cat_leisure"
+}` },
+                        { inline_data: { mime_type: "image/jpeg", data: rawBase64 } }
+                    ]
+                }]
+            };
+
+            let data;
+            let retries = 3;
+            let success = false;
+
+            // 3. Enviar a Gemini (Usando 3.8-flash con reintentos)
+            for (let i = 0; i < retries; i++) {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                data = await response.json();
+
+                if (!data.error) {
+                    success = true;
+                    break;
+                }
+
+                if (data.error.message.includes("high demand") && i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                } else {
+                    throw new Error(data.error.message);
+                }
+            }
+
+            if (!success) throw new Error("Servidores saturados.");
+
+            const rawText = data.candidates[0].content.parts[0].text;
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            
+            if (!jsonMatch) throw new Error("Formato invalido.");
+
+            const result = JSON.parse(jsonMatch[0]);
+
+            // 4. Rellenar campos en la interfaz
+            if (result.amount) {
+                document.getElementById('exp-amount').value = parseFloat(result.amount).toFixed(2);
+            }
+            if (result.desc) {
+                document.getElementById('exp-desc').value = result.desc;
+            }
+            if (result.category) {
+                const chips = document.querySelectorAll('#cat-chips .cat-chip');
+                chips.forEach(chip => {
+                    chip.classList.remove('selected');
+                    chip.style.background = 'var(--glass-bg)';
+                    chip.style.color = 'var(--text-color)';
+                    
+                    if (chip.dataset.id === result.category) {
+                        chip.classList.add('selected');
+                        chip.style.background = 'var(--primary)';
+                        chip.style.color = 'white';
+                    }
+                });
+            }
+
+            if (typeof UI !== 'undefined') UI.showSnackbar("Gasto autocompletado con exito ✨");
+
+        } catch (err) {
+            console.error("Error autofill:", err);
+            if (typeof UI !== 'undefined') UI.showSnackbar("No se pudo autocompletar el gasto");
+        } finally {
+            if (statusLabel) statusLabel.innerText = "🪄 Autocompletar con Recibo";
+        }
     }
 
 

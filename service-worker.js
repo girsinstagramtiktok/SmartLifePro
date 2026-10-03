@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v11.37-polished-ui'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v11.38-polished-ui'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
