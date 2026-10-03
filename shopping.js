@@ -13,6 +13,26 @@ const Shopping = {
 
     // --- DICCIONARIO DE EMOJIS (BASE DE DATOS) ---
      emojiMap: {
+        'mandarina': '\uD83C\uDF4A', 'tangerina': '\uD83C\uDF4A',
+        'pera asiatica': '\uD83C\uDF50', 'ciruela': '\uD83C\uDF51', 'ciruelas': '\uD83C\uDF51',
+        'arveja': '\uD83E\uDED8', 'guisante': '\uD83E\uDED8', 'chicharo': '\uD83E\uDED8',
+        'coliflor': '\u{1F966}', 'coliflor fresca': '\u{1F966}',
+        'yuca': '\uD83E\uDD54', 'mandioca': '\uD83E\uDD54', '�ame': '\uD83E\uDD54',
+        'carne molida': '\uD83E\uDD69', 'carne picada': '\uD83E\uDD69', 'ground beef': '\uD83E\uDD69',
+        'leche en polvo': '\uD83E\uDD5B', 'leche condensada': '\uD83E\uDD5B',
+        'papel de cocina': '\uD83E\uDDFB', 'papel toalla': '\uD83E\uDDFB',
+        'lavaplatos': '\uD83E\uDDFD', 'lava vajillas': '\uD83E\uDDFD', 'esponjas': '\uD83E\uDDFD',
+        'pasta de dientes': '\uD83E\uDDB7', 'crema dental': '\uD83E\uDDB7',
+        'frutos secos': '\uD83E\uDD5C', 'nueces': '\uD83E\uDD5C', 'almendras': '\uD83E\uDD5C',
+        'aceite de oliva': '\uD83E\uDED2', 'vinagre': '\uD83E\uDED9',
+        'harina de trigo': '\uD83C\uDF3E', 'levadura': '\uD83E\uDDC1',
+        'papas fritas': '\uD83C\uDF5F', 'boniato': '\uD83C\uDF60',
+        'pescado congelado': '\uD83D\uDC1F', 'filete de pescado': '\uD83D\uDC1F',
+        'comida para perro': '\uD83D\uDC36', 'comida para gato': '\uD83D\uDC31',
+        'pa�ales': '\uD83D\uDC76', 'toallitas humedas': '\uD83E\uDDFB',
+        'desinfectante': '\uD83E\uDDF4', 'limpiavidrios': '\uD83E\uDDF4',
+        'focos': '\uD83D\uDCA1', 'pilas': '\uD83D\uDD0B',
+
         // --- BEBIDAS / DRINKS ---
         'agua': '💧', 'water': '💧', 'agua mineral': '💧',
         'refresco': '🥤', 'soda': '🥤', 'gaseosa': '🥤', 'coca': '🥤', 'refrigerante': '🥤', 'soft drink': '🥤',
@@ -194,7 +214,8 @@ const Shopping = {
     getEmoji(name) {
         const cleanName = this.normalize(name);
         for (let key in this.emojiMap) {
-            if (new RegExp(`\\b${key}\\b`, 'i').test(cleanName)) return this.emojiMap[key];
+            const variants = key.endsWith('s') ? [key] : [key, key + 's', key + 'es'];
+            if (variants.some(variant => new RegExp(`\\b${variant}\\b`, 'i').test(cleanName))) return this.emojiMap[key];
         }
         return '🛒'; 
     },
@@ -426,6 +447,7 @@ activeLists.forEach(l => {
                 </button>
             </div>
             
+            <div class="shopping-import-row"><button class="shopping-import-btn" onclick="Shopping.toggleImport()"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg><span>Importar lista</span></button></div>
            <div class="input-area" style="position: relative;">
                 <input type="text" id="shop-input" placeholder="${UI.t('shop_placeholder')}" autocomplete="off" list="suggestions">
                 
@@ -799,6 +821,8 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         });
         
         container.appendChild(fragment);
+        const manual = document.getElementById("finish-manual-total");
+        if (manual) manual.value = "";
         this.updateFinishTotal();
     },
 
@@ -810,7 +834,8 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
             const qty = parseFloat(inp.getAttribute('data-qty')) || 1;
             total += (price * qty); 
         });
-        document.getElementById('finish-total-val').innerText = UI.formatMoney(total);
+        const manual = parseFloat(document.getElementById('finish-manual-total')?.value);
+        document.getElementById('finish-total-val').innerText = UI.formatMoney(Number.isFinite(manual) && manual >= 0 ? manual : total);
     },
 
     confirmFinish() {
@@ -832,7 +857,8 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
             total += (price * qty); 
         });
 
-        list.total = total;
+        const manual = parseFloat(document.getElementById('finish-manual-total')?.value);
+        list.total = Number.isFinite(manual) && manual >= 0 ? manual : total;
         list.status = 'completed';
         list.date = Date.now(); 
 

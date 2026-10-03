@@ -523,16 +523,31 @@ msg_bio_inactive: "Lock Disabled 🔓"
     },
 
     // --- CATEGORÍAS DISPONIBLES ---
+    categoryIcon(id) {
+        const shapes = {
+            cat_market: '<path d="M3 4h2l2 11h12l2-8H6"/><circle cx="10" cy="19" r="1"/><circle cx="17" cy="19" r="1"/>',
+            cat_leisure: '<path d="M4 11h16l-2 8H6zM7 11l2-6h6l2 6"/>',
+            cat_transport: '<path d="M5 16V8l2-3h10l2 3v8M5 11h14M7 19h2m6 0h2"/><circle cx="7" cy="16" r="1"/><circle cx="17" cy="16" r="1"/>',
+            cat_clothes: '<path d="m8 5 4-2 4 2 5 3-3 4-3-2v11H9V10l-3 2-3-4z"/>',
+            cat_health: '<path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/>',
+            cat_bills: '<path d="m3 10 9-7 9 7v10H3zM9 20v-6h6v6"/>',
+            cat_travel: '<path d="M3 12h18M12 3l6 9-6 9-6-9z"/>',
+            cat_beauty: '<path d="m4 20 11-11 4 4L8 24M14 6l4-4 4 4-4 4z"/>',
+            cat_other: '<path d="M4 7h16v14H4zM3 3h18v4H3zM9 12h6"/>'
+        };
+        return '<svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(shapes[id]||shapes.cat_other)+'</svg>';
+    },
+
     categories: [
-        { id: 'cat_market', icon: '\uD83D\uDED2' }, 
-        { id: 'cat_leisure', icon: '\uD83C\uDF54' },
-        { id: 'cat_transport', icon: '\uD83D\uDE8C' },
-        { id: 'cat_clothes', icon: '\uD83D\uDC55' },
-        { id: 'cat_health', icon: '\uD83D\uDC8A' },
-        { id: 'cat_bills', icon: '\uD83C\uDFE0' },
-        { id: 'cat_travel', icon: '\u2708\uFE0F' },
-        { id: 'cat_beauty', icon: '\u2702\uFE0F \uD83D\uDC85' },
-        { id: 'cat_other', icon: '\uD83D\uDCE6' }
+        { id: 'cat_market', icon: 'cart' }, 
+        { id: 'cat_leisure', icon: 'leisure' },
+        { id: 'cat_transport', icon: 'transport' },
+        { id: 'cat_clothes', icon: 'clothes' },
+        { id: 'cat_health', icon: 'health' },
+        { id: 'cat_bills', icon: 'home' },
+        { id: 'cat_travel', icon: 'travel' },
+        { id: 'cat_beauty', icon: 'beauty' },
+        { id: 'cat_other', icon: 'other' }
     ],
 
     // --- UTILS ---
@@ -686,7 +701,7 @@ msg_bio_inactive: "Lock Disabled 🔓"
         this.categories.forEach(cat => {
             const chip = document.createElement('div');
             chip.className = 'chip cat-chip'; 
-            chip.innerText = `${cat.icon} ${this.t(cat.id)}`;
+            chip.innerHTML = `${this.categoryIcon(cat.id)}<span>${this.t(cat.id)}</span>`;
             chip.dataset.id = cat.id;
             
             chip.onclick = () => {

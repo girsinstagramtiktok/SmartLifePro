@@ -8,6 +8,7 @@ const Finance = {
     selectedHistoryMonth: null, 
     selectedCategoryFilter: 'ALL', // Estado del filtro de categorï¿½as
     chartDisplayMode: 'percent',
+    subscriptionSort: 'date',
     // Variable temporal para la foto (NUEVO)
     tempPhotoData: null, 
 
@@ -63,7 +64,7 @@ const Finance = {
                 const isActive = this.selectedCategoryFilter === cat.id ? 'active' : '';
                 html += `
                     <div class="filter-chip ${isActive}" onclick="Finance.setCategoryFilter('${cat.id}')">
-                        ${cat.icon} ${UI.t(cat.id)}
+                        ${UI.categoryIcon(cat.id)} ${UI.t(cat.id)}
                     </div>
                 `;
             });
@@ -179,15 +180,15 @@ const Finance = {
 
     // --- HELPER PARA ICONOS ---
     getCategoryIcon(catName) {
-        if (catName === 'cat_market' || catName === UI.t('cat_market')) return '\uD83D\uDED2'; 
+        if (catName === 'cat_market' || catName === UI.t('cat_market')) return UI.categoryIcon('cat_market'); 
         if (catName === 'tab_subs' || catName === 'cat_subs' || catName === UI.t('tab_subs')) return '\uD83D\uDCC5'; 
 
         if (typeof UI !== 'undefined' && UI.categories) {
             let found = UI.categories.find(c => c.id === catName);
             if (!found) found = UI.categories.find(c => UI.t(c.id) === catName);
-            if (found) return found.icon; 
+            if (found) return UI.categoryIcon(found.id); 
         }
-        return '\uD83D\uDCE6'; 
+        return UI.categoryIcon('cat_other'); 
     },
 
     // --- RENDERIZADO HOME (WIDGETS) ---
@@ -799,10 +800,16 @@ const Finance = {
             return;
         }
 
-        let totalCost = 0; // <--- NUEVO: Variable para el total
+        const sortBar = document.createElement('div');
+        sortBar.className = 'subscription-sort-bar';
+        sortBar.innerHTML = `<label for="subs-sort">Ordenar por</label><select id="subs-sort" onchange="Finance.subscriptionSort=this.value; Finance.renderSubscriptions()"><option value="date">Fecha de cobro</option><option value="value">Valor</option><option value="name">Orden alfabético</option></select>`;
+        sortBar.querySelector('select').value = this.subscriptionSort;
+        container.appendChild(sortBar);
+        const subscriptions = [...Data.store.subscriptions].sort((a,b) => this.subscriptionSort === 'value' ? (parseFloat(a.cost)||0)-(parseFloat(b.cost)||0) : this.subscriptionSort === 'name' ? String(a.name).localeCompare(String(b.name), undefined, {sensitivity:'base'}) : (parseInt(a.day,10)||0)-(parseInt(b.day,10)||0));
+        let totalCost = 0;
 
-        Data.store.subscriptions.forEach(sub => {
-            totalCost += parseFloat(sub.cost); // <--- NUEVO: Sumar al total
+        subscriptions.forEach(sub => {
+            totalCost += parseFloat(sub.cost)||0;
             
             const div = document.createElement('div');
             div.className = 'glass-card item-row';

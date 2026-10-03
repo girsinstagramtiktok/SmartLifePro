@@ -332,7 +332,9 @@
                 </div>
                 <div id="finish-items-list" style="flex:1; overflow-y:auto; padding-right:5px; margin-bottom:10px;">
                     </div>
-                <div class="receipt-total">
+                
+                <div class="manual-total-row"><label for="finish-manual-total">Total pagado (opcional)</label><input id="finish-manual-total" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Usar suma por artículo" oninput="Shopping.updateFinishTotal()"></div>
+                                <div class="receipt-total">
                     <span data-i18n="receipt_est">TOTAL</span> <b id="finish-total-val">$0.00</b>
                 </div>
                 <button class="btn-full" onclick="Shopping.confirmFinish()" data-i18n="btn_finish">Confirmar y Guardar</button>
@@ -347,6 +349,8 @@
                 </div>
                 <div id="detail-items-list" style="flex:1; overflow-y:auto; padding-right:5px; margin-bottom:10px;">
                     </div>
+                
+                
                 <div class="receipt-total">
                     <span data-i18n="receipt_real">TOTAL REAL</span> <b id="detail-total-val">$0.00</b>
                 </div>
@@ -365,7 +369,7 @@
                         <div class="sheet-icon-wrap bg-orange">&#128184;</div>
                         <div class="sheet-text"><span class="sheet-title" data-i18n="menu_exp_title">Registrar Gasto</span><span class="sheet-sub" data-i18n="menu_exp_desc">Pagos individuales</span></div>
                     </button>
-                    <button class="sheet-btn" onclick="Main.showListOptions()">
+                    <button class="sheet-btn" onclick="Shopping.createList()">
                         <div class="sheet-icon-wrap bg-blue">&#128221;</div>
                         <div class="sheet-text"><span class="sheet-title" data-i18n="menu_list_title">Nueva Lista</span><span class="sheet-sub" data-i18n="menu_list_desc">Organizar compra</span></div>
                     </button>

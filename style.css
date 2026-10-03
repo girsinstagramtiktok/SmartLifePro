@@ -996,3 +996,19 @@ body.dark-mode.theme-purple { --bg-body: #10051a; --glass-bg: rgba(25, 10, 40, 0
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* Modern UI refinements */
+.category-icon{width:18px;height:18px;flex:0 0 18px;vertical-align:middle;color:currentColor}
+.cat-chip{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid var(--glass-border);transition:transform .16s ease,background .16s ease,box-shadow .16s ease}
+.cat-chip:active,.sheet-btn:active,.shopping-import-btn:active{transform:scale(.97)}
+.cat-chip.selected{box-shadow:0 5px 14px color-mix(in srgb,var(--primary) 24%,transparent)}
+.shopping-import-row{display:flex;justify-content:flex-end;padding:0 18px 8px}
+.shopping-import-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--glass-border);border-radius:999px;background:var(--glass-bg);color:var(--primary);font:700 13px var(--font-main);padding:9px 13px;box-shadow:var(--glass-shadow)}
+.shopping-import-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.manual-total-row{display:grid;gap:8px;margin-top:12px;padding:13px 14px;border:1px solid var(--glass-border);border-radius:16px;background:var(--input-bg)}
+.manual-total-row label,.subscription-sort-bar label{font-size:12px;font-weight:800;color:var(--text-sec);text-transform:uppercase;letter-spacing:.04em}
+.manual-total-row input,.subscription-sort-bar select{width:100%;border:0;border-radius:10px;background:var(--glass-bg);color:var(--text-color);font:600 15px var(--font-main);padding:11px 12px;outline:none}
+.subscription-sort-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:12px 14px;border:1px solid var(--glass-border);border-radius:16px;background:var(--glass-bg)}
+.subscription-sort-bar select{width:auto;min-width:150px;border:1px solid var(--glass-border);padding:9px 30px 9px 10px}
+.glass-card,.settings-card,.action-sheet-card{box-shadow:var(--glass-shadow)}
+@media(max-width:380px){.subscription-sort-bar{align-items:flex-start;flex-direction:column}.subscription-sort-bar select{width:100%}}
