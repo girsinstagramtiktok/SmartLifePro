@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - SHOPPING MODULE (V7.7 - UI & LOGIC FIX)
+   SMART LIFE PRO - SHOPPING MODULE (V7.7 - UI & LOGIC FIX + GEMINI AI)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -1366,8 +1366,7 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         modal.classList.add('open');
     },
 
-    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); },
-    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }, // <-- NO OLVIDES ESTA COMA
+    closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); }, 
 
     // --- ESCANEO DE RECIBO CON IA ---
     async handleReceiptPhoto(input) {
@@ -1377,14 +1376,15 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         // Verificar API Key
         let apiKey = Data.store.settings.geminiApiKey;
         if (!apiKey) {
-            const key = prompt("Ingresa tu clave gratuita de Google AI Studio (solo la primera vez):");
+            const key = prompt("Ingresa tu clave de Google AI Studio:");
             if (!key) return;
             Data.store.settings.geminiApiKey = key.trim();
+            apiKey = Data.store.settings.geminiApiKey;
             Data.save();
         }
 
         const statusLabel = document.getElementById('receipt-scan-status');
-        if (statusLabel) statusLabel.innerText = "⏳ Analizando recibo...";
+        if (statusLabel) statusLabel.innerText = "⏳ Analizando recibo... espera unos segundos.";
 
         try {
             // 1. Comprimir imagen
@@ -1395,29 +1395,29 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
             const list = Data.store.lists.find(l => l.id === Data.store.currentId);
             const targetItems = list.items.filter(i => i.checked).map(i => i.name);
 
-            // 3. Enviar a Gemini
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${Data.store.settings.geminiApiKey}`, {
+            // 3. Enviar a Gemini (Usando el modelo más avanzado)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{
                         parts: [
                             { text: `Analiza este recibo de compra.
-    Lista de productos que compré: ${JSON.stringify(targetItems)}.
+Lista de productos que compré: ${JSON.stringify(targetItems)}.
 
-    Tu tarea:
-    1. Extrae los precios unitarios o finales de cada producto que coincida con la lista.
-    2. Si en el recibo hay productos con precio que NO lograste asociar con seguridad a ninguno de la lista, colócalos en "unmatched".
+Tu tarea:
+1. Extrae los precios unitarios o finales de cada producto que coincida con la lista.
+2. Si en el recibo hay productos con precio que NO lograste asociar con seguridad a ninguno de la lista, colócalos en "unmatched".
 
-    Responde ÚNICAMENTE un JSON válido con este formato:
-    {
-      "matches": [
-        { "listName": "Nombre exacto de la lista", "price": 10.50 }
-      ],
-      "unmatched": [
-        { "receiptText": "Texto en el ticket", "price": 5.20 }
-      ]
-    }` },
+Responde ÚNICAMENTE un JSON válido con este formato:
+{
+  "matches": [
+    { "listName": "Nombre exacto de la lista", "price": 10.50 }
+  ],
+  "unmatched": [
+    { "receiptText": "Texto en el ticket", "price": 5.20 }
+  ]
+}` },
                             {
                                 inline_data: {
                                     mime_type: "image/jpeg",
@@ -1434,9 +1434,15 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
                 throw new Error(data.error.message);
             }
 
+            // Extracción de JSON a prueba de fallos (Filtro Inteligente)
             const rawText = data.candidates[0].content.parts[0].text;
-            const cleanJSON = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const result = JSON.parse(cleanJSON);
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/); 
+            
+            if (!jsonMatch) {
+                throw new Error("La IA no devolvió un formato válido.");
+            }
+            
+            const result = JSON.parse(jsonMatch[0]);
 
             // 4. Asignar precios asociados automáticamente
             if (result.matches && result.matches.length > 0) {
@@ -1458,10 +1464,15 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
 
         } catch (err) {
             console.error("Error al procesar el recibo:", err);
+            alert("Error de procesamiento: " + err.message); 
             if (typeof UI !== 'undefined') UI.showSnackbar("Error al procesar el recibo ❌");
         } finally {
-            if (statusLabel) statusLabel.innerText = "📸 Escanear Recibo / Ticket";
-            input.value = '';
+            if (statusLabel) statusLabel.innerText = "";
+            
+            const camInput = document.getElementById('receipt-photo-cam');
+            const galInput = document.getElementById('receipt-photo-gal');
+            if(camInput) camInput.value = '';
+            if(galInput) galInput.value = '';
         }
     },
 
@@ -1499,5 +1510,3 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
         if (typeof UI !== 'undefined') UI.showSnackbar("Precios actualizados");
     }
 };
-
-
