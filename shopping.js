@@ -1311,123 +1311,102 @@ if (typeof UI !== 'undefined') UI.renderBudgetChart();
 
     closeProductHistory() { document.getElementById('product-modal').classList.remove('open'); },
 
-    // --- ESCANEO DE RECIBO CON IA ---
+    // --- ESCANEO DE RECIBO CON IA (GROQ VISION) ---
     async handleReceiptPhoto(input) {
         const file = input.files[0];
         if (!file) return;
 
-        // Verificar API Key sin tildes
-        let apiKey = Data.store.settings.geminiApiKey;
-        if (!apiKey) {
-            const key = prompt("Ingresa tu clave de Google AI Studio:");
-            if (!key) return;
-            Data.store.settings.geminiApiKey = key.trim();
-            apiKey = Data.store.settings.geminiApiKey;
-            Data.save();
+        if (typeof GroqAI === 'undefined') {
+            console.error('GroqAI no esta disponible.');
+            if (typeof UI !== 'undefined') UI.showSnackbar('Modulo de IA no disponible');
+            return;
         }
 
-        // Mostrar mensaje no bloqueante
-        if (typeof UI !== 'undefined') UI.showSnackbar("Procesando en segundo plano, puede seguir...");
-        
-        // Limpiar inputs para permitir re-uso inmediato
+        // Pedir/validar que exista una clave antes de procesar la imagen.
+        if (!GroqAI.getApiKey()) return;
+
+        if (typeof UI !== 'undefined') UI.showSnackbar("Procesando recibo con IA...");
+
+        // Limpiar inputs para permitir re-uso inmediato.
         const camInput = document.getElementById('receipt-photo-cam');
         const galInput = document.getElementById('receipt-photo-gal');
-        if(camInput) camInput.value = '';
-        if(galInput) galInput.value = '';
+        if (camInput) camInput.value = '';
+        if (galInput) galInput.value = '';
 
         try {
-            // 1. Comprimir imagen
-            const base64Data = await Finance.compressImage(file, 1200, 0.7);
+            // 1. Comprimir imagen. Finance.compressImage siempre devuelve JPEG.
+            const base64Data = await Finance.compressImage(file, 1200, 0.72);
             const rawBase64 = base64Data.split(',')[1];
 
-            // 2. Extraer productos pendientes
+            // 2. Extraer productos marcados para asociarlos con el recibo.
             const list = Data.store.lists.find(l => l.id === Data.store.currentId);
-            if (!list) return;
+            if (!list) throw new Error('Lista no encontrada.');
+
             const targetItems = list.items.filter(i => i.checked).map(i => i.name);
+            if (targetItems.length === 0) {
+                if (typeof UI !== 'undefined') UI.showSnackbar("Marca primero los productos comprados.");
+                return;
+            }
 
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: `Analiza este recibo de compra.
-Lista de productos: ${JSON.stringify(targetItems)}.
+            // Prompt en ingles para JSON mode. listName debe copiar exactamente uno de targetItems.
+            const promptText = `Analyze this shopping receipt image and match prices to the provided shopping-list items.
+Shopping-list items: ${JSON.stringify(targetItems)}
 
-Tarea: Extrae precios unitarios o finales de la lista.
-Responde UNICAMENTE un JSON valido:
+Return ONLY one JSON object using this exact structure:
 {
-  "matches": [ { "listName": "Nombre", "price": 10.50 } ],
-  "unmatched": [ { "receiptText": "Texto", "price": 5.20 } ]
-}` },
-                        { inline_data: { mime_type: "image/jpeg", data: rawBase64 } }
-                    ]
-                }]
-            };
+  "matches": [
+    { "listName": "EXACT item name copied from the shopping-list items", "price": 10.50 }
+  ],
+  "unmatched": [
+    { "receiptText": "Receipt item that could not be matched", "price": 5.20 }
+  ]
+}
+Rules:
+- Never invent shopping-list item names.
+- For every match, listName must be copied exactly from the provided shopping-list items.
+- price must be the price attributable to that list item as shown on the receipt and must be a positive number.
+- Do not include uncertain matches in matches; place them in unmatched instead.
+- If nothing can be read, return empty arrays.`;
 
-            let data;
-            let retries = 3;
-            let success = false;
+            const result = await GroqAI.visionJSON(promptText, rawBase64);
 
-            // 3. Enviar a Gemini (Usando 3.8-flash) con reintentos
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+            const matches = Array.isArray(result?.matches) ? result.matches : [];
+            const unmatched = Array.isArray(result?.unmatched) ? result.unmatched : [];
+            const validNames = new Set(targetItems);
+            const receiptInputs = Array.from(document.querySelectorAll('#finish-items-list .receipt-input[data-name]'));
 
-                data = await response.json();
-
-                if (!data.error) {
-                    success = true;
-                    break;
-                }
-
-                // Esperar si hay alta demanda
-                if (data.error.message.includes("high demand") && i < retries - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 3000)); 
-                } else {
-                    throw new Error(data.error.message);
-                }
-            }
-
-            if (!success) throw new Error("Servidores saturados.");
-
-            // Extraccion de JSON a prueba de fallos
-            const rawText = data.candidates[0].content.parts[0].text;
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/); 
-            
-            if (!jsonMatch) {
-                throw new Error("Formato invalido.");
-            }
-            
-            const result = JSON.parse(jsonMatch[0]);
-
-            // 4. Asignar precios asociados automaticamente
+            // 3. Asignar precios. Solo aceptamos nombres exactos de la lista para evitar asociaciones incorrectas.
             let matchedCount = 0;
-            if (result.matches && result.matches.length > 0) {
-                result.matches.forEach(m => {
-                    const inputEl = document.querySelector(`#finish-items-list .receipt-input[data-name="${m.listName}"]`);
-                    if (inputEl && m.price > 0) {
-                        inputEl.value = parseFloat(m.price).toFixed(2);
-                        matchedCount++;
-                    }
-                });
-                this.updateFinishTotal();
-            }
+            matches.forEach(match => {
+                const listName = typeof match?.listName === 'string' ? match.listName : '';
+                const price = Number(match?.price);
+                if (!validNames.has(listName) || !Number.isFinite(price) || price <= 0) return;
 
-            // 5. Mensajes de resultado sin tildes ni alerts
+                const inputEl = receiptInputs.find(el => el.dataset.name === listName);
+                if (inputEl) {
+                    inputEl.value = price.toFixed(2);
+                    matchedCount++;
+                }
+            });
+
+            if (matchedCount > 0) this.updateFinishTotal();
+
+            // 4. Informar resultado.
             if (typeof UI !== 'undefined') {
-                if (result.unmatched && result.unmatched.length > 0) {
-                    UI.showSnackbar("Precios extraidos. Faltaron algunos items.");
-                } else if (matchedCount > 0) {
-                    UI.showSnackbar("Todos los precios extraidos con exito.");
+                if (matchedCount === 0) {
+                    UI.showSnackbar("No se detectaron precios confiables de la lista.");
+                } else if (unmatched.length > 0 || matchedCount < targetItems.length) {
+                    UI.showSnackbar(`Precios extraidos: ${matchedCount}/${targetItems.length}. Revisa los faltantes.`);
                 } else {
-                    UI.showSnackbar("No se detectaron precios de la lista.");
+                    UI.showSnackbar("Todos los precios extraidos con exito.");
                 }
             }
 
         } catch (err) {
-            console.error("Error al procesar el recibo:", err);
-            if (typeof UI !== 'undefined') UI.showSnackbar("Error al procesar el recibo. Intente luego.");
+            console.error("Error al procesar el recibo con Groq:", err);
+            const msg = GroqAI.friendlyError(err);
+            if (typeof UI !== 'undefined' && msg) UI.showSnackbar(msg);
         }
     }
+
 };

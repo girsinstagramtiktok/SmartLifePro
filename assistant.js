@@ -3,6 +3,183 @@
    Autor: A_True_Alpha | Fix: Badges Visual & Full Translation
    ========================================= */
 
+// --- GROQ AI CLIENT (shared by Assistant, Finance and Shopping) ---
+// NOTE: The API key is stored in Data.store.settings.groqApiKey.
+// This keeps the migration limited to these 3 files; data.js preserves extra settings automatically.
+const GroqAI = {
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    textModel: 'openai/gpt-oss-20b',
+    visionModel: 'qwen/qwen3.8-27b',
+    maxAttempts: 3,
+
+    getApiKey() {
+        if (!Data.store.settings) Data.store.settings = {};
+
+        const stored = (Data.store.settings.groqApiKey || '').trim();
+        if (stored) return stored;
+
+        const key = prompt('Ingresa tu API key de Groq (empieza normalmente por gsk_):');
+        if (!key || !key.trim()) return null;
+
+        Data.store.settings.groqApiKey = key.trim();
+        Data.save();
+        return Data.store.settings.groqApiKey;
+    },
+
+    clearApiKey() {
+        if (Data.store.settings) {
+            Data.store.settings.groqApiKey = '';
+            Data.save();
+        }
+    },
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    retryDelay(response, attempt) {
+        const retryAfter = response?.headers?.get('retry-after');
+        if (retryAfter) {
+            const seconds = Number(retryAfter);
+            if (Number.isFinite(seconds)) return Math.max(500, seconds * 1000);
+        }
+        return Math.min(5000, 700 * Math.pow(2, attempt));
+    },
+
+    async request(payload, { timeoutMs = 30000 } = {}) {
+        const apiKey = this.getApiKey();
+        if (!apiKey) throw new Error('GROQ_KEY_CANCELLED');
+
+        let lastError = null;
+
+        for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+            try {
+                const response = await fetch(this.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                const raw = await response.text();
+                let data = {};
+                try { data = raw ? JSON.parse(raw) : {}; }
+                catch (_) { data = { error: { message: raw || 'Respuesta invalida de Groq.' } }; }
+
+                if (response.ok) return data;
+
+                const message = data?.error?.message || `Error HTTP ${response.status}`;
+                const err = new Error(message);
+                err.status = response.status;
+                err.data = data;
+                lastError = err;
+
+                if (response.status === 401 || response.status === 403) {
+                    this.clearApiKey();
+                    throw err;
+                }
+
+                const retryable = response.status === 408 || response.status === 409 || response.status === 429 || response.status >= 500;
+                if (!retryable || attempt === this.maxAttempts - 1) throw err;
+
+                await this.sleep(this.retryDelay(response, attempt));
+
+            } catch (err) {
+                clearTimeout(timeoutId);
+                lastError = err;
+
+                if (err?.status === 401 || err?.status === 403) throw err;
+
+                const retryableNetworkError = err?.name === 'AbortError' || typeof err?.status === 'undefined';
+                if (!retryableNetworkError || attempt === this.maxAttempts - 1) throw err;
+
+                await this.sleep(Math.min(5000, 700 * Math.pow(2, attempt)));
+            }
+        }
+
+        throw lastError || new Error('No se pudo conectar con Groq.');
+    },
+
+    extractText(data) {
+        const text = data?.choices?.[0]?.message?.content;
+        if (typeof text !== 'string' || !text.trim()) {
+            throw new Error('Groq devolvio una respuesta vacia.');
+        }
+        return text.trim();
+    },
+
+    parseJSON(text) {
+        const cleaned = String(text || '')
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim();
+
+        try {
+            return JSON.parse(cleaned);
+        } catch (_) {
+            const match = cleaned.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error('Formato JSON invalido.');
+            return JSON.parse(match[0]);
+        }
+    },
+
+    async chat(systemPrompt, userText) {
+        const payload = {
+            model: this.textModel,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userText }
+            ],
+            temperature: 0.45,
+            max_completion_tokens: 450,
+            stream: false
+        };
+
+        const data = await this.request(payload, { timeoutMs: 25000 });
+        return this.extractText(data);
+    },
+
+    async visionJSON(promptText, rawBase64) {
+        const payload = {
+            model: this.visionModel,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: promptText },
+                    {
+                        type: 'image_url',
+                        image_url: { url: `data:image/jpeg;base64,${rawBase64}` }
+                    }
+                ]
+            }],
+            response_format: { type: 'json_object' },
+            reasoning_effort: 'none',
+            temperature: 0.1,
+            max_completion_tokens: 1400,
+            stream: false
+        };
+
+        const data = await this.request(payload, { timeoutMs: 45000 });
+        return this.parseJSON(this.extractText(data));
+    },
+
+    friendlyError(err) {
+        if (err?.message === 'GROQ_KEY_CANCELLED') return null;
+        if (err?.status === 401 || err?.status === 403) return 'La API key de Groq no es valida. Intenta de nuevo para ingresar otra.';
+        if (err?.status === 429) return 'Groq alcanzo temporalmente el limite de uso. Intenta de nuevo en unos segundos.';
+        if (err?.name === 'AbortError') return 'Groq tardo demasiado en responder. Intenta nuevamente.';
+        return 'No se pudo conectar con Groq. Intenta nuevamente.';
+    }
+};
+
 const Assistant = {
     config: {
         baseXP: 100,
@@ -1008,76 +1185,37 @@ Reglas estrictas:
     async sendSmartyMessage() {
         const input = document.getElementById('smarty-chat-input');
         const text = input.value.trim();
-        if(!text) return;
+        if (!text) return;
+
+        // Pedir la clave antes de modificar el chat; si se cancela, no deja mensajes colgados.
+        const apiKey = GroqAI.getApiKey();
+        if (!apiKey) return;
 
         // 1. Mostrar mensaje del usuario
         this.appendChatMessage(text, 'user');
         input.value = '';
 
-        // 2. Mostrar "Escribiendo..."
+        // 2. Mostrar "Pensando..."
         const typingId = 'typing-' + Date.now();
         this.appendChatMessage("Pensando...", 'bot', typingId);
 
-        let apiKey = Data.store.settings.geminiApiKey;
-        if (!apiKey) {
-            const key = prompt("Ingresa tu clave de Google AI Studio:");
-            if (!key) return;
-            Data.store.settings.geminiApiKey = key.trim();
-            apiKey = Data.store.settings.geminiApiKey;
-            Data.save();
-        }
-
         try {
             const context = this.getFinancialContext();
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: context + "\n\nPregunta del usuario: " + text }
-                    ]
-                }]
-            };
+            const botReply = await GroqAI.chat(context, text);
 
-            let data;
-            let retries = 3;
-            let success = false;
-
-            // Bucle de reintentos con 3.8-flash
-            for (let i = 0; i < retries; i++) {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                data = await response.json();
-
-                if (!data.error) {
-                    success = true;
-                    break;
-                }
-
-                if (data.error.message.includes("high demand") && i < retries - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                } else {
-                    throw new Error(data.error.message);
-                }
-            }
-
-            if (!success) throw new Error("Servidores saturados.");
-
-            const botReply = data.candidates[0].content.parts[0].text;
-            
             // 3. Remover "Pensando..." y mostrar respuesta final
             const typingEl = document.getElementById(typingId);
-            if(typingEl) typingEl.remove();
+            if (typingEl) typingEl.remove();
 
             this.appendChatMessage(botReply, 'bot');
 
-        } catch(err) {
-            console.error(err);
+        } catch (err) {
+            console.error('Error Groq Smarty:', err);
             const typingEl = document.getElementById(typingId);
-            if(typingEl) typingEl.remove();
-            this.appendChatMessage("Ups, tuve un problema procesando los datos. Los servidores deben estar saturados, intenta de nuevo.", 'bot');
+            if (typingEl) typingEl.remove();
+
+            const msg = GroqAI.friendlyError(err);
+            if (msg) this.appendChatMessage(msg, 'bot');
         }
     },
 
@@ -1104,8 +1242,14 @@ Reglas estrictas:
             border-bottom-left-radius: ${isUser ? '22px' : '4px'};
         `;
         
-        // Formatear negritas de markdown
-        let formattedText = text.replace(/\n/g, '<br>');
+        // Formatear texto de forma segura y conservar **negritas**
+        let formattedText = String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;')
+            .replace(/\n/g, '<br>');
         formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<b style="font-weight:800;">$1</b>');
         
         msgDiv.innerHTML = formattedText;
