@@ -1,5 +1,5 @@
 /* =========================================
-   SMART LIFE PRO - SHOPPING MODULE (V7.7 - UI & LOGIC FIX + GEMINI AI PRO)
+   SMART LIFE PRO - SHOPPING MODULE (V8.0 - GROQ SMARTY VOICE + VISION)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -306,6 +306,133 @@ parseQtyValue(qtyString) {
         this.openShoppingView();
     },
 
+    getKnownPriceForSmarty(name) {
+        const cleanName = this.normalize(name);
+        let price = Data.store.prices?.[cleanName];
+        if (price === undefined && Data.store.prices) {
+            const dirtyKey = Object.keys(Data.store.prices).find(k => this.normalize(k) === cleanName);
+            if (dirtyKey) price = Data.store.prices[dirtyKey];
+        }
+        return parseFloat(price) || 0;
+    },
+
+    smartListSchema() {
+        return {
+            type: 'object',
+            properties: {
+                title: { type: 'string' },
+                items: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            name: { type: 'string' },
+                            qty: { type: 'string' }
+                        },
+                        required: ['name','qty'],
+                        additionalProperties: false
+                    }
+                }
+            },
+            required: ['title','items'],
+            additionalProperties: false
+        };
+    },
+
+    async parseSmartyShoppingSpeech(transcript) {
+        const lang = Data?.store?.settings?.lang || 'es';
+        const instructions = `You convert natural spoken shopping requests into a clean shopping list. The user language is ${lang}. Split every distinct product into an item. Preserve explicit quantities/units such as kg, g, L, ml, packs, bottles, dozens or item counts in qty. If no quantity is given, use qty "1". Keep product names short and natural in the user's language. title must be a short useful list name. Never add products the user did not request.`;
+        const result = await GroqAI.textJSON(instructions, transcript, 'smart_shopping_list', this.smartListSchema(), { maxTokens: 1000 });
+        const items = Array.isArray(result.items) ? result.items : [];
+        const cleaned = [];
+        const seen = new Set();
+
+        items.slice(0, 50).forEach(item => {
+            const name = String(item.name || '').trim();
+            if (!name) return;
+            const key = this.normalize(name);
+            if (!key || seen.has(key)) return;
+            seen.add(key);
+            cleaned.push({
+                name,
+                qty: String(item.qty || '1').trim() || '1',
+                checked: false,
+                price: this.getKnownPriceForSmarty(name)
+            });
+        });
+
+        if (!cleaned.length) throw new Error('EMPTY_SMART_LIST');
+        return { title: String(result.title || '').trim(), items: cleaned };
+    },
+
+    async startSmartyListVoice() {
+        const btn = document.getElementById('lists-smarty-btn');
+        const original = btn ? btn.innerHTML : '';
+        try {
+            if (btn) { btn.disabled = true; btn.innerHTML = '🎙'; }
+            if (typeof UI !== 'undefined') UI.showSnackbar('🎙 Dile a Smarty todo lo que necesitas comprar');
+            const transcript = await GroqAI.listenOnce();
+            if (btn) btn.innerHTML = '⏳';
+
+            const parsed = await this.parseSmartyShoppingSpeech(transcript);
+            this.createList(true);
+            const list = Data.store.lists.find(l => l.id === Data.store.currentId) || Data.store.lists[0];
+            if (!list) throw new Error('LIST_CREATE_FAILED');
+
+            if (parsed.title) list.name = parsed.title.slice(0, 60);
+            list.items = parsed.items;
+            Data.save();
+            this.openShoppingView();
+            if (typeof UI !== 'undefined') UI.showSnackbar(`✨ Smarty creo ${parsed.items.length} productos. Puedes editarlos antes de comprar.`);
+        } catch (err) {
+            console.error('Smarty list voice:', err);
+            const msg = err?.message === 'EMPTY_SMART_LIST'
+                ? 'Smarty no identifico productos. Puedes crear la lista manualmente.'
+                : GroqAI.friendlyError(err);
+            if (msg && typeof UI !== 'undefined') UI.showSnackbar(msg);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = original || '✨ Smarty'; }
+        }
+    },
+
+    async startSmartyAddItemsVoice() {
+        const btn = document.getElementById('shop-smarty-btn');
+        const original = btn ? btn.innerHTML : '';
+        try {
+            const list = Data.store.lists.find(l => l.id === Data.store.currentId);
+            if (!list) return;
+            if (btn) { btn.disabled = true; btn.innerHTML = '🎙'; }
+            if (typeof UI !== 'undefined') UI.showSnackbar('🎙 Dile a Smarty varios productos de una sola vez');
+
+            const transcript = await GroqAI.listenOnce();
+            if (btn) btn.innerHTML = '⏳';
+            const parsed = await this.parseSmartyShoppingSpeech(transcript);
+
+            const existing = new Set((list.items || []).map(i => this.normalize(i.name)));
+            let added = 0;
+            parsed.items.forEach(item => {
+                const key = this.normalize(item.name);
+                if (!key || existing.has(key)) return;
+                existing.add(key);
+                list.items.push(item);
+                added++;
+            });
+
+            Data.save();
+            this.renderShoppingItems();
+            this.renderQuickChips();
+            if (typeof UI !== 'undefined') UI.showSnackbar(added ? `✨ Smarty agrego ${added} productos.` : 'Todos esos productos ya estaban en la lista.');
+        } catch (err) {
+            console.error('Smarty add items voice:', err);
+            const msg = err?.message === 'EMPTY_SMART_LIST'
+                ? 'Smarty no identifico productos. El microfono normal sigue disponible.'
+                : GroqAI.friendlyError(err);
+            if (msg && typeof UI !== 'undefined') UI.showSnackbar(msg);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = original || '✨'; }
+        }
+    },
+
     // --- RENDERIZADO (LISTAS ACTIVAS) ---
     renderLists() {
         const container = document.getElementById('lists-container');
@@ -423,6 +550,7 @@ activeLists.forEach(l => {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
                 </button>
                 <h2 style="flex:1; text-align:center; font-size:16px; margin:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${list.name}</h2>
+                <button id="shop-smarty-btn" class="icon-btn" onclick="Shopping.startSmartyAddItemsVoice()" aria-label="Agregar varios productos con Smarty" title="Agregar varios con Smarty" style="width:34px; height:34px; font-size:16px; margin-right:2px;">✨</button>
                 <button class="icon-btn" onclick="Shopping.sortList()">
                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 </button>

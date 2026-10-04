@@ -742,6 +742,9 @@ msg_bio_inactive: "Lock Disabled 🔓"
         // --- 2. PREPARAR DATOS ALMACENAMIENTO ---
         const storage = Data.getStorageUsage();
         const barColor = storage.status === 'good' ? 'var(--success)' : (storage.status === 'warning' ? 'var(--warning)' : 'var(--danger)');
+        const groqUsageHTML = (typeof GroqAI !== 'undefined')
+            ? GroqAI.getUsageCardHTML()
+            : '<div class="glass-card" style="padding:15px;">Smarty AI se inicializara al abrir la app.</div>';
 
         // --- 3. RENDERIZADO ÚNICO ---
         container.innerHTML = `
@@ -818,6 +821,11 @@ msg_bio_inactive: "Lock Disabled 🔓"
                         <span class="slider"></span>
                     </label>
                 </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <div class="section-label">SMARTY AI</div>
+                <div id="groq-usage-card">${groqUsageHTML}</div>
             </div>
             
             <div style="margin-bottom: 20px;">

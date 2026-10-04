@@ -33,6 +33,159 @@ const GroqAI = {
         }
     },
 
+    todayKey() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    ensureUsageState() {
+        if (!Data.store.settings) Data.store.settings = {};
+        const today = this.todayKey();
+        let state = Data.store.settings.groqUsage;
+
+        if (!state || state.date !== today) {
+            state = {
+                date: today,
+                requests: 0,
+                promptTokens: 0,
+                completionTokens: 0,
+                totalTokens: 0,
+                cachedTokens: 0,
+                models: {}
+            };
+            Data.store.settings.groqUsage = state;
+            Data.save();
+        }
+        return state;
+    },
+
+    headerNumber(response, name) {
+        const raw = response?.headers?.get(name);
+        if (raw === null || raw === undefined || raw === '') return null;
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : null;
+    },
+
+    recordResponse(response, data, model, success) {
+        if (typeof Data === 'undefined' || !Data.store) return;
+        const state = this.ensureUsageState();
+        const modelId = model || data?.model || 'unknown';
+        if (!state.models[modelId]) {
+            state.models[modelId] = {
+                requests: 0,
+                promptTokens: 0,
+                completionTokens: 0,
+                totalTokens: 0,
+                cachedTokens: 0,
+                quota: {}
+            };
+        }
+
+        const m = state.models[modelId];
+        const usage = data?.usage || {};
+
+        if (success) {
+            const prompt = Number(usage.prompt_tokens || 0);
+            const completion = Number(usage.completion_tokens || 0);
+            const total = Number(usage.total_tokens || (prompt + completion));
+            const cached = Number(usage?.prompt_tokens_details?.cached_tokens || 0);
+
+            state.requests += 1;
+            state.promptTokens += prompt;
+            state.completionTokens += completion;
+            state.totalTokens += total;
+            state.cachedTokens += cached;
+
+            m.requests += 1;
+            m.promptTokens += prompt;
+            m.completionTokens += completion;
+            m.totalTokens += total;
+            m.cachedTokens += cached;
+        }
+
+        const quota = {
+            limitRequests: this.headerNumber(response, 'x-ratelimit-limit-requests'),
+            remainingRequests: this.headerNumber(response, 'x-ratelimit-remaining-requests'),
+            limitTokens: this.headerNumber(response, 'x-ratelimit-limit-tokens'),
+            remainingTokens: this.headerNumber(response, 'x-ratelimit-remaining-tokens'),
+            resetRequests: response?.headers?.get('x-ratelimit-reset-requests') || null,
+            resetTokens: response?.headers?.get('x-ratelimit-reset-tokens') || null,
+            updatedAt: Date.now()
+        };
+
+        Object.keys(quota).forEach(key => {
+            if (quota[key] !== null && quota[key] !== undefined) m.quota[key] = quota[key];
+        });
+
+        Data.store.settings.groqUsage = state;
+        Data.save();
+        this.refreshUsagePanel();
+    },
+
+    getUsageState() {
+        return this.ensureUsageState();
+    },
+
+    compactNumber(value) {
+        const n = Number(value || 0);
+        return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
+    },
+
+    modelUsageHTML(modelId, label) {
+        const state = this.getUsageState();
+        const m = state.models?.[modelId] || null;
+        if (!m) {
+            return `<div style="padding:10px 0; border-top:1px solid rgba(120,120,120,0.1);">
+                <div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; font-weight:700;"><span>${label}</span><span style="color:var(--text-sec);">Sin uso hoy</span></div>
+            </div>`;
+        }
+
+        const q = m.quota || {};
+        const rpd = (q.remainingRequests !== undefined && q.limitRequests !== undefined)
+            ? `${this.compactNumber(q.remainingRequests)} / ${this.compactNumber(q.limitRequests)} RPD restantes`
+            : 'RPD: se actualiza con la siguiente respuesta';
+        const tpm = (q.remainingTokens !== undefined && q.limitTokens !== undefined)
+            ? `${this.compactNumber(q.remainingTokens)} / ${this.compactNumber(q.limitTokens)} TPM disponibles`
+            : 'TPM: se actualiza con la siguiente respuesta';
+
+        return `<div style="padding:10px 0; border-top:1px solid rgba(120,120,120,0.1);">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+                <span style="font-size:12px; font-weight:800;">${label}</span>
+                <span style="font-size:10px; color:var(--text-sec);">${m.requests} req · ${this.compactNumber(m.totalTokens)} tok</span>
+            </div>
+            <div style="font-size:10px; color:var(--text-sec); margin-top:4px;">${rpd}</div>
+            <div style="font-size:10px; color:var(--text-sec); margin-top:2px;">${tpm}</div>
+        </div>`;
+    },
+
+    getUsageCardHTML() {
+        const state = this.getUsageState();
+        return `<div id="groq-usage-card-inner" class="glass-card" style="padding:15px; margin:0;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                <div>
+                    <div style="font-size:14px; font-weight:800;">Groq · uso de hoy</div>
+                    <div style="font-size:10px; color:var(--text-sec); margin-top:2px;">Contador local de Smart Life Pro</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:18px; font-weight:900; color:var(--primary);">${this.compactNumber(state.totalTokens)}</div>
+                    <div style="font-size:9px; color:var(--text-sec); text-transform:uppercase;">tokens</div>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
+                <div style="background:var(--input-bg); border-radius:12px; padding:9px; text-align:center;"><b>${state.requests}</b><div style="font-size:9px; color:var(--text-sec);">solicitudes</div></div>
+                <div style="background:var(--input-bg); border-radius:12px; padding:9px; text-align:center;"><b>${this.compactNumber(state.promptTokens)}</b><div style="font-size:9px; color:var(--text-sec);">tokens entrada</div></div>
+            </div>
+            ${this.modelUsageHTML(this.textModel, 'Smarty · texto')}
+            ${this.modelUsageHTML(this.visionModel, 'Smarty · vision')}
+            <div style="font-size:9px; line-height:1.35; color:var(--text-sec); margin-top:8px;">Groq informa RPD restante y TPM disponible por headers. Los tokens de hoy son los consumidos por esta app con esta instalacion.</div>
+        </div>`;
+    },
+
+    refreshUsagePanel() {
+        const host = document.getElementById('groq-usage-card');
+        if (host) host.innerHTML = this.getUsageCardHTML();
+    },
+
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
@@ -74,6 +227,7 @@ const GroqAI = {
                 try { data = raw ? JSON.parse(raw) : {}; }
                 catch (_) { data = { error: { message: raw || 'Respuesta invalida de Groq.' } }; }
 
+                this.recordResponse(response, data, payload?.model, response.ok);
                 if (response.ok) return data;
 
                 const message = data?.error?.message || `Error HTTP ${response.status}`;
@@ -131,20 +285,48 @@ const GroqAI = {
         }
     },
 
-    async chat(systemPrompt, userText) {
+    async chat(systemPrompt, userText, { maxTokens = 650 } = {}) {
         const payload = {
             model: this.textModel,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userText }
             ],
-            temperature: 0.45,
-            max_completion_tokens: 450,
+            temperature: 0.4,
+            reasoning_effort: 'low',
+            reasoning_format: 'hidden',
+            max_completion_tokens: maxTokens,
             stream: false
         };
 
-        const data = await this.request(payload, { timeoutMs: 25000 });
+        const data = await this.request(payload, { timeoutMs: 30000 });
         return this.extractText(data);
+    },
+
+    async textJSON(instructions, userText, schemaName, schema, { maxTokens = 900 } = {}) {
+        const payload = {
+            model: this.textModel,
+            messages: [
+                { role: 'system', content: instructions },
+                { role: 'user', content: userText }
+            ],
+            response_format: {
+                type: 'json_schema',
+                json_schema: {
+                    name: schemaName,
+                    strict: true,
+                    schema
+                }
+            },
+            temperature: 0.1,
+            reasoning_effort: 'low',
+            reasoning_format: 'hidden',
+            max_completion_tokens: maxTokens,
+            stream: false
+        };
+
+        const data = await this.request(payload, { timeoutMs: 30000 });
+        return this.parseJSON(this.extractText(data));
     },
 
     async visionJSON(promptText, rawBase64) {
@@ -171,14 +353,59 @@ const GroqAI = {
         return this.parseJSON(this.extractText(data));
     },
 
+    listenOnce() {
+        return new Promise((resolve, reject) => {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                reject(new Error('VOICE_UNSUPPORTED'));
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            const lang = Data?.store?.settings?.lang || 'es';
+            recognition.lang = lang === 'pt' ? 'pt-BR' : (lang === 'en' ? 'en-US' : 'es-ES');
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            let settled = false;
+            recognition.onresult = (event) => {
+                if (settled) return;
+                settled = true;
+                const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
+                if (transcript) resolve(transcript);
+                else reject(new Error('VOICE_NO_SPEECH'));
+            };
+            recognition.onerror = (event) => {
+                if (settled) return;
+                settled = true;
+                const err = new Error(event?.error === 'no-speech' ? 'VOICE_NO_SPEECH' : 'VOICE_ERROR');
+                reject(err);
+            };
+            recognition.onend = () => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error('VOICE_NO_SPEECH'));
+                }
+            };
+
+            try { recognition.start(); }
+            catch (_) { reject(new Error('VOICE_ERROR')); }
+        });
+    },
+
     friendlyError(err) {
         if (err?.message === 'GROQ_KEY_CANCELLED') return null;
+        if (err?.message === 'VOICE_UNSUPPORTED') return 'Tu navegador no soporta reconocimiento de voz. Los metodos manuales siguen disponibles.';
+        if (err?.message === 'VOICE_NO_SPEECH') return 'No pude escuchar una frase completa. Intenta otra vez.';
+        if (err?.message === 'VOICE_ERROR') return 'No se pudo usar el microfono. Revisa el permiso de voz.';
         if (err?.status === 401 || err?.status === 403) return 'La API key de Groq no es valida. Intenta de nuevo para ingresar otra.';
-        if (err?.status === 429) return 'Groq alcanzo temporalmente el limite de uso. Intenta de nuevo en unos segundos.';
-        if (err?.name === 'AbortError') return 'Groq tardo demasiado en responder. Intenta nuevamente.';
-        return 'No se pudo conectar con Groq. Intenta nuevamente.';
+        if (err?.status === 429) return 'Groq alcanzo temporalmente el limite de uso. Puedes seguir usando la app manualmente.';
+        if (err?.name === 'AbortError') return 'Groq tardo demasiado en responder. Puedes seguir usando la app manualmente.';
+        return 'Smarty no pudo completar esta accion. Los metodos manuales siguen disponibles.';
     }
 };
+
+window.GroqAI = GroqAI;
 
 const Assistant = {
     config: {
@@ -1151,35 +1378,241 @@ const Assistant = {
         document.getElementById('modal-smarty-chat').classList.remove('open');
     },
 
-    getFinancialContext() {
-        const limit = Data.store.budget.limit || 0;
-        const spent = typeof Finance !== 'undefined' ? Finance.calculateMonthlySpent() : 0;
-        const remaining = limit - spent;
-        
-        // Sumar por categorias para sacar el Top 3
-        const catTotals = {};
-        Data.store.expenses.forEach(e => {
-            const cat = e.category || 'Otros';
-            catTotals[cat] = (catTotals[cat] || 0) + parseFloat(e.amount);
+    normalizeAIText(text) {
+        return String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    },
+
+    monthLabel(date) {
+        const lang = Data?.store?.settings?.lang || 'es';
+        return new Intl.DateTimeFormat(lang === 'pt' ? 'pt-BR' : (lang === 'en' ? 'en-US' : 'es-ES'), {
+            month: 'short', year: 'numeric'
+        }).format(date);
+    },
+
+    monthlyRegisteredSnapshot(year, month) {
+        const categories = {};
+        let expensesTotal = 0;
+        let shoppingTotal = 0;
+        const addCategory = (name, amount) => {
+            const key = name || 'Otros';
+            categories[key] = (categories[key] || 0) + amount;
+        };
+
+        (Data.store.expenses || []).forEach(exp => {
+            const amount = parseFloat(exp.amount) || 0;
+            let applies = false;
+
+            if (exp.isInstallment && exp.installments?.total) {
+                const startDate = new Date(exp.date);
+                const delta = (year - startDate.getFullYear()) * 12 + (month - startDate.getMonth());
+                const installmentNumber = delta + 1;
+                applies = installmentNumber >= 1 && installmentNumber <= Number(exp.installments.total);
+            } else {
+                const d = new Date(exp.date);
+                applies = d.getFullYear() === year && d.getMonth() === month;
+            }
+
+            if (applies) {
+                expensesTotal += amount;
+                addCategory(exp.category || 'Otros', amount);
+            }
         });
-        const topCats = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,3).map(c => `${c[0]}: $${c[1]}`).join(', ');
 
-        // Ultimos 8 gastos
-        const recentExp = Data.store.expenses.slice(-8).map(e => `${e.desc}: $${e.amount}`).join(', ');
-        
-        return `Contexto financiero del usuario:
-- Limite mensual: $${limit}
-- Gastado este mes: $${spent}
-- Restante: $${remaining}
-- Top categorias: ${topCats}
-- Ultimos gastos: ${recentExp}
+        (Data.store.lists || []).forEach(list => {
+            if (list.status !== 'completed') return;
+            const d = new Date(list.date);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+                const total = parseFloat(list.total) || 0;
+                shoppingTotal += total;
+                addCategory(typeof UI !== 'undefined' ? UI.t('cat_market') : 'Supermercado', total);
+            }
+        });
 
-Instrucciones: Eres Smarty, el asesor financiero directo, util y algo sarcastico del usuario.
-Reglas estrictas:
-1. NUNCA uses tildes ni la letra eñe (usa n en su lugar).
-2. Tus respuestas deben ser cortas, claras y al grano (como un WhatsApp, maximo 3 o 4 oraciones). No hagas listas largas.
-3. Usa los datos de contexto matematicamente para aconsejar, felicitar o regañar segun corresponda. 
-4. Usa emojis para darle personalidad.`;
+        const topCategories = Object.entries(categories)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([name, amount]) => `${name}: ${amount.toFixed(2)}`)
+            .join(', ');
+
+        return {
+            total: expensesTotal + shoppingTotal,
+            expensesTotal,
+            shoppingTotal,
+            topCategories
+        };
+    },
+
+    historicalSummary(monthCount = 6) {
+        const now = new Date();
+        const rows = [];
+        for (let i = monthCount - 1; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const snap = this.monthlyRegisteredSnapshot(d.getFullYear(), d.getMonth());
+            rows.push(`${this.monthLabel(d)}: total ${snap.total.toFixed(2)}; gastos ${snap.expensesTotal.toFixed(2)}; compras ${snap.shoppingTotal.toFixed(2)}; top [${snap.topCategories || 'sin datos'}]`);
+        }
+        return rows.join('\n');
+    },
+
+    installmentSummary() {
+        const rows = [];
+        (Data.store.expenses || []).filter(e => e.isInstallment && e.installments?.total).forEach(exp => {
+            const start = new Date(exp.date);
+            const now = new Date();
+            const delta = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+            const current = Math.max(1, delta + 1);
+            const total = Number(exp.installments.total) || 1;
+            const remaining = Math.max(0, total - current);
+            if (current <= total) rows.push(`${exp.desc}: ${Number(exp.amount || 0).toFixed(2)}/mes, cuota ${current}/${total}, quedan ${remaining}`);
+        });
+        return rows.length ? rows.join('; ') : 'ninguna';
+    },
+
+    subscriptionSummary() {
+        const subs = Data.store.subscriptions || [];
+        if (!subs.length) return 'ninguna';
+        const total = subs.reduce((sum, sub) => sum + (parseFloat(sub.cost) || 0), 0);
+        return `${subs.map(s => `${s.name}: ${Number(s.cost || 0).toFixed(2)} dia ${s.day}`).join('; ')} | total mensual actual ${total.toFixed(2)}`;
+    },
+
+    activeListsSummary() {
+        const lists = (Data.store.lists || []).filter(l => l.status === 'active').slice(0, 4);
+        if (!lists.length) return 'ninguna';
+        return lists.map(l => {
+            const pending = (l.items || []).filter(i => !i.checked).slice(0, 15).map(i => `${i.name}${i.qty ? ` (${i.qty})` : ''}`);
+            return `${l.name}: ${pending.join(', ') || 'sin pendientes'}`;
+        }).join(' | ');
+    },
+
+    relevantProductHistory(question) {
+        const q = this.normalizeAIText(question);
+        const priceIntent = /(precio|preco|price|pague|pagaba|costo|costou|cost|inflacion|inflacao|subio|subiu|aumento|barato|caro)/.test(q);
+        if (!priceIntent) return '';
+
+        const points = {};
+        (Data.store.lists || []).filter(l => l.status === 'completed').forEach(list => {
+            (list.items || []).forEach(item => {
+                const price = parseFloat(item.price) || 0;
+                if (price <= 0) return;
+                const key = typeof Shopping !== 'undefined' ? Shopping.normalize(item.name) : this.normalizeAIText(item.name);
+                if (!points[key]) points[key] = { name: item.name, rows: [] };
+                points[key].rows.push({ date: Number(list.date) || 0, price });
+            });
+        });
+
+        const entries = Object.values(points);
+        const directlyMentioned = entries.filter(entry => {
+            const n = this.normalizeAIText(entry.name);
+            return n.length > 2 && q.includes(n);
+        });
+
+        let selected = directlyMentioned;
+        if (!selected.length) {
+            selected = entries
+                .filter(e => e.rows.length >= 2)
+                .map(e => {
+                    const rows = e.rows.sort((a, b) => a.date - b.date);
+                    const first = rows[0].price;
+                    const last = rows[rows.length - 1].price;
+                    return { ...e, change: first > 0 ? Math.abs((last - first) / first) : 0 };
+                })
+                .sort((a, b) => b.change - a.change)
+                .slice(0, 8);
+        } else {
+            selected = selected.slice(0, 8);
+        }
+
+        if (!selected.length) return 'No hay historial suficiente de precios.';
+        return selected.map(entry => {
+            const rows = entry.rows.sort((a, b) => a.date - b.date).slice(-6);
+            return `${entry.name}: ${rows.map(r => `${new Date(r.date).toLocaleDateString()}:${r.price.toFixed(2)}`).join(', ')}`;
+        }).join(' | ');
+    },
+
+    getFinancialContext(question = '') {
+        const limit = Number(Data.store.budget?.limit || 0);
+        const spent = typeof Finance !== 'undefined' ? Number(Finance.calculateMonthlySpent() || 0) : 0;
+        const remaining = limit - spent;
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const elapsedDays = Math.max(1, now.getDate());
+        const dailyBurn = spent / elapsedDays;
+        const paceProjection = dailyBurn * daysInMonth;
+        const q = this.normalizeAIText(question);
+        const historyMonths = /(12 meses|ano|año|histor|tendenc|evolu|compar|ultimos meses|últimos meses)/.test(q) ? 12 : 6;
+
+        const currentCategories = {};
+        const addCurrentCategory = (cat, amount) => {
+            const key = cat || 'Otros';
+            currentCategories[key] = (currentCategories[key] || 0) + (Number(amount) || 0);
+        };
+        (Data.store.expenses || []).forEach(e => {
+            const amount = parseFloat(e.amount) || 0;
+            const d = new Date(e.date);
+            if (!e.isInstallment && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+                addCurrentCategory(e.category || 'Otros', amount);
+            } else if (e.isInstallment && e.installments?.total) {
+                const delta = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+                const installmentNumber = delta + 1;
+                if (installmentNumber >= 1 && installmentNumber <= Number(e.installments.total)) {
+                    addCurrentCategory(e.category || 'Otros', amount);
+                }
+            }
+        });
+        (Data.store.lists || []).filter(l => l.status === 'completed').forEach(l => {
+            const d = new Date(l.date);
+            if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+                addCurrentCategory(typeof UI !== 'undefined' ? UI.t('cat_market') : 'Supermercado', parseFloat(l.total) || 0);
+            }
+        });
+        (Data.store.subscriptions || []).forEach(sub => {
+            if (now.getDate() >= Number(sub.day || 0)) {
+                addCurrentCategory(typeof UI !== 'undefined' ? UI.t('tab_subs') : 'Suscripciones', parseFloat(sub.cost) || 0);
+            }
+        });
+        const topCats = Object.entries(currentCategories).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,a]) => `${c}: ${a.toFixed(2)}`).join(', ');
+
+        const recentExp = [...(Data.store.expenses || [])]
+            .sort((a,b) => Number(b.date || 0) - Number(a.date || 0))
+            .slice(0,12)
+            .map(e => `${new Date(e.date).toLocaleDateString()} ${e.desc}: ${Number(e.amount || 0).toFixed(2)} [${e.category || 'Otros'}]`)
+            .join('; ');
+
+        const productHistory = this.relevantProductHistory(question);
+        const listContext = /(lista|comprar|compra|mercado|supermerc|falta|shopping)/.test(q) ? this.activeListsSummary() : 'omitido por no ser relevante a la pregunta';
+
+        return `Eres Smarty, el asesor financiero personal de Smart Life Pro. Responde usando SOLO los datos suministrados; si falta un dato, dilo claramente y no lo inventes.
+
+RESUMEN ACTUAL
+- Fecha: ${now.toLocaleDateString()}
+- Limite mensual: ${limit.toFixed(2)}
+- Gastado contabilizado este mes: ${spent.toFixed(2)}
+- Restante: ${remaining.toFixed(2)}
+- Ritmo diario aproximado: ${dailyBurn.toFixed(2)}
+- Proyeccion simple por ritmo al cierre: ${paceProjection.toFixed(2)}
+- Categorias registradas destacadas este mes: ${topCats || 'sin datos'}
+
+COMPROMISOS ACTUALES
+- Suscripciones: ${this.subscriptionSummary()}
+- Cuotas activas: ${this.installmentSummary()}
+
+HISTORICO REGISTRADO (${historyMonths} meses)
+${this.historicalSummary(historyMonths)}
+
+MOVIMIENTOS RECIENTES
+${recentExp || 'sin gastos registrados'}
+
+LISTAS ACTIVAS
+${listContext}
+
+HISTORIAL DE PRECIOS RELEVANTE
+${productHistory || 'omitido por no ser relevante a la pregunta'}
+
+REGLAS IMPORTANTES
+1. Los historicos mensuales anteriores incluyen gastos registrados, cuotas aplicables y compras finalizadas. Las suscripciones actuales no tienen fecha de alta historica en la base, por lo que NO debes inventar que existian en meses anteriores.
+2. Distingue gasto ya contabilizado, compromisos actuales y proyecciones; no los mezcles como si fueran lo mismo.
+3. Haz calculos concretos cuando ayuden y compara meses o categorias cuando la pregunta lo pida.
+4. Mantente breve para preguntas simples. Para un analisis financiero solicitado puedes usar hasta 6-8 frases cortas.
+5. Responde en el idioma del usuario y con tono directo, util y ligeramente informal. Usa emojis con moderacion.`;
     },
 
     async sendSmartyMessage() {
@@ -1200,7 +1633,7 @@ Reglas estrictas:
         this.appendChatMessage("Pensando...", 'bot', typingId);
 
         try {
-            const context = this.getFinancialContext();
+            const context = this.getFinancialContext(text);
             const botReply = await GroqAI.chat(context, text);
 
             // 3. Remover "Pensando..." y mostrar respuesta final

@@ -104,9 +104,12 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
                 <span class="view-title" data-i18n="title_lists">Mis Listas</span>
-                <button class="icon-btn" onclick="Main.router('history')">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                </button>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <button id="lists-smarty-btn" class="icon-btn" onclick="Shopping.startSmartyListVoice()" aria-label="Crear lista con Smarty" title="Crear lista completa con Smarty" style="width:auto; min-width:34px; padding:0 8px; gap:3px; font-size:11px; font-weight:800;"><span style="font-size:15px;">✨</span><span>Smarty</span></button>
+                    <button class="icon-btn" onclick="Main.router('history')">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </button>
+                </div>
             </div>
             <div class="scroll-content" id="lists-container"></div>
         </div>
@@ -218,7 +221,10 @@
     <div class="settings-card" onclick="event.stopPropagation()">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <h2 style="color:var(--primary); margin:0;" data-i18n="mod_exp_title">Registrar Gasto</h2>
-            <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <button id="expense-smarty-btn" class="icon-btn" onclick="Finance.startSmartyExpenseVoice()" aria-label="Registrar gasto con Smarty" title="Hablar con Smarty" style="width:auto; min-width:34px; padding:0 8px; gap:3px; font-size:11px; font-weight:800;"><span style="font-size:15px;">✨</span><span>Smarty</span></button>
+                <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
+            </div>
         </div>
         <!-- NUEVO: Boton de Autocompletado IA -->
         <div style="margin-bottom: 15px;">

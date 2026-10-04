@@ -945,7 +945,7 @@ const Finance = {
     
     // --- SMART VOICE & MODAL INTELIGENTE ---
 
-    openSmartExpenseModal(amount, desc, categoryId) {
+    openSmartExpenseModal(amount, desc, categoryId, options = {}) {
         // 1. Abrir modal normal
         this.openExpenseModal();
 
@@ -973,6 +973,56 @@ const Finance = {
             
             UI.showSnackbar("Gasto procesado ");
         }, 100);
+    },
+
+    async startSmartyExpenseVoice() {
+        const btn = document.getElementById('expense-smarty-btn');
+        const original = btn ? btn.innerHTML : '';
+        try {
+            if (btn) { btn.disabled = true; btn.innerHTML = '🎙'; }
+            if (typeof UI !== 'undefined') UI.showSnackbar('🎙 Habla: por ejemplo, "gaste 35 reales en gasolina"');
+
+            const transcript = await GroqAI.listenOnce();
+            if (btn) btn.innerHTML = '⏳';
+
+            const categories = ['cat_market','cat_leisure','cat_transport','cat_clothes','cat_health','cat_bills','cat_travel','cat_beauty','cat_other'];
+            const schema = {
+                type: 'object',
+                properties: {
+                    amount: { type: 'number' },
+                    desc: { type: 'string' },
+                    category: { type: 'string', enum: categories },
+                    isInstallment: { type: 'boolean' },
+                    installmentCount: { type: 'integer' }
+                },
+                required: ['amount','desc','category','isInstallment','installmentCount'],
+                additionalProperties: false
+            };
+
+            const lang = Data?.store?.settings?.lang || 'es';
+            const instructions = `You extract one personal expense from natural speech for a finance app. The user language is ${lang}. Return the amount actually stated, a short clean description in the user's language, and exactly one allowed category id. If installments are not explicitly mentioned set isInstallment=false and installmentCount=1. Do not invent an amount. Allowed categories: ${categories.join(', ')}.`;
+            const result = await GroqAI.textJSON(instructions, transcript, 'smart_expense', schema, { maxTokens: 500 });
+
+            const amount = Number(result.amount);
+            if (!Number.isFinite(amount) || amount <= 0) throw new Error('INVALID_SMART_EXPENSE');
+            const category = categories.includes(result.category) ? result.category : 'cat_other';
+            const desc = String(result.desc || '').trim() || 'Gasto';
+            const installmentCount = result.isInstallment ? Math.max(2, Number(result.installmentCount) || 2) : 1;
+
+            this.openSmartExpenseModal(amount, desc, category, {
+                fromSmarty: true,
+                installmentCount,
+                installmentsPaid: 0
+            });
+        } catch (err) {
+            console.error('Smarty expense voice:', err);
+            const msg = err?.message === 'INVALID_SMART_EXPENSE'
+                ? 'Smarty no encontro un monto valido. Puedes registrarlo manualmente.'
+                : GroqAI.friendlyError(err);
+            if (msg && typeof UI !== 'undefined') UI.showSnackbar(msg);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = original || '✨ Smarty'; }
+        }
     },
 
     // --- FUNCIÓN DEL BOTÓN (BOTÓN DOCK) ---
