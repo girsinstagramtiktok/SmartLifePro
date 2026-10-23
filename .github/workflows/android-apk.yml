@@ -10,8 +10,6 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     timeout-minutes: 6
-    env:
-      REPO_SLUG: ${{ github.repository }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,7 +40,6 @@ jobs:
 
           cat << 'EOF_SCRIPT' > inject_apk.js
           const fs = require("fs");
-          const repoSlug = process.env.REPO_SLUG || "";
 
           if (fs.existsSync("www/assistant.js")) {
             let ast = fs.readFileSync("www/assistant.js", "utf8");
@@ -53,7 +50,7 @@ jobs:
           const addons = [
             "(function() {",
             "  window.SMARTY_APK_VERSION = '15.0';",
-            "  window.SMARTY_REPO = '" + repoSlug + "';",
+            "  window.SMARTY_REPO = 'girsinstagramtiktok/SmartLifePro';",
             "",
             "  const st = document.createElement('style');",
             "  st.innerHTML = [",
@@ -569,18 +566,20 @@ jobs:
             rm -rf android/app/src/main/res/mipmap-anydpi-v26
             for d in android/app/src/main/res/mipmap-*; do
               if [ -d "$d" ]; then
-                convert www/logo.png -resize 192x192 "$d/ic_launcher.png"
-                convert www/logo.png -resize 192x192 "$d/ic_launcher_round.png"
-                convert www/logo.png -resize 192x192 "$d/ic_launcher_foreground.png"
+                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher.png"
+                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher_round.png"
+                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher_foreground.png"
               fi
             done
           fi
 
-          mkdir -p android/app/src/main/res/drawable
+          # Guardar la mascota Smarty en mipmap como PNG32 valido para el Widget
           if [ -f "www/idle.png" ]; then
-            convert www/idle.png -resize 140x140 android/app/src/main/res/drawable/smarty_mascot.png
-          elif [ -f "www/logo.png" ]; then
-            convert www/logo.png -resize 140x140 android/app/src/main/res/drawable/smarty_mascot.png
+            for d in android/app/src/main/res/mipmap-*; do
+              if [ -d "$d" ]; then
+                convert www/idle.png -resize 140x140 "PNG32:$d/smarty_mascot.png"
+              fi
+            done
           fi
 
           cat << 'EOF_JAVA' > setup_java.js
@@ -588,44 +587,15 @@ jobs:
           const pkgDir = "android/app/src/main/java/com/smartlife/pro";
           const resLayoutDir = "android/app/src/main/res/layout";
           const resXmlDir = "android/app/src/main/res/xml";
-          const resDrawableDir = "android/app/src/main/res/drawable";
           fs.mkdirSync(pkgDir, { recursive: true });
           fs.mkdirSync(resLayoutDir, { recursive: true });
           fs.mkdirSync(resXmlDir, { recursive: true });
-          fs.mkdirSync(resDrawableDir, { recursive: true });
 
           let buildGradle = fs.readFileSync("android/app/build.gradle", "utf8");
           buildGradle = buildGradle.replace("defaultConfig {", "defaultConfig {\n        ndk {\n            abiFilters 'arm64-v8a', 'armeabi-v7a'\n        }");
           fs.writeFileSync("android/app/build.gradle", buildGradle);
 
-          const widgetBg = [
-            '<?xml version="1.0" encoding="utf-8"?>',
-            '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
-            '    <solid android:color="#E6111827" />',
-            '    <corners android:radius="22dp" />',
-            '    <stroke android:width="1dp" android:color="#33FFFFFF" />',
-            '</shape>'
-          ].join("\n");
-          fs.writeFileSync(resDrawableDir + "/smarty_widget_bg.xml", widgetBg);
-
-          const btnExpBg = [
-            '<?xml version="1.0" encoding="utf-8"?>',
-            '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
-            '    <solid android:color="#0066FF" />',
-            '    <corners android:radius="12dp" />',
-            '</shape>'
-          ].join("\n");
-          fs.writeFileSync(resDrawableDir + "/smarty_btn_blue.xml", btnExpBg);
-
-          const btnListBg = [
-            '<?xml version="1.0" encoding="utf-8"?>',
-            '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
-            '    <solid android:color="#10B981" />',
-            '    <corners android:radius="12dp" />',
-            '</shape>'
-          ].join("\n");
-          fs.writeFileSync(resDrawableDir + "/smarty_btn_green.xml", btnListBg);
-
+          // Layout del Widget compacto en 1 fila con la figura de Smarty (@mipmap/smarty_mascot)
           const widgetLayout = [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"',
@@ -634,70 +604,24 @@ jobs:
             '    android:orientation="horizontal"',
             '    android:gravity="center_vertical"',
             '    android:padding="10dp"',
-            '    android:background="@drawable/smarty_widget_bg">',
+            '    android:background="@android:color/background_dark">',
             '    <ImageView',
             '        android:id="@+id/widget_mascot"',
-            '        android:layout_width="46dp"',
-            '        android:layout_height="46dp"',
-            '        android:src="@drawable/smarty_mascot"',
-            '        android:scaleType="fitCenter"',
+            '        android:layout_width="44dp"',
+            '        android:layout_height="44dp"',
+            '        android:src="@mipmap/smarty_mascot"',
             '        android:layout_marginEnd="10dp" />',
             '    <LinearLayout',
             '        android:layout_width="0dp"',
             '        android:layout_height="wrap_content"',
             '        android:layout_weight="1"',
             '        android:orientation="vertical">',
-            '        <TextView',
-            '            android:text="DISPONIBLE"',
-            '            android:textColor="#94A3B8"',
-            '            android:textSize="9sp"',
-            '            android:textStyle="bold"',
-            '            android:layout_width="wrap_content"',
-            '            android:layout_height="wrap_content" />',
-            '        <TextView',
-            '            android:id="@+id/widget_remaining"',
-            '            android:text="$0.00"',
-            '            android:textColor="#10B981"',
-            '            android:textSize="17sp"',
-            '            android:textStyle="bold"',
-            '            android:singleLine="true"',
-            '            android:layout_width="wrap_content"',
-            '            android:layout_height="wrap_content" />',
-            '        <TextView',
-            '            android:id="@+id/widget_spent"',
-            '            android:text="Gastado: $0"',
-            '            android:textColor="#CBD5E1"',
-            '            android:textSize="10sp"',
-            '            android:singleLine="true"',
-            '            android:layout_width="wrap_content"',
-            '            android:layout_height="wrap_content" />',
+            '        <TextView android:text="DISPONIBLE" android:textColor="#94A3B8" android:textSize="9sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
+            '        <TextView android:id="@+id/widget_remaining" android:text="$0.00" android:textColor="#10B981" android:textSize="17sp" android:textStyle="bold" android:singleLine="true" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
+            '        <TextView android:id="@+id/widget_spent" android:text="Gastado: $0" android:textColor="#F8FAFC" android:textSize="10sp" android:singleLine="true" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
             '    </LinearLayout>',
-            '    <LinearLayout',
-            '        android:layout_width="wrap_content"',
-            '        android:layout_height="wrap_content"',
-            '        android:orientation="horizontal">',
-            '        <Button',
-            '            android:id="@+id/widget_btn_expense"',
-            '            android:text="+ Gasto"',
-            '            android:textColor="#FFFFFF"',
-            '            android:textSize="11sp"',
-            '            android:textStyle="bold"',
-            '            android:allCaps="false"',
-            '            android:background="@drawable/smarty_btn_blue"',
-            '            android:layout_width="68dp"',
-            '            android:layout_height="36dp"',
-            '            android:layout_marginEnd="6dp" />',
-            '        <Button',
-            '            android:id="@+id/widget_btn_lists"',
-            '            android:text="Listas"',
-            '            android:textColor="#FFFFFF"',
-            '            android:textSize="11sp"',
-            '            android:textStyle="bold"',
-            '            android:allCaps="false"',
-            '            android:background="@drawable/smarty_btn_green"',
-            '            android:layout_width="62dp"',
-            '            android:layout_height="36dp" />',
-            '    </LinearLayout>',
+            '    <Button android:id="@+id/widget_btn_expense" android:text="+ Gasto" android:textColor="#FFFFFF" android:textSize="11sp" android:backgroundTint="#0066FF" android:layout_width="76dp" android:layout_height="38dp" android:layout_marginEnd="6dp"/>',
+            '    <Button android:id="@+id/widget_btn_lists" android:text="Listas" android:textColor="#FFFFFF" android:textSize="11sp" android:backgroundTint="#10B981" android:layout_width="70dp" android:layout_height="38dp"/>',
             '</LinearLayout>'
           ].join("\n");
           fs.writeFileSync(resLayoutDir + "/smarty_widget.xml", widgetLayout);
@@ -705,8 +629,8 @@ jobs:
           const widgetInfo = [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
-            '    android:minWidth="220dp"',
-            '    android:minHeight="56dp"',
+            '    android:minWidth="250dp"',
+            '    android:minHeight="50dp"',
             '    android:updatePeriodMillis="1800000"',
             '    android:initialLayout="@layout/smarty_widget"',
             '    android:resizeMode="horizontal|vertical"',
@@ -737,9 +661,6 @@ jobs:
             "        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.smarty_widget);",
             "        views.setTextViewText(R.id.widget_remaining, rem);",
             "        views.setTextViewText(R.id.widget_spent, \"Gastado: \" + spt);",
-            "        Intent homeIntent = new Intent(context, MainActivity.class);",
-            "        PendingIntent homePending = PendingIntent.getActivity(context, 100, homeIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);",
-            "        views.setOnClickPendingIntent(R.id.widget_mascot, homePending);",
             "        Intent expIntent = new Intent(context, MainActivity.class);",
             "        expIntent.putExtra(\"widget_action\", \"expense\");",
             "        expIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);",
