@@ -1,1 +1,46 @@
+name: Build Smarty Android APK
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
 
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Prepare Web Assets & Capacitor Android
+        run: |
+          mkdir -p www
+          cp *.html *.css *.js *.json *.png www/ 2>/dev/null || true
+          cp -r skins www/ 2>/dev/null || true
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/local-notifications @capacitor/preferences
+          npx cap init "Smart Life Pro" "com.smartlife.pro" --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmartLifePro-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
