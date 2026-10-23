@@ -25,6 +25,7 @@ jobs:
 
       - name: Prepare Web Assets, Compress Images & Inject APK Addons
         run: |
+          sudo apt-get update -y && sudo apt-get install -y imagemagick pngquant
           rm -rf www android package.json package-lock.json capacitor.config.json node_modules
           mkdir -p www
 
@@ -33,14 +34,12 @@ jobs:
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
-          for img in $(find www -type f -name "*.png"); do
-            ffmpeg -y -i "$img" -vf "scale='min(380,iw)':-1" -c:v libwebp -quality 80 "${img}.webp" </dev/null >/dev/null 2>&1 && mv "${img}.webp" "$img" || true
-          done
+          find www -type f -name "*.png" -exec mogrify -strip -resize "360x360>" {} +
+          find www -type f -name "*.png" -exec pngquant --force --ext .png --quality=65-80 {} + || true
 
           node -e '
           const fs = require("fs");
 
-          // CRITICO: Subir maxTokens de 650 a 2500 en assistant.js para que el analisis mensual NUNCA se corte en blanco
           if (fs.existsSync("www/assistant.js")) {
             let ast = fs.readFileSync("www/assistant.js", "utf8");
             ast = ast.replace("maxTokens = 650", "maxTokens = 2500");
@@ -49,13 +48,110 @@ jobs:
 
           const addonsCode = `
           (function() {
-            console.log("[Smarty APK Native] Cargando mejoras exclusivas Android V12...");
+            console.log("[Smarty APK Native V13] Super-Contexto IA + Modo Inmersivo + Bancos...");
 
             const st = document.createElement("style");
             st.innerHTML = "#listening-overlay:not(.active), .modal-overlay:not(.open), #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; } .pin-pad .pin-btn.bio-btn-active { visibility: visible !important; pointer-events: auto !important; color: var(--primary) !important; font-size: 26px !important; }";
             document.head.appendChild(st);
 
-            // 1. Modal para API Key de Groq
+            // 1. SUPER-CONTEXTO TOTAL PARA SMARTY AI (Productos de listas, variaciones de nombre, frecuencia, cantidades y gastos)
+            function upgradeSmartyFullDataAccess() {
+              if (typeof Assistant === "undefined") return;
+
+              // Normalizador de raiz para agrupar singulares/plurales y variaciones ligeras
+              function stemProduct(name) {
+                let s = String(name || "").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim();
+                s = s.replace(/[^a-z0-9\\s]/g, "").replace(/\\s+/g, " ");
+                // Quitar plurales comunes en espanol/portugues/ingles
+                s = s.split(" ").map(w => {
+                  if (w.length > 4 && w.endsWith("es")) return w.slice(0, -2);
+                  if (w.length > 3 && w.endsWith("s")) return w.slice(0, -1);
+                  return w;
+                }).join(" ");
+                return s || "item";
+              }
+
+              Assistant.buildCompleteShoppingAndExpensesIndex = function() {
+                const productGroups = {};
+                const completedLists = (Data.store.lists || []).filter(l => l.status === "completed");
+
+                completedLists.forEach(list => {
+                  const listDate = new Date(list.date).toLocaleDateString();
+                  (list.items || []).filter(i => i.checked !== false).forEach(item => {
+                    const rawName = String(item.name || "").trim();
+                    if (!rawName) return;
+                    const key = stemProduct(rawName);
+                    const qtyNum = (typeof Shopping !== "undefined" && Shopping.parseQtyValue) ? Shopping.parseQtyValue(item.qty) : (parseFloat(item.qty) || 1);
+                    const unitPrice = parseFloat(item.price) || 0;
+                    const lineTotal = unitPrice * qtyNum;
+
+                    if (!productGroups[key]) {
+                      productGroups[key] = {
+                        canonicalName: rawName,
+                        variants: new Set(),
+                        timesBought: 0,
+                        totalUnits: 0,
+                        totalSpent: 0,
+                        lastPrice: 0,
+                        priceHistory: []
+                      };
+                    }
+                    const g = productGroups[key];
+                    g.variants.add(rawName);
+                    g.timesBought += 1;
+                    g.totalUnits += qtyNum;
+                    g.totalSpent += lineTotal;
+                    if (unitPrice > 0) {
+                      g.lastPrice = unitPrice;
+                      g.priceHistory.push(listDate + ":" + unitPrice.toFixed(2));
+                    }
+                  });
+                });
+
+                const sortedByFreq = Object.values(productGroups).sort((a, b) => b.timesBought - a.timesBought || b.totalUnits - a.totalUnits);
+                if (!sortedByFreq.length) return "Sin productos comprados en listas completadas todavía.";
+
+                return sortedByFreq.slice(0, 60).map(g => {
+                  const vars = Array.from(g.variants).join("/");
+                  const hist = g.priceHistory.slice(-4).join(", ");
+                  return \`- \${g.canonicalName} (variantes: \${vars}): comprado \${g.timesBought} veces | unidades totales: \${g.totalUnits} | gasto acum: \${g.totalSpent.toFixed(2)} | precios: [\${hist || "sin precio"}]\`;
+                }).join("\\n");
+              };
+
+              const origContext = Assistant.getFinancialContext.bind(Assistant);
+              Assistant.getFinancialContext = function(question = "") {
+                const base = origContext(question);
+                const fullProductsReport = this.buildCompleteShoppingAndExpensesIndex();
+                const allCompletedLists = (Data.store.lists || [])
+                  .filter(l => l.status === "completed")
+                  .sort((a, b) => b.date - a.date)
+                  .slice(0, 15)
+                  .map(l => \`\${new Date(l.date).toLocaleDateString()} "\${l.name}" (Total: \${Number(l.total || 0).toFixed(2)}): \${(l.items || []).filter(i => i.checked !== false).map(i => i.name + (i.qty ? " x" + i.qty : "") + (i.price ? " @" + i.price : "")).join(", ")}\`)
+                  .join("\\n");
+
+                const allExpensesReport = [...(Data.store.expenses || [])]
+                  .sort((a, b) => Number(b.date || 0) - Number(a.date || 0))
+                  .slice(0, 40)
+                  .map(e => \`\${new Date(e.date).toLocaleDateString()} | \${e.desc} | Monto: \${Number(e.amount || 0).toFixed(2)} | Cat: \${e.category || "Otros"}\`)
+                  .join("\\n");
+
+                return base + \`
+
+INDICE COMPLETO DE PRODUCTOS COMPRADOS EN SUPERMERCADO (AGRUPADOS POR SIMILITUD)
+\${fullProductsReport}
+
+DETALLE DE LAS ULTIMAS 15 LISTAS DE COMPRAS FINALIZADAS
+\${allCompletedLists || "Ninguna lista finalizada"}
+
+HISTORIAL AMPLIADO DE GASTOS INDIVIDUALES (ULTIMOS 40)
+\${allExpensesReport || "Sin gastos individuales"}
+
+INSTRUCCION ADICIONAL CLAVE:
+Tienes acceso TOTAL a todos los productos comprados en las listas, sus cantidades, frecuencias, precios y gastos individuales. Si el usuario escribió el mismo producto con ligeras variaciones de nombre, plurales, errores tipográficos o sinónimos (ej: "leche" y "leche entera", "pan" y "pan de molde", "coca" y "coca cola"), únelos mentalmente, suma sus frecuencias/cantidades/gastos y dale una respuesta exacta y completa.\`;
+              };
+            }
+
+            // 2. Modal para API Key de Groq
             window.askGroqKeyModal = function() {
               const old = document.getElementById("groq-key-modal");
               if (old) old.remove();
@@ -99,7 +195,6 @@ jobs:
               };
             }
 
-            // 2. Crear y Restaurar Copia de Seguridad Nativa Android
             if (typeof Main !== "undefined") {
               const origBackup = Main.downloadBackup.bind(Main);
               Main.downloadBackup = function() {
@@ -127,7 +222,6 @@ jobs:
               }
             };
 
-            // 3. Puente Nativo: Huella Digital y Lector de Notificaciones con Monitor en Vivo
             window.NativeBridge = {
               lastCapturedText: "Ninguna todavía",
 
@@ -141,7 +235,6 @@ jobs:
                   if (e && e.detail) this.processBankNotification(e.detail);
                 });
 
-                // Revisar si llegaron notificaciones bancarias mientras la app estaba cerrada
                 this.flushPendingBackgroundNotifications();
                 document.addEventListener("visibilitychange", () => {
                   if (document.visibilityState === "visible") {
@@ -173,9 +266,7 @@ jobs:
                       }
                     }
                   }
-                } catch (e) {
-                  console.warn("Error leyendo cola de notificaciones:", e);
-                }
+                } catch (_) {}
               },
 
               toggleBiometricSetting(checked) {
@@ -200,7 +291,6 @@ jobs:
                 const fullText = ((notif.title || "") + " - " + (notif.text || "")).trim();
                 if (fullText.length < 4) return;
 
-                // Guardar registro visual para que el usuario vea que el lector esta vivo
                 this.lastCapturedText = fullText.slice(0, 70);
                 localStorage.setItem("smarty_last_notif", this.lastCapturedText);
                 const logEl = document.getElementById("smarty-last-notif-log");
@@ -365,6 +455,7 @@ jobs:
             }
 
             window.addEventListener("load", () => {
+              upgradeSmartyFullDataAccess();
               hookSettingsUI();
               setTimeout(() => {
                 NativeBridge.init();
@@ -396,15 +487,15 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Set App Icon, Optimize APK Size & Inject Background Queue + Real Notification Tester
+      - name: Set App Icon, Immersive Fullscreen Mode & Inject Native Java
         run: |
-          if [ -f "logo.png" ]; then
+          if [ -f "www/logo.png" ]; then
             rm -rf android/app/src/main/res/mipmap-anydpi-v26
             for d in android/app/src/main/res/mipmap-*; do
               if [ -d "$d" ]; then
-                ffmpeg -y -i logo.png -vf scale=192:192 "$d/ic_launcher.png" </dev/null >/dev/null 2>&1 || cp logo.png "$d/ic_launcher.png"
-                ffmpeg -y -i logo.png -vf scale=192:192 "$d/ic_launcher_round.png" </dev/null >/dev/null 2>&1 || cp logo.png "$d/ic_launcher_round.png"
-                ffmpeg -y -i logo.png -vf scale=192:192 "$d/ic_launcher_foreground.png" </dev/null >/dev/null 2>&1 || cp logo.png "$d/ic_launcher_foreground.png"
+                convert www/logo.png -resize 192x192 "$d/ic_launcher.png"
+                convert www/logo.png -resize 192x192 "$d/ic_launcher_round.png"
+                convert www/logo.png -resize 192x192 "$d/ic_launcher_foreground.png"
               fi
             done
           fi
@@ -441,7 +532,6 @@ jobs:
             "        String title = titleCs != null ? titleCs.toString() : \"\";",
             "        String text = textCs != null ? textCs.toString() : \"\";",
             "        if (title.isEmpty() && text.isEmpty()) return;",
-            "        // Evitar bucle con notificaciones propias salvo que sea la prueba bancaria",
             "        if (pkg.equals(\"com.smartlife.pro\") && !title.equals(\"Nubank\")) return;",
             "        try {",
             "            SharedPreferences prefs = getSharedPreferences(\"smarty_bank_queue\", MODE_PRIVATE);",
@@ -484,6 +574,9 @@ jobs:
             "import android.os.CancellationSignal;",
             "import android.provider.Settings;",
             "import android.util.Base64;",
+            "import android.view.View;",
+            "import android.view.WindowInsets;",
+            "import android.view.WindowInsetsController;",
             "import android.webkit.JavascriptInterface;",
             "import androidx.core.app.ActivityCompat;",
             "import androidx.core.app.NotificationCompat;",
@@ -500,6 +593,27 @@ jobs:
             "    private static final int PICK_RESTORE_JSON = 9901;",
             "    private static final int CREATE_BACKUP_JSON = 9902;",
             "    private String pendingBackupContent = \"\";",
+            "    private void enableImmersiveNavigation() {",
+            "        try {",
+            "            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {",
+            "                final WindowInsetsController controller = getWindow().getInsetsController();",
+            "                if (controller != null) {",
+            "                    controller.hide(WindowInsets.Type.navigationBars());",
+            "                    controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);",
+            "                }",
+            "            } else {",
+            "                getWindow().getDecorView().setSystemUiVisibility(",
+            "                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |",
+            "                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY",
+            "                );",
+            "            }",
+            "        } catch (Exception ignored) {}",
+            "    }",
+            "    @Override",
+            "    public void onWindowFocusChanged(boolean hasFocus) {",
+            "        super.onWindowFocusChanged(hasFocus);",
+            "        if (hasFocus) enableImmersiveNavigation();",
+            "    }",
             "    public class SmartyJSBridge {",
             "        @JavascriptInterface",
             "        public void openNotificationSettings() {",
@@ -624,6 +738,7 @@ jobs:
             "    @Override",
             "    protected void onCreate(Bundle savedInstanceState) {",
             "        super.onCreate(savedInstanceState);",
+            "        enableImmersiveNavigation();",
             "        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {",
             "            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS}, 101);",
             "        }",
