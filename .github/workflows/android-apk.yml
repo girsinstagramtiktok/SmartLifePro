@@ -16,32 +16,309 @@ jobs:
         with:
           node-version: 20
 
-      - name: Setup Java 17 (Oficial para Capacitor 6)
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Prepare Web Assets & Capacitor Android
+      - name: Prepare Web Assets & Inject All Pro Upgrades Safely
         run: |
           rm -rf www android package.json package-lock.json capacitor.config.json
           mkdir -p www
           find . -maxdepth 1 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" -o -name "*.png" \) -exec cp {} www/ \;
           if [ -d "skins" ]; then cp -r skins www/; fi
+
+          node -e '
+          const fs = require("fs");
+
+          // 1. Actualizar Groq a Llama 3.3 70B + Llama 4 Vision sin tocar nada mas de assistant.js
+          if (fs.existsSync("www/assistant.js")) {
+            let ast = fs.readFileSync("www/assistant.js", "utf8");
+            ast = ast
+              .replace(/textModel:\s*[\x27"][^\x27"]+[\x27"]/, "textModel: \x27llama-3.3-70b-versatile\x27")
+              .replace(/visionModel:\s*[\x27"][^\x27"]+[\x27"]/, "visionModel: \x27meta-llama/llama-4-scout-17b-16e-instruct\x27")
+              .replace(/reasoning_effort:\s*[\x27"][^\x27"]+[\x27"],?/g, "")
+              .replace(/reasoning_format:\s*[\x27"][^\x27"]+[\x27"],?/g, "");
+            fs.writeFileSync("www/assistant.js", ast);
+          }
+
+          // 2. Arreglar CSS para que NINGUN overlay invisible bloquee los botones en Android + Pulido Visual
+          if (fs.existsSync("www/style.css")) {
+            let css = fs.readFileSync("www/style.css", "utf8");
+            css += `
+            /* === ANDROID NATIVE TOUCH FIX & NEXT-GEN POLISH === */
+            #listening-overlay:not(.active) { display: none !important; pointer-events: none !important; }
+            .modal-overlay:not(.open) { display: none !important; pointer-events: none !important; }
+            #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; }
+            .pin-pad .pin-btn.bio-btn-active { visibility: visible !important; pointer-events: auto !important; color: var(--primary) !important; }
+            `;
+            fs.writeFileSync("www/style.css", css);
+          }
+
+          // 3. Crear modulo de mejoras Pro (Huella, Lector Bancario, Notificaciones, Carrito en vivo, Memoria Nativa)
+          const addonsJS = `
+          (function() {
+            console.log("[Smarty Pro Addons] Cargando mejoras nativas Android...");
+
+            // A. ALMACENAMIENTO PERSISTENTE FUERA DE LOCALSTORAGE (IndexedDB Mirror)
+            if (typeof Data !== "undefined") {
+              const origSave = Data.save.bind(Data);
+              Data.save = function() {
+                origSave();
+                try {
+                  const req = indexedDB.open("SmartyNativeDB", 1);
+                  req.onupgradeneeded = (e) => e.target.result.createObjectStore("store");
+                  req.onsuccess = (e) => {
+                    const db = e.target.result;
+                    const tx = db.transaction("store", "readwrite");
+                    tx.objectStore("store").put(JSON.stringify(Data.store), Data.KEY);
+                  };
+                } catch (_) {}
+              };
+            }
+
+            // B. PUENTE NATIVO ANDROID (Notificaciones, Bancos y Biometria)
+            window.NativeBridge = {
+              init() {
+                if (!Data.store.settings) Data.store.settings = {};
+                if (typeof Data.store.settings.subNotifications === "undefined") Data.store.settings.subNotifications = true;
+                if (typeof Data.store.settings.bankAutoDetect === "undefined") Data.store.settings.bankAutoDetect = false;
+                if (typeof Data.store.settings.bankAutoSaveMode === "undefined") Data.store.settings.bankAutoSaveMode = "confirm";
+
+                this.checkTomorrowSubscriptions();
+                window.addEventListener("SmartyBankNotification", (e) => {
+                  if (e && e.detail) this.processBankNotification(e.detail);
+                });
+              },
+
+              notify(title, body) {
+                if (Data.store.settings?.subNotifications === false) return;
+                if (window.SmartyAndroid && window.SmartyAndroid.showNotification) {
+                  window.SmartyAndroid.showNotification(title, body);
+                }
+              },
+
+              checkTomorrowSubscriptions() {
+                if (Data.store.settings?.subNotifications === false) return;
+                const subs = Data.store.subscriptions || [];
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tDay = tomorrow.getDate();
+                const due = subs.filter(s => parseInt(s.day, 10) === tDay);
+                if (due.length > 0) {
+                  const key = "sub_alert_" + new Date().toDateString();
+                  if (!localStorage.getItem(key)) {
+                    localStorage.setItem(key, "1");
+                    const names = due.map(s => s.name + " (" + UI.formatMoney(s.cost) + ")").join(", ");
+                    this.notify("🔔 Cobro de Suscripción Mañana", "Mañana se cobra: " + names);
+                  }
+                }
+              },
+
+              openAndroidNotificationAccess() {
+                if (window.SmartyAndroid && window.SmartyAndroid.openNotificationSettings) {
+                  window.SmartyAndroid.openNotificationSettings();
+                } else {
+                  UI.showSnackbar("Disponible en el APK de Android");
+                }
+              },
+
+              async processBankNotification(notif) {
+                if (!Data.store.settings?.bankAutoDetect) return;
+                const fullText = ((notif.title || "") + " - " + (notif.text || "")).trim();
+                if (fullText.length < 6) return;
+                const payRegex = /(compra|pago|pagaste|aprobada|aprovada|pix|transferencia|transferência|débito|debito|crédito|credito|spent|paid|r\\$|\\$)/i;
+                if (!payRegex.test(fullText)) return;
+
+                const categories = ["cat_market","cat_leisure","cat_transport","cat_clothes","cat_health","cat_bills","cat_travel","cat_beauty","cat_other"];
+                let extracted = null;
+
+                if (Data.store.settings?.groqApiKey && typeof GroqAI !== "undefined") {
+                  try {
+                    const schema = {
+                      type: "object",
+                      properties: {
+                        isRealExpense: { type: "boolean" },
+                        amount: { type: "number" },
+                        merchant: { type: "string" },
+                        category: { type: "string", enum: categories }
+                      },
+                      required: ["isRealExpense","amount","merchant","category"],
+                      additionalProperties: false
+                    };
+                    extracted = await GroqAI.textJSON(
+                      "Extract real payment expense from banking notification. Ignore promos. Categories: " + categories.join(", "),
+                      fullText, "bank_expense", schema, { maxTokens: 300 }
+                    );
+                    if (!extracted.isRealExpense) return;
+                  } catch (_) {}
+                }
+
+                if (!extracted || !extracted.amount) {
+                  const m = fullText.match(/(\\d+(?:[.,]\\d{1,2})?)/);
+                  if (!m) return;
+                  extracted = { amount: parseFloat(m[1].replace(",", ".")), merchant: notif.title || "Pago Bancario", category: "cat_other" };
+                }
+
+                const amount = Number(extracted.amount);
+                if (!amount || amount <= 0) return;
+                const desc = "🏦 " + String(extracted.merchant || "Banco").trim();
+                const cat = categories.includes(extracted.category) ? extracted.category : "cat_other";
+
+                if (Data.store.settings.bankAutoSaveMode === "auto") {
+                  Data.store.expenses.push({
+                    id: Date.now().toString(), date: Date.now(), amount,
+                    desc, category: UI.t(cat), isInstallment: false, installments: null
+                  });
+                  Data.save();
+                  UI.renderBudgetChart();
+                  Finance.renderHomeWidgets();
+                  this.notify("🤖 Gasto Bancario Registrado", UI.formatMoney(amount) + " en " + desc);
+                  if (typeof Assistant !== "undefined") Assistant.showReactivePopup("🏦 Auto-registrado: " + UI.formatMoney(amount));
+                } else {
+                  Finance.openSmartExpenseModal(amount, desc, cat);
+                }
+              },
+
+              simulateBankNotification() {
+                Data.store.settings.bankAutoDetect = true;
+                Data.save();
+                const samples = [
+                  { title: "Nubank", text: "Compra aprobada en Uber Trip por 24.50" },
+                  { title: "Mercado Pago", text: "Pagaste 65.00 en Supermercado Central" },
+                  { title: "Banco Inter", text: "Pix enviado de R$ 38.90 para Pizzaria" }
+                ];
+                this.processBankNotification(samples[Math.floor(Math.random() * samples.length)]);
+              }
+            };
+
+            // C. INYECTAR HUELLA DIGITAL EN PANTALLA DE PIN
+            function setupBiometricButton() {
+              const emptyPinBtn = document.querySelector(".pin-pad .pin-btn:nth-child(10)");
+              if (emptyPinBtn && !emptyPinBtn.classList.contains("bio-btn-active")) {
+                emptyPinBtn.classList.add("bio-btn-active");
+                emptyPinBtn.innerHTML = "🫆";
+                emptyPinBtn.onclick = () => {
+                  if (window.SmartyAndroid && window.SmartyAndroid.authenticateBiometric) {
+                    window.SmartyAndroid.authenticateBiometric();
+                  } else {
+                    UI.showSnackbar("Usa tu huella en Android");
+                  }
+                };
+              }
+            }
+
+            // D. INYECTAR PANEL DE BANCOS Y ALERTAS EN AJUSTES SIN ROMPER UI.JS
+            if (typeof UI !== "undefined" && UI.renderSettingsView) {
+              const origSettings = UI.renderSettingsView.bind(UI);
+              UI.renderSettingsView = function() {
+                origSettings();
+                const groqCard = document.getElementById("groq-usage-card");
+                if (groqCard && !document.getElementById("android-pro-settings")) {
+                  const s = Data.store.settings || {};
+                  const panel = document.createElement("div");
+                  panel.id = "android-pro-settings";
+                  panel.style.marginBottom = "20px";
+                  panel.innerHTML = \`
+                    <div class="section-label">ANDROID NATIVO & BANCOS AUTOMÁTICOS</div>
+                    <div class="glass-card" style="padding:15px; margin:0;">
+                      <div class="setting-item">
+                        <span>🔔 Alertas de Suscripciones y Presupuesto</span>
+                        <label class="switch-wrap">
+                          <input type="checkbox" \${s.subNotifications !== false ? "checked" : ""} onchange="Data.store.settings.subNotifications = this.checked; Data.save();">
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                      <div class="setting-item">
+                        <span>🏦 Auto-Detectar Notificaciones Bancarias</span>
+                        <label class="switch-wrap">
+                          <input type="checkbox" \${s.bankAutoDetect ? "checked" : ""} onchange="Data.store.settings.bankAutoDetect = this.checked; Data.save(); if(this.checked) NativeBridge.openAndroidNotificationAccess();">
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                      <div class="setting-item">
+                        <span>Modo de Registro Bancario</span>
+                        <select class="setting-select" style="width:auto; margin:0; padding:6px 10px; font-size:12px;" onchange="Data.store.settings.bankAutoSaveMode = this.value; Data.save();">
+                          <option value="confirm" \${s.bankAutoSaveMode !== "auto" ? "selected" : ""}>Confirmar antes</option>
+                          <option value="auto" \${s.bankAutoSaveMode === "auto" ? "selected" : ""}>Guardar 100% solo</option>
+                        </select>
+                      </div>
+                      <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.openAndroidNotificationAccess()">⚙️ Permiso Android</button>
+                        <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.simulateBankNotification()">⚡ Probar Pago</button>
+                      </div>
+                    </div>
+                  \`;
+                  groqCard.parentElement.parentNode.insertBefore(panel, groqCard.parentElement);
+                }
+              };
+            }
+
+            // E. CARRITO EN VIVO CON ESTIMACION DE PRECIO EN SUPERMERCADO
+            if (typeof Shopping !== "undefined" && Shopping.renderShoppingItems) {
+              const origShop = Shopping.renderShoppingItems.bind(Shopping);
+              Shopping.renderShoppingItems = function() {
+                origShop();
+                const list = Data.store.lists.find(l => l.id === Data.store.currentId);
+                if (!list) return;
+                let est = 0;
+                (list.items || []).filter(i => i.checked).forEach(i => {
+                  const p = parseFloat(i.price) || Shopping.getKnownPriceForSmarty(i.name) || 0;
+                  const q = Shopping.parseQtyValue(i.qty) || 1;
+                  est += p * q;
+                });
+                const cartBox = document.getElementById("shop-cart");
+                if (cartBox && cartBox.previousElementSibling) {
+                  cartBox.previousElementSibling.innerHTML = UI.t("cart_label") + (est > 0 ? \` <span style="float:right; color:var(--primary);">Est: \${UI.formatMoney(est)}</span>\` : "");
+                }
+              };
+            }
+
+            window.addEventListener("load", () => {
+              setTimeout(() => {
+                NativeBridge.init();
+                setupBiometricButton();
+                if (Data.store.settings?.pin && window.SmartyAndroid?.authenticateBiometric) {
+                  window.SmartyAndroid.authenticateBiometric();
+                }
+              }, 600);
+            });
+          })();
+          `;
+          fs.writeFileSync("www/smarty-pro-addons.js", addonsJS);
+
+          // 4. Desactivar Service Worker en APK e inyectar smarty-pro-addons.js en index.html
+          if (fs.existsSync("www/index.html")) {
+            let html = fs.readFileSync("www/index.html", "utf8");
+            html = html.replace("if (\x27serviceWorker\x27 in navigator)", "if (false && \x27serviceWorker\x27 in navigator)");
+            html = html.replace(\x27<script src="main.js"></script>\x27, \x27<script src="main.js"></script>\n    <script src="smarty-pro-addons.js"></script>\x27);
+            fs.writeFileSync("www/index.html", html);
+          }
+          '
+
           npm init -y
-          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2
+          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2
           npx cap init "Smart Life Pro" "com.smartlife.pro" --web-dir www
           npx cap add android
           npx cap sync android
 
-      - name: Inject Native Biometrics & Bank Notification Listener
-        run: |
-          PKG_DIR="android/app/src/main/java/com/smartlife/pro"
-          mkdir -p "$PKG_DIR"
+          if [ -f "logo.png" ]; then
+            for dir in android/app/src/main/res/mipmap-*; do
+              if [ -d "$dir" ]; then
+                cp logo.png "$dir/ic_launcher.png" 2>/dev/null || true
+                cp logo.png "$dir/ic_launcher_round.png" 2>/dev/null || true
+                cp logo.png "$dir/ic_launcher_foreground.png" 2>/dev/null || true
+              fi
+            done
+          fi
 
+      - name: Inject Native Android Biometrics, Notifications & Bank Listener
+        run: |
           node -e '
           const fs = require("fs");
           const pkgDir = "android/app/src/main/java/com/smartlife/pro";
+          fs.mkdirSync(pkgDir, { recursive: true });
 
           const notifService = `package com.smartlife.pro;
           import android.app.Notification;
@@ -72,8 +349,9 @@ jobs:
               }
           }`;
 
-          const mainActivity = `package com.smartlife.pro;
-          import android.app.KeyguardManager;
+          const mainAct = `package com.smartlife.pro;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
           import android.content.BroadcastReceiver;
           import android.content.Context;
           import android.content.DialogInterface;
@@ -85,6 +363,7 @@ jobs:
           import android.os.CancellationSignal;
           import android.provider.Settings;
           import android.webkit.JavascriptInterface;
+          import androidx.core.app.NotificationCompat;
           import com.getcapacitor.BridgeActivity;
           import org.json.JSONObject;
 
@@ -97,6 +376,24 @@ jobs:
                       Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                       startActivity(intent);
+                  }
+
+                  @JavascriptInterface
+                  public void showNotification(String title, String body) {
+                      try {
+                          NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                          String chId = "smarty_alerts";
+                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                              NotificationChannel ch = new NotificationChannel(chId, "Alertas Smarty", NotificationManager.IMPORTANCE_HIGH);
+                              nm.createNotificationChannel(ch);
+                          }
+                          NotificationCompat.Builder b = new NotificationCompat.Builder(MainActivity.this, chId)
+                              .setSmallIcon(android.R.drawable.ic_dialog_info)
+                              .setContentTitle(title)
+                              .setContentText(body)
+                              .setAutoCancel(true);
+                          nm.notify((int) (System.currentTimeMillis() % 10000), b.build());
+                      } catch (Exception ignored) {}
                   }
 
                   @JavascriptInterface
@@ -125,11 +422,6 @@ jobs:
                                               });
                                           }
                                       });
-                                  } else {
-                                      KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-                                      if (km != null && km.isKeyguardSecure()) {
-                                          getBridge().getWebView().evaluateJavascript("if(window.Main) Main.unlockApp();", null);
-                                      }
                                   }
                               } catch (Exception ignored) {}
                           }
@@ -177,16 +469,13 @@ jobs:
           }`;
 
           fs.writeFileSync(pkgDir + "/SmartyNotificationService.java", notifService);
-          fs.writeFileSync(pkgDir + "/MainActivity.java", mainActivity);
+          fs.writeFileSync(pkgDir + "/MainActivity.java", mainAct);
 
           let manifest = fs.readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
-          if (!manifest.includes("USE_BIOMETRIC")) {
-              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
-          }
-          if (!manifest.includes("SmartyNotificationService")) {
-              const serviceTag = `<service android:name=".SmartyNotificationService" android:label="Smarty Lector Bancario" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"><intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter></service>\n    </application>`;
-              manifest = manifest.replace("</application>", serviceTag);
-          }
+          const perms = `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.USE_BIOMETRIC" />\n    <uses-permission android:name="android.permission.USE_FINGERPRINT" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <application`;
+          manifest = manifest.replace("<application", perms);
+          const serviceTag = `<service android:name=".SmartyNotificationService" android:label="Smarty Lector Bancario" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"><intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter></service>\n    </application>`;
+          manifest = manifest.replace("</application>", serviceTag);
           fs.writeFileSync("android/app/src/main/AndroidManifest.xml", manifest);
           '
 
