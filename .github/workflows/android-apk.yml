@@ -7,7 +7,7 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Capacitor Android Project (APK Only Upgrades)
+      - name: Build Capacitor Android Project & Inject APK Addons
         run: |
           rm -rf www android package.json package-lock.json capacitor.config.json
           mkdir -p www
@@ -32,14 +32,315 @@ jobs:
 
           node -e '
           const fs = require("fs");
+
+          const addonsCode = `
+          (function() {
+            console.log("[Smarty APK Native] Inicializando mejoras Android...");
+
+            // 1. Estilos para que nada bloquee toques y boton de huella visible
+            const st = document.createElement("style");
+            st.innerHTML = "#listening-overlay:not(.active), .modal-overlay:not(.open), #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; } .pin-pad .pin-btn.bio-btn-active { visibility: visible !important; pointer-events: auto !important; color: var(--primary) !important; font-size: 26px !important; }";
+            document.head.appendChild(st);
+
+            // 2. Modal HTML para pedir API Key de Groq (porque Android WebView bloquea window.prompt)
+            window.askGroqKeyModal = function() {
+              return new Promise((resolve) => {
+                const old = document.getElementById("groq-key-modal");
+                if (old) old.remove();
+                const ov = document.createElement("div");
+                ov.id = "groq-key-modal";
+                ov.className = "modal-overlay open";
+                ov.style.zIndex = "25000";
+                const current = (Data?.store?.settings?.groqApiKey || "").trim();
+                ov.innerHTML = \`
+                  <div class="settings-card" onclick="event.stopPropagation()" style="max-width:350px;">
+                    <h3 style="margin:0 0 8px 0; color:var(--primary);">🔑 Activar Smarty AI (Groq)</h3>
+                    <p style="font-size:12px; color:var(--text-sec); margin:0 0 12px 0;">Pega tu clave gratuita de Groq (empieza por <b>gsk_</b>) para usar el chat, voz IA y escáner de recibos.</p>
+                    <input type="text" id="groq-key-input-field" class="setting-input" placeholder="gsk_..." value="\${current}" style="width:100%; margin-bottom:12px; font-family:monospace;">
+                    <div style="display:flex; gap:8px;">
+                      <button class="btn-danger-outline" style="margin:0; flex:1; padding:12px;" id="gk-cancel">Cancelar</button>
+                      <button class="btn-full" style="margin:0; flex:1; padding:12px;" id="gk-save">Guardar</button>
+                    </div>
+                  </div>
+                \`;
+                document.body.appendChild(ov);
+                ov.querySelector("#gk-cancel").onclick = () => { ov.remove(); resolve(null); };
+                ov.querySelector("#gk-save").onclick = () => {
+                  const val = ov.querySelector("#groq-key-input-field").value.trim();
+                  if (val) {
+                    if (!Data.store.settings) Data.store.settings = {};
+                    Data.store.settings.groqApiKey = val;
+                    Data.save();
+                    if (typeof GroqAI !== "undefined") GroqAI.refreshUsagePanel();
+                    if (typeof UI !== "undefined") UI.showSnackbar("Smarty AI activado ✅");
+                  }
+                  ov.remove();
+                  resolve(val || null);
+                };
+              });
+            };
+
+            // 3. Arreglar GroqAI (Modelos Llama 3.3 70B + Llama 4 Vision + Voz Nativa Android)
+            function patchGroqAndVoice() {
+              if (typeof GroqAI === "undefined") return;
+              GroqAI.textModel = "llama-3.3-70b-versatile";
+              GroqAI.visionModel = "meta-llama/llama-4-scout-17b-16e-instruct";
+
+              GroqAI.getApiKeyAsync = async function() {
+                if (!Data.store.settings) Data.store.settings = {};
+                const stored = (Data.store.settings.groqApiKey || "").trim();
+                if (stored) return stored;
+                return await window.askGroqKeyModal();
+              };
+
+              const origReq = GroqAI.request.bind(GroqAI);
+              GroqAI.request = async function(payload, opts = {}) {
+                const key = await this.getApiKeyAsync();
+                if (!key) throw new Error("GROQ_KEY_CANCELLED");
+                if (payload.reasoning_effort) delete payload.reasoning_effort;
+                if (payload.reasoning_format) delete payload.reasoning_format;
+                if (payload.response_format && payload.response_format.type === "json_schema") {
+                  const sc = payload.response_format.json_schema?.schema;
+                  if (sc && payload.messages && payload.messages[0]) {
+                    payload.messages[0].content += "\\nRespond ONLY with valid JSON matching this schema: " + JSON.stringify(sc);
+                  }
+                  payload.response_format = { type: "json_object" };
+                }
+                return await origReq(payload, opts);
+              };
+
+              GroqAI.getApiKey = function() {
+                const stored = (Data?.store?.settings?.groqApiKey || "").trim();
+                if (stored) return stored;
+                window.askGroqKeyModal();
+                return null;
+              };
+
+              // Conectar Voz Nativa de Android a GroqAI.listenOnce()
+              GroqAI.listenOnce = function() {
+                return new Promise((resolve, reject) => {
+                  if (window.SmartyAndroid && window.SmartyAndroid.startVoiceRecognition) {
+                    window._smartyVoiceCallback = (text, err) => {
+                      if (text && text.trim()) resolve(text.trim());
+                      else reject(new Error(err || "VOICE_NO_SPEECH"));
+                    };
+                    const lang = Data?.store?.settings?.lang || "es";
+                    const locale = lang === "pt" ? "pt-BR" : (lang === "en" ? "en-US" : "es-ES");
+                    window.SmartyAndroid.startVoiceRecognition(locale);
+                    return;
+                  }
+                  reject(new Error("VOICE_UNSUPPORTED"));
+                });
+              };
+            }
+
+            // 4. Conectar Voz Nativa de Android al boton central (+) y al microfono de Compras
+            function patchNativeMicrophones() {
+              if (typeof Shopping !== "undefined") {
+                Shopping.startVoiceRecognition = async function() {
+                  try {
+                    const text = await GroqAI.listenOnce();
+                    const inp = document.getElementById("shop-input");
+                    if (inp) inp.value = text;
+                    this.addItem(text);
+                  } catch (e) {
+                    UI.showSnackbar("No se detectó voz");
+                  }
+                };
+              }
+
+              if (typeof Finance !== "undefined") {
+                Finance.initSmartButton = function() {
+                  const btn = document.getElementById("dock-plus-btn");
+                  if (!btn) return;
+                  const newBtn = btn.cloneNode(true);
+                  btn.parentNode.replaceChild(newBtn, btn);
+                  const activeBtn = document.getElementById("dock-plus-btn");
+
+                  let timer = null;
+                  let longPress = false;
+
+                  const startPress = () => {
+                    longPress = false;
+                    timer = setTimeout(async () => {
+                      longPress = true;
+                      if (navigator.vibrate) navigator.vibrate(50);
+                      try {
+                        const transcript = await GroqAI.listenOnce();
+                        if (Data.store.settings?.groqApiKey) {
+                          const categories = ["cat_market","cat_leisure","cat_transport","cat_clothes","cat_health","cat_bills","cat_travel","cat_beauty","cat_other"];
+                          const schema = { type: "object", properties: { amount: { type: "number" }, desc: { type: "string" }, category: { type: "string" } }, required: ["amount","desc","category"] };
+                          const res = await GroqAI.textJSON("Extract expense amount, short desc, and category from: " + categories.join(", "), transcript, "exp", schema);
+                          if (res && res.amount > 0) {
+                            Finance.openSmartExpenseModal(Number(res.amount), res.desc || "Gasto", res.category || "cat_other");
+                            return;
+                          }
+                        }
+                        Finance.processSmartText(transcript);
+                      } catch (_) {}
+                    }, 550);
+                  };
+
+                  const endPress = () => {
+                    clearTimeout(timer);
+                    if (!longPress) Main.openAddMenu();
+                    longPress = false;
+                  };
+
+                  activeBtn.addEventListener("touchstart", startPress, { passive: true });
+                  activeBtn.addEventListener("touchend", endPress);
+                  activeBtn.addEventListener(" click", () => { if (!longPress) Main.openAddMenu(); });
+                };
+              }
+            }
+
+            // 5. Puente Nativo: Huella Digital, Notificaciones y Lector Bancario
+            window.NativeBridge = {
+              init() {
+                if (!Data.store.settings) Data.store.settings = {};
+                if (typeof Data.store.settings.biometricEnabled === "undefined") Data.store.settings.biometricEnabled = false;
+                if (typeof Data.store.settings.subNotifications === "undefined") Data.store.settings.subNotifications = true;
+                if (typeof Data.store.settings.bankAutoDetect === "undefined") Data.store.settings.bankAutoDetect = false;
+                if (typeof Data.store.settings.bankAutoSaveMode === "undefined") Data.store.settings.bankAutoSaveMode = "confirm";
+
+                window.addEventListener("SmartyBankNotification", (e) => {
+                  if (e && e.detail) this.processBankNotification(e.detail);
+                });
+              },
+
+              toggleBiometricSetting(checked) {
+                if (checked && !Data.store.settings.pin) {
+                  UI.showSnackbar("Primero crea un PIN de respaldo");
+                  Main.togglePinLock();
+                }
+                Data.store.settings.biometricEnabled = checked;
+                Data.save();
+                if (checked && window.SmartyAndroid?.authenticateBiometric) {
+                  window.SmartyAndroid.authenticateBiometric();
+                }
+              },
+
+              openNotificationAccessSettings() {
+                if (window.SmartyAndroid?.openNotificationSettings) {
+                  window.SmartyAndroid.openNotificationSettings();
+                }
+              },
+
+              async processBankNotification(notif) {
+                if (!Data.store.settings?.bankAutoDetect) return;
+                const fullText = ((notif.title || "") + " - " + (notif.text || "")).trim();
+                if (fullText.length < 5) return;
+                const m = fullText.match(/(\\d+(?:[.,]\\d{1,2})?)/);
+                if (!m) return;
+                const amount = parseFloat(m[1].replace(",", "."));
+                if (!amount || amount <= 0) return;
+                const desc = "🏦 " + (notif.title || "Pago Bancario");
+                if (Data.store.settings.bankAutoSaveMode === "auto") {
+                  Data.store.expenses.push({ id: Date.now().toString(), date: Date.now(), amount, desc, category: UI.t("cat_other"), isInstallment: false });
+                  Data.save();
+                  UI.renderBudgetChart();
+                  Finance.renderHomeWidgets();
+                  if (typeof Assistant !== "undefined") Assistant.showReactivePopup("🏦 Auto-registrado: " + UI.formatMoney(amount));
+                } else {
+                  Finance.openSmartExpenseModal(amount, desc, "cat_other");
+                }
+              },
+
+              simulateBankNotification() {
+                Data.store.settings.bankAutoDetect = true;
+                Data.save();
+                this.processBankNotification({ title: "Nubank", text: "Compra aprobada en Uber por 24.50" });
+              }
+            };
+
+            function setupBiometricLockScreen() {
+              const emptyPinBtn = document.querySelector(".pin-pad .pin-btn:nth-child(10)");
+              if (emptyPinBtn && !emptyPinBtn.classList.contains("bio-btn-active")) {
+                emptyPinBtn.classList.add("bio-btn-active");
+                emptyPinBtn.innerHTML = "🫆";
+                emptyPinBtn.onclick = () => {
+                  if (window.SmartyAndroid?.authenticateBiometric) window.SmartyAndroid.authenticateBiometric();
+                };
+              }
+              if ((Data?.store?.settings?.pin || Data?.store?.settings?.biometricEnabled) && window.SmartyAndroid?.authenticateBiometric) {
+                setTimeout(() => window.SmartyAndroid.authenticateBiometric(), 400);
+              }
+            }
+
+            // 6. Inyectar Opciones de Huella, API Key de Groq y Bancos en Ajustes
+            function hookSettingsUI() {
+              if (typeof UI === "undefined" || !UI.renderSettingsView) return;
+              const origRender = UI.renderSettingsView.bind(UI);
+              UI.renderSettingsView = function() {
+                origRender();
+                const container = document.getElementById("settings-inject");
+                if (!container || document.getElementById("android-pro-settings")) return;
+                const s = Data.store.settings || {};
+                const hasKey = !!(s.groqApiKey && s.groqApiKey.trim());
+                const panel = document.createElement("div");
+                panel.id = "android-pro-settings";
+                panel.style.marginBottom = "20px";
+                panel.innerHTML = \`
+                  <div class="section-label">OPCIONES EXCLUSIVAS ANDROID & IA</div>
+                  <div class="glass-card" style="padding:15px; margin:0;">
+                    <div class="setting-item">
+                      <span>🔑 Clave API de Groq (Smarty AI)</span>
+                      <button class="text-btn-small" style="background:var(--input-bg);" onclick="window.askGroqKeyModal().then(()=>UI.renderSettingsView())">\${hasKey ? "Cambiar ✅" : "Configurar ➕"}</button>
+                    </div>
+                    <div class="setting-item">
+                      <span>🫆 Desbloqueo con Huella / Rostro</span>
+                      <label class="switch-wrap">
+                        <input type="checkbox" \${s.biometricEnabled ? "checked" : ""} onchange="NativeBridge.toggleBiometricSetting(this.checked)">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <div class="setting-item">
+                      <span>🏦 Leer Notificaciones de Bancos</span>
+                      <label class="switch-wrap">
+                        <input type="checkbox" \${s.bankAutoDetect ? "checked" : ""} onchange="Data.store.settings.bankAutoDetect = this.checked; Data.save(); if(this.checked) NativeBridge.openNotificationAccessSettings();">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <div class="setting-item">
+                      <span>Modo de Registro Bancario</span>
+                      <select class="setting-select" style="width:auto; margin:0; padding:6px 10px; font-size:12px;" onchange="Data.store.settings.bankAutoSaveMode = this.value; Data.save();">
+                        <option value="confirm" \${s.bankAutoSaveMode !== "auto" ? "selected" : ""}>Confirmar antes</option>
+                        <option value="auto" \${s.bankAutoSaveMode === "auto" ? "selected" : ""}>Guardar 100% solo</option>
+                      </select>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                      <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.openNotificationAccessSettings()">⚙️ Permiso Bancos</button>
+                      <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.simulateBankNotification()">⚡ Probar Pago</button>
+                    </div>
+                  </div>
+                \`;
+                container.insertBefore(panel, container.firstChild);
+              };
+            }
+
+            window.addEventListener("load", () => {
+              patchGroqAndVoice();
+              patchNativeMicrophones();
+              hookSettingsUI();
+              setTimeout(() => {
+                NativeBridge.init();
+                Finance.initSmartButton();
+                setupBiometricLockScreen();
+                if (typeof UI !== "undefined") UI.renderSettingsView();
+              }, 400);
+            });
+          })();
+          `;
+
+          fs.writeFileSync("www/smarty-pro-addons.js", addonsCode);
+
           if (fs.existsSync("www/index.html")) {
             let html = fs.readFileSync("www/index.html", "utf8");
             html = html.replace(/serviceWorker/g, "serviceWorkerDisabledInAPK");
-            if (fs.existsSync("www/smarty-pro-addons.js") && !html.includes("smarty-pro-addons.js")) {
-              html = html.replace("main.js\"></script>", "main.js\"></script><script src=\"smarty-pro-addons.js\"></script>");
-            }
+            html = html.replace("main.js\"></script>", "main.js\"></script><script src=\"smarty-pro-addons.js\"></script>");
             fs.writeFileSync("www/index.html", html);
           }
+
           fs.writeFileSync("capacitor.config.json", JSON.stringify({
             appId: "com.smartlife.pro",
             appName: "Smart Life Pro",
@@ -52,8 +353,20 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Inject Native Biometrics & Bank Notification Listener
+      - name: Set App Icon from logo.png & Inject Native Java (Voice + Biometrics + Bank Reader)
         run: |
+          # 1. Convertir logo.png a PNG real y eliminar el icono verde adaptable por defecto de Capacitor
+          if [ -f "logo.png" ]; then
+            rm -rf android/app/src/main/res/mipmap-anydpi-v26
+            for d in android/app/src/main/res/mipmap-*; do
+              if [ -d "$d" ]; then
+                ffmpeg -y -i logo.png -vf scale=192:192 "$d/ic_launcher.png" </dev/null >/dev/null 2>&1 || cp logo.png "$d/ic_launcher.png"
+                ffmpeg -y -i logo.png -vf scale=192:192 "$d/ic_launcher_round.png" </dev/null >/dev/null 2>&1 || cp logo.png "$d/ic_launcher_round.png"
+                ffmpeg -y -i logo.png -vf scale=192:192 "$d/ic_launcher_foreground.png" </dev/null >/dev/null 2>&1 || cp logo.png "$d/ic_launcher_foreground.png"
+              fi
+            done
+          fi
+
           node -e '
           const fs = require("fs");
           const pkgDir = "android/app/src/main/java/com/smartlife/pro";
@@ -91,28 +404,56 @@ jobs:
 
           const mainActivity = [
             "package com.smartlife.pro;",
+            "import android.Manifest;",
+            "import android.app.Activity;",
             "import android.app.KeyguardManager;",
             "import android.content.BroadcastReceiver;",
             "import android.content.Context;",
             "import android.content.DialogInterface;",
             "import android.content.Intent;",
             "import android.content.IntentFilter;",
+            "import android.content.pm.PackageManager;",
             "import android.hardware.biometrics.BiometricPrompt;",
             "import android.os.Build;",
             "import android.os.Bundle;",
             "import android.os.CancellationSignal;",
             "import android.provider.Settings;",
+            "import android.speech.RecognizerIntent;",
             "import android.webkit.JavascriptInterface;",
+            "import androidx.core.app.ActivityCompat;",
+            "import androidx.core.content.ContextCompat;",
             "import com.getcapacitor.BridgeActivity;",
+            "import java.util.ArrayList;",
             "import org.json.JSONObject;",
             "public class MainActivity extends BridgeActivity {",
             "    private BroadcastReceiver bankReceiver;",
+            "    private static final int VOICE_REQ_CODE = 8899;",
             "    public class SmartyJSBridge {",
             "        @JavascriptInterface",
             "        public void openNotificationSettings() {",
             "            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);",
             "            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);",
             "            startActivity(intent);",
+            "        }",
+            "        @JavascriptInterface",
+            "        public void startVoiceRecognition(String lang) {",
+            "            runOnUiThread(new Runnable() {",
+            "                @Override",
+            "                public void run() {",
+            "                    try {",
+            "                        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {",
+            "                            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.RECORD_AUDIO}, 101);",
+            "                        }",
+            "                        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);",
+            "                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);",
+            "                        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang != null ? lang : \"es-ES\");",
+            "                        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, \"Habla con Smarty...\");",
+            "                        startActivityForResult(intent, VOICE_REQ_CODE);",
+            "                    } catch (Exception e) {",
+            "                        getBridge().getWebView().evaluateJavascript(\"if(window._smartyVoiceCallback) window._smartyVoiceCallback(null, \x27VOICE_ERROR\x27);\", null);",
+            "                    }",
+            "                }",
+            "            });",
             "        }",
             "        @JavascriptInterface",
             "        public void authenticateBiometric() {",
@@ -140,13 +481,34 @@ jobs:
             "                                    });",
             "                                }",
             "                            });",
-            "                        } else {",
-            "                            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);",
-            "                            if (km != null && km.isKeyguardSecure()) {",
-            "                                getBridge().getWebView().evaluateJavascript(\"if(window.Main) Main.unlockApp();\", null);",
-            "                            }",
             "                        }",
             "                    } catch (Exception ignored) {}",
+            "                }",
+            "            });",
+            "        }",
+            "    }",
+            "    @Override",
+            "    protected void onActivityResult(int requestCode, int resultCode, Intent data) {",
+            "        super.onActivityResult(requestCode, resultCode, data);",
+            "        if (requestCode == VOICE_REQ_CODE) {",
+            "            if (resultCode == Activity.RESULT_OK && data != null) {",
+            "                ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);",
+            "                if (matches != null && !matches.isEmpty()) {",
+            "                    String spoken = matches.get(0).replace(\"\x27\", \" \").replace(\"\\\"\", \" \");",
+            "                    final String js = \"if(window._smartyVoiceCallback) window._smartyVoiceCallback(\x27\" + spoken + \"\x27, null);\";",
+            "                    getBridge().getWebView().post(new Runnable() {",
+            "                        @Override",
+            "                        public void run() {",
+            "                            getBridge().getWebView().evaluateJavascript(js, null);",
+            "                        }",
+            "                    });",
+            "                    return;",
+            "                }",
+            "            }",
+            "            getBridge().getWebView().post(new Runnable() {",
+            "                @Override",
+            "                public void run() {",
+            "                    getBridge().getWebView().evaluateJavascript(\"if(window._smartyVoiceCallback) window._smartyVoiceCallback(null, \x27VOICE_NO_SPEECH\x27);\", null);",
             "                }",
             "            });",
             "        }",
@@ -193,7 +555,7 @@ jobs:
 
           let manifest = fs.readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
           if (!manifest.includes("USE_BIOMETRIC")) {
-              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
+              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
           }
           if (!manifest.includes("SmartyNotificationService")) {
               const serviceTag = "<service android:name=\".SmartyNotificationService\" android:label=\"Smarty Lector Bancario\" android:exported=\"true\" android:permission=\"android.permission.BIND_NOTIFICATION_LISTENER_SERVICE\"><intent-filter><action android:name=\"android.service.notification.NotificationListenerService\" /></intent-filter></service>\n    </application>";
