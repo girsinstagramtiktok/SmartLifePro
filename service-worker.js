@@ -1,10 +1,10 @@
 /* =========================================
-   SMART LIFE PRO - SERVICE WORKER (V12.1 - SMARTY AI UPDATE)
+   SMART LIFE PRO - SERVICE WORKER (V12.0 - SMARTY AI UPDATE)
    Estrategia: Stale-While-Revalidate (Carga Rápida + Update Background)
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v12.2-smarty-context-voice'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v12-smarty-context-voice'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

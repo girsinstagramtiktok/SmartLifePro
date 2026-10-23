@@ -1,22 +1,5 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Descargar main.js con Huella y Rostro</title>
-<style>
-  body { font-family: system-ui, sans-serif; background: #090d16; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 90vh; margin: 0; }
-  .box { background: #151e2e; border: 1px solid #2d3b55; border-radius: 24px; padding: 32px; max-width: 440px; width: 90%; text-align: center; }
-  button { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; color: white; background: #10b981; }
-</style>
-</head>
-<body>
-<div class="box">
-  <h2>ü´Ü main.js (Con Huella + Rostro Android)</h2>
-  <button onclick="dl()">‚¨áÔ∏è Descargar main.js Ahora</button>
-</div>
-<textarea id="code" style="display:none;">
 /* =========================================
-   SMART LIFE PRO - MAIN CONTROLLER (V11.2 - BIOMETRIC FINGERPRINT/FACE + ANDROID READY)
+   SMART LIFE PRO - MAIN CONTROLLER (V10.1 - CSS BACKGROUNDS & AUTO-REFRESH)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -26,7 +9,7 @@ const Main = {
     isSettingUpPin: false,
 
     init() {
-        console.log("Iniciando Smart Life Pro v11.2...");
+        console.log("Iniciando Smart Life Pro v10.1...");
         if (typeof Data !== 'undefined') Data.init();
         this.injectLockScreenHTML();
         if (this.checkSecurityAtStart()) return;
@@ -34,42 +17,60 @@ const Main = {
     },
 
     continueLoadingApp() {
-        if (typeof Finance !== 'undefined') {
-            Finance.checkMonthTransition();
-            Finance.initSmartButton();
-        }
+        // Inicializar mÛdulos
+        if (typeof Finance !== 'undefined') {Finance.checkMonthTransition();
+        Finance.initSmartButton();}
         if (typeof Assistant !== 'undefined') Assistant.init();
 
+        // --- NUEVO: REFRESCAR AL VOLVER A LA APP ---
+        // Esto soluciona que las misiones no se actualicen si la app se queda abierta de noche
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
+                console.log("[Main] App visible: Verificando cambios de fecha...");
+                
+                // 1. Verificar Misiones y Racha (Assistant)
                 if (typeof Assistant !== 'undefined') {
                     Assistant.validateDailyQuests();
                     Assistant.checkDailyStreak();
+                    
+                    // Si el perfil est· abierto, refrescar la UI visualmente
                     const modalProfile = document.getElementById('modal-profile');
                     if (modalProfile && modalProfile.classList.contains('open')) {
                         Assistant.renderProfile();
                     }
                 }
+                
+                // 2. Verificar Cambio de Mes (Finance)
                 if (typeof Finance !== 'undefined') {
                     Finance.checkMonthTransition();
                 }
             }
         });
 
+        // Configurar fondo (Ahora con Gradients CSS)
         this.setRandomBackground();
 
+        // 1. APLICAR TEMA COLOR
         const savedTheme = (Data.store.settings && Data.store.settings.theme) ? Data.store.settings.theme : 'blue';
         this.applyThemeToBody(savedTheme);
 
+        // 2. APLICAR FUENTE
         const savedFont = (Data.store.settings && Data.store.settings.font) ? Data.store.settings.font : 'Modern';
         if (typeof UI !== 'undefined') UI.changeFont(savedFont);
 
+        // 3. Renderizar Ajustes
         if (typeof UI !== 'undefined') UI.renderSettingsView();
+
+        // Refrescar textos y DOM
         if (typeof UI !== 'undefined' && typeof UI.refreshDOM === 'function') UI.refreshDOM();
 
+        // Quitar bloqueo
         const lockScreen = document.getElementById('lock-screen');
         if (lockScreen) lockScreen.classList.add('hidden');
 
+
+
+        // Ir al inicio
         this.router('home');
     },
 
@@ -81,6 +82,7 @@ const Main = {
 
         const savedFont = (Data.store.settings && Data.store.settings.font) ? Data.store.settings.font : 'Modern';
         if (typeof UI !== 'undefined') UI.changeFont(savedFont);
+        
         if (typeof UI !== 'undefined') UI.renderSettingsView();
         if (navigator.vibrate) navigator.vibrate(10);
     },
@@ -109,7 +111,7 @@ const Main = {
         if (viewName === 'lists' && typeof Shopping !== 'undefined') Shopping.renderLists();
         if (viewName === 'finance' && typeof Finance !== 'undefined') {
             const activeTab = document.querySelector('.segment-btn.active');
-            if (activeTab && activeTab.id.startsWith('fin-tab-')) {
+            if (activeTab) {
                 const tabId = activeTab.id.replace('fin-tab-', '');
                 Finance.setTab(tabId);
             } else {
@@ -156,35 +158,54 @@ const Main = {
         document.getElementById('modal-profile').classList.remove('open');
     },
 
+     // --- FONDOS CON GRADIENTES M¡S DISTINTIVOS ---
     setRandomBackground() {
         const bgLayer = document.getElementById('bg-layer');
         if (!bgLayer) return;
 
+        // Paleta Light Mode (M·s colorida y diferenciada)
         const gradients = [
-            'linear-gradient(135deg, #DBEAFE 0%, #F1F5F9 100%)',
-            'linear-gradient(120deg, #FDFBFB 0%, #FFE4E6 100%)',
-            'linear-gradient(to top, #D1FAE5 0%, #F0FDF4 100%)',
-            'linear-gradient(135deg, #EDE9FE 0%, #F8FAFC 100%)',
-            'radial-gradient(circle at 50% 0%, #E0F2FE 10%, #F1F5F9 90%)'
+            // 1. Azul Smarty (El cl·sico, pero m·s vivo)
+            'linear-gradient(135deg, #CFE7FA 0%, #E6F0F5 100%)', 
+            // 2. Atardecer C·lido (MelocotÛn suave)
+            'linear-gradient(120deg, #fdfbfb 0%, #ffe2e2 100%)', 
+            // 3. Frescura Menta (Verde agua visible)
+            'linear-gradient(to top, #d4fc79 0%, #96e6a1 100%)', 
+            // 4. Lavanda Digital (Morado suave)
+            'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', 
+            // 5. Profundidad (Radial azulado)
+            'radial-gradient(circle at 50% 0%, #eef2ff 10%, #dbeafe 90%)' 
         ];
 
+        // Paleta Dark Mode (Profundos y elegantes)
         const darkGradients = [
-            'radial-gradient(circle at 50% -20%, #1E3A8A 0%, #090D16 80%)',
-            'linear-gradient(to bottom, #1E1B4B, #090D16)',
-            'linear-gradient(to top, #090D16, #064E3B)',
-            'linear-gradient(135deg, #1E293B 0%, #090D16 100%)',
-            'linear-gradient(to bottom, #0F172A, #1E293B)'
+            // 1. Deep Space (Negro azulado radial)
+            'radial-gradient(circle at 50% -20%, #2b32b2 0%, #1488cc 10%, #000000 80%)', 
+            // 2. Cyberpunk Night (Toque morado oscuro)
+            'linear-gradient(to bottom, #240b36, #c31432)', 
+            // 3. Forest Night (Verde muy oscuro)
+            'linear-gradient(to top, #000000, #0f9b0f)', 
+            // 4. Carbon Fiber (Gris industrial puro)
+            'linear-gradient(135deg, #434343 0%, #000000 100%)',
+            // 5. Midnight (Azul noche plano y limpio)
+            'linear-gradient(to bottom, #0f2027, #203a43, #2c5364)'
         ];
 
-        const list = (Data.store.settings && Data.store.settings.darkMode) ? darkGradients : gradients;
-        const currentBg = bgLayer.style.backgroundImage;
+        let list = (Data.store.settings && Data.store.settings.darkMode) ? darkGradients : gradients;
+        
+        // --- TRUCO: Evitar repetir el mismo fondo que ya estaba ---
+        // Obtenemos el fondo actual para no elegirlo de nuevo
+        let currentBg = bgLayer.style.backgroundImage;
         let newBg;
+        
         do {
             newBg = list[Math.floor(Math.random() * list.length)];
-        } while (newBg === currentBg && list.length > 1);
+        } while (newBg === currentBg && list.length > 1); // Seguir buscando si sale el mismo
 
+        // Aplicar
         bgLayer.style.backgroundImage = newBg;
     },
+
 
     injectLockScreenHTML() {
         if (document.getElementById('lock-screen')) return;
@@ -193,8 +214,8 @@ const Main = {
         div.className = 'hidden';
         div.innerHTML = `
             <div style="display:flex; flex-direction:column; align-items:center;">
-                <div style="font-size:40px; margin-bottom:10px;">üîí</div>
-                <h2 style="margin-bottom:30px; color:var(--text-color);">PIN / Biometr√≠a</h2>
+                <div style="font-size:40px; margin-bottom:10px;"></div>
+                <h2 style="margin-bottom:30px; color:var(--text-color);">PIN</h2>
                 <div class="pin-display" id="pin-dots">
                     <div class="pin-dot"></div><div class="pin-dot"></div>
                     <div class="pin-dot"></div><div class="pin-dot"></div>
@@ -210,32 +231,17 @@ const Main = {
                     <div class="pin-btn" onclick="Main.pressPin(7)">7</div>
                     <div class="pin-btn" onclick="Main.pressPin(8)">8</div>
                     <div class="pin-btn" onclick="Main.pressPin(9)">9</div>
-                    <div class="pin-btn" onclick="Main.triggerBiometricUnlock()" style="visibility:visible !important; pointer-events:auto !important; color:var(--primary);" title="Huella / Rostro">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/><path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"/></svg>
-                    </div>
-                    <div class="pin-btn" onclick="Main.pressPin(0)">0</div>
+                    <div class="pin-btn clear"></div> <div class="pin-btn" onclick="Main.pressPin(0)">0</div>
                     <div class="pin-btn clear" onclick="Main.clearPin()" style="display:flex; align-items:center; justify-content:center;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
                     </div>
                 </div>
-                <button onclick="Main.forgotPin()" style="margin-top:30px; background:none; border:none; color:var(--text-sec); font-size:12px; text-decoration:underline;">
-                    Olvid√© mi PIN
+                <button onclick="Main.forgotPin()" style="margin-top:30px; background:none; border:none; color:var(--text-sec); font-size:12px; text-decoration:underline;" data-i18n="pin_forgot">
+                    ${typeof UI !== 'undefined' ? UI.t('pin_forgot') : 'Forgot PIN'}
                 </button>
             </div>
         `;
         document.body.appendChild(div);
-    },
-
-    triggerBiometricUnlock() {
-        if (this.isSettingUpPin) return;
-        // 1. Si estamos en el APK Nativo de Android, lanza el lector nativo de Huella / Rostro
-        if (window.SmartyAndroid && typeof window.SmartyAndroid.authenticateBiometric === 'function') {
-            window.SmartyAndroid.authenticateBiometric();
-            return;
-        }
-        if (typeof UI !== 'undefined') {
-            UI.showSnackbar("Biometr√≠a disponible en la App Android instalada ü´Ü");
-        }
     },
 
     pressPin(num) {
@@ -255,7 +261,8 @@ const Main = {
     updatePinUI() {
         const dots = document.querySelectorAll('.pin-dot');
         dots.forEach((dot, index) => {
-            dot.classList.toggle('filled', index < this.tempPin.length);
+            if (index < this.tempPin.length) dot.classList.add('filled');
+            else dot.classList.remove('filled');
         });
     },
 
@@ -268,7 +275,7 @@ const Main = {
             document.getElementById('lock-screen').classList.add('hidden');
             if (typeof UI !== 'undefined') {
                 UI.renderSettingsView();
-                UI.showSnackbar("PIN y Huella activados üîí");
+                UI.showSnackbar("PIN creado correctamente ");
             }
             return;
         }
@@ -276,9 +283,10 @@ const Main = {
             this.tempPin = "";
             this.updatePinUI();
             this.unlockApp();
+            if (navigator.vibrate) navigator.vibrate(50);
         } else {
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            if (typeof UI !== 'undefined') UI.showSnackbar("PIN Incorrecto ‚ùå");
+            if (typeof UI !== 'undefined') UI.showSnackbar("PIN Incorrecto ");
             this.tempPin = "";
             this.updatePinUI();
         }
@@ -289,9 +297,7 @@ const Main = {
             const lock = document.getElementById('lock-screen');
             if (lock) {
                 lock.classList.remove('hidden');
-                lock.querySelector('h2').innerText = "PIN / Biometr√≠a";
-                // Lanzar huella/rostro autom√°ticamente al abrir la app en Android
-                setTimeout(() => this.triggerBiometricUnlock(), 350);
+                lock.querySelector('h2').innerText = "PIN";
             }
             return true;
         }
@@ -309,6 +315,10 @@ const Main = {
         const confirmed = await UI.confirm("reset_confirm", "confirm_desc");
         if (confirmed) {
             localStorage.removeItem(Data.KEY);
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+            }
             location.reload();
         }
     },
@@ -316,7 +326,10 @@ const Main = {
     toggleDarkMode() {
         Data.store.settings.darkMode = !Data.store.settings.darkMode;
         Data.save();
+        
+        // Recalcular fondo al cambiar de modo
         this.setRandomBackground();
+        
         if (typeof UI !== 'undefined') UI.refreshDOM();
     },
 
@@ -340,10 +353,28 @@ const Main = {
             this.updatePinUI();
             const lock = document.getElementById('lock-screen');
             if (lock) {
-                lock.querySelector('h2').innerText = "Crear PIN (Respaldo de Huella)";
+                lock.querySelector('h2').innerText = "PIN";
                 lock.classList.remove('hidden');
             }
         }
+    },
+
+    setCurrency(curr) {
+        Data.store.settings.currency = curr;
+        if (Data.store.budget) Data.store.budget.currency = curr;
+        Data.save();
+        if (typeof UI !== 'undefined') UI.refreshDOM();
+    },
+
+    setLang(lang) {
+        Data.store.settings.lang = lang;
+        Data.save();
+        if (typeof UI !== 'undefined') {
+            UI.renderSettingsView();
+            UI.refreshDOM();
+            UI.showSnackbar(UI.t('msg_updated'));
+        }
+        if (typeof Assistant !== 'undefined') Assistant.updateMood();
     },
 
     changePin() {
@@ -359,7 +390,7 @@ const Main = {
 
     downloadBackup() {
         const json = Data.exportJSON();
-        UI.showSnackbar("Generando copia...");
+        UI.showSnackbar("Generando...");
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -383,7 +414,7 @@ const Main = {
                 await UI.confirm("import_success_title", "import_success_msg");
                 location.reload();
             } else {
-                UI.showSnackbar("Error: Archivo inv√°lido");
+                UI.showSnackbar("Error: Archivo inv·lido");
             }
         };
         reader.readAsText(file);
@@ -394,17 +425,24 @@ const Main = {
         const confirm = await UI.confirm("confirm_title", "confirm_desc");
         if (confirm) {
             localStorage.removeItem(Data.KEY);
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+            }
             location.reload();
         }
     },
 
     toggleSmartTips() {
         if (!Data.store.settings) Data.store.settings = {};
+
         const chk = document.getElementById('smarty-tips-toggle');
         Data.store.settings.showSmartTips = chk.checked;
         Data.save();
+
         if (typeof UI !== 'undefined') {
-            UI.showSnackbar(`Consejos ${chk.checked ? "Activados ‚ú®" : "Desactivados"}`);
+            const status = chk.checked ? "Activados " : "Desactivados ";
+            UI.showSnackbar(`Consejos ${status}`);
         }
     },
 
@@ -413,32 +451,30 @@ const Main = {
     }
 };
 
+/* =========================================
+   TRUCO DE ESCALADO AUTOM¡TICO (RESPONSIVE)
+   ========================================= */
 function autoScaleApp() {
-    if (window.innerWidth > 700) {
-        document.body.style.maxWidth = '450px';
-        document.body.style.margin = '0 auto';
+    const width = window.innerWidth;
+    
+    // Si es pantalla grande (PC/Tablet > 700px)
+    if (width > 700) {
+        document.body.style.maxWidth = '450px'; // Ancho de mÛvil est·ndar
+        document.body.style.margin = '0 auto';  // Centrar en pantalla
         document.body.style.minHeight = '100vh';
-        document.body.style.boxShadow = '0 0 50px rgba(0,0,0,0.12)';
+        document.body.style.boxShadow = '0 0 50px rgba(0,0,0,0.1)'; // Sombra elegante
+        document.body.style.borderLeft = '1px solid rgba(0,0,0,0.05)';
+        document.body.style.borderRight = '1px solid rgba(0,0,0,0.05)';
     } else {
+        // Si es mÛvil real, restauramos a pantalla completa
         document.body.style.maxWidth = '100%';
         document.body.style.margin = '0';
         document.body.style.boxShadow = 'none';
+        document.body.style.border = 'none';
     }
 }
+
+// Ejecutar al cargar y al cambiar tamaÒo de ventana
 window.addEventListener('resize', autoScaleApp);
 window.addEventListener('DOMContentLoaded', autoScaleApp);
-autoScaleApp();
-</textarea>
-<script>
-function dl() {
-  const content = document.getElementById('code').value.trim();
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
-  a.download = 'main.js';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-</script>
-</body>
-</html>
+autoScaleApp(); // EjecuciÛn inmediata
