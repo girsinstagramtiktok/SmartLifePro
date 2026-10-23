@@ -9,7 +9,9 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
+    env:
+      REPO_SLUG: ${{ github.repository }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,7 +27,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Prepare Web Assets, Compress Images & Inject V14 Master Addons
+      - name: Prepare Web Assets, Compress Images & Inject V15 Master Addons
         run: |
           sudo apt-get update -y && sudo apt-get install -y imagemagick
           rm -rf www android package.json package-lock.json capacitor.config.json node_modules
@@ -40,7 +42,7 @@ jobs:
 
           cat << 'EOF_SCRIPT' > inject_apk.js
           const fs = require("fs");
-          const repoSlug = process.env.GITHUB_REPOSITORY || "";
+          const repoSlug = process.env.REPO_SLUG || "";
 
           if (fs.existsSync("www/assistant.js")) {
             let ast = fs.readFileSync("www/assistant.js", "utf8");
@@ -50,30 +52,26 @@ jobs:
 
           const addons = [
             "(function() {",
-            "  window.SMARTY_APK_VERSION = '14.0';",
+            "  window.SMARTY_APK_VERSION = '15.0';",
             "  window.SMARTY_REPO = '" + repoSlug + "';",
             "",
-            "  try {",
-            "    const otaCode = localStorage.getItem('smarty_ota_patch_v14');",
-            "    if (otaCode && !window._otaLoaded) { window._otaLoaded = true; eval(otaCode); }",
-            "  } catch(e) {}",
-            "",
+            "  // 1. ESTILOS NEXT-GEN LIMPIOS (SIN SOMBRA GRIS EN EL ANILLO)",
             "  const st = document.createElement('style');",
             "  st.innerHTML = [",
             "    '#listening-overlay:not(.active), .modal-overlay:not(.open), #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; }',",
             "    '.pin-pad .pin-btn.bio-btn-active { visibility: visible !important; pointer-events: auto !important; color: var(--primary) !important; font-size: 11px !important; font-weight: 800 !important; }',",
             "    'body.dark-mode { --bg-body: #05070B !important; --glass-bg: linear-gradient(145deg, rgba(24,32,48,0.92) 0%, rgba(14,19,30,0.95) 100%) !important; --item-bg: #111726 !important; --input-bg: #192236 !important; }',",
             "    'body.dark-mode .glass-card, body.dark-mode .item-row, body.dark-mode .mascot-compact-row { background: linear-gradient(145deg, rgba(26,35,52,0.92), rgba(15,21,33,0.95)) !important; border-top: 1px solid rgba(255,255,255,0.16) !important; border-left: 1px solid rgba(255,255,255,0.08) !important; box-shadow: 0 14px 34px rgba(0,0,0,0.55) !important; }',",
-            "    '#budget-circle { filter: drop-shadow(0 0 6px currentColor); transition: stroke-dasharray 0.9s cubic-bezier(0.22,1,0.36,1), stroke 0.4s ease !important; }',",
-            "    '.xp-fill-vertical { background: linear-gradient(to top, #F59E0B, #FDE047) !important; box-shadow: 0 0 12px rgba(251,191,36,0.75) !important; }',",
-            "    '.mascot-compact-row { backdrop-filter: blur(18px) !important; border-radius: 24px !important; box-shadow: 0 10px 28px rgba(0,0,0,0.08) !important; }',",
-            "    '.bottom-dock .dock-btn.active { background: rgba(0,110,230,0.14) !important; border-radius: 18px !important; padding: 8px !important; box-shadow: 0 0 18px rgba(0,110,230,0.22); transform: translateY(-3px) !important; }',",
-            "    '.dock-main-btn { box-shadow: 0 8px 24px rgba(0,110,230,0.5) !important; border: 1.5px solid rgba(255,255,255,0.35) !important; }',",
-            "    '.brand-badge { width: 36px; height: 36px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 15px; color: #fff; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-right: 10px; }',",
+            "    '#budget-circle { filter: none !important; box-shadow: none !important; transition: stroke-dasharray 0.8s ease, stroke 0.3s ease !important; }',",
+            "    '.xp-fill-vertical { background: linear-gradient(to top, #F59E0B, #FDE047) !important; box-shadow: 0 0 10px rgba(251,191,36,0.6) !important; }',",
+            "    '.bottom-dock .dock-btn.active { background: rgba(0,110,230,0.14) !important; border-radius: 18px !important; padding: 8px !important; transform: translateY(-2px) !important; }',",
+            "    '.brand-logo-real { width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; overflow: hidden; box-shadow: 0 3px 8px rgba(0,0,0,0.14); }',",
+            "    '.brand-logo-real svg, .brand-logo-real img { width: 100%; height: 100%; object-fit: cover; display: block; }',",
             "    '.fin-bank-header { margin: 0 16px 14px; padding: 16px 18px; border-radius: 22px; background: var(--primary-grad); color: #fff; box-shadow: 0 12px 28px rgba(0,110,230,0.32); display: flex; justify-content: space-between; align-items: center; }'",
             "  ].join('\\n');",
             "  document.head.appendChild(st);",
             "",
+            "  // 2. RENOMBRAR SUSCRIPCIONES A GASTOS FIJOS",
             "  function renameSubscriptionsToFixedExpenses() {",
             "    if (typeof UI === 'undefined' || !UI.dictionary) return;",
             "    if (UI.dictionary.es) { UI.dictionary.es.tab_subs = 'Gastos Fijos'; UI.dictionary.es.btn_add_sub = '+ Nuevo Gasto Fijo'; UI.dictionary.es.mod_sub_title = 'Nuevo Gasto Fijo'; UI.dictionary.es.empty_subs = 'Sin gastos fijos activos.'; }",
@@ -81,31 +79,51 @@ jobs:
             "    if (UI.dictionary.en) { UI.dictionary.en.tab_subs = 'Fixed Exp.'; UI.dictionary.en.btn_add_sub = '+ New Fixed Expense'; UI.dictionary.en.mod_sub_title = 'New Fixed Expense'; UI.dictionary.en.empty_subs = 'No active fixed expenses.'; }",
             "  }",
             "",
-            "  window.getSmartBrandBadge = function(name, fallbackIcon) {",
-            "    const n = String(name || '').toLowerCase();",
-            "    const brands = [",
-            "      { k: ['netflix'], bg: '#E50914', txt: 'N' },",
-            "      { k: ['spotify'], bg: '#1DB954', txt: '🎧' },",
-            "      { k: ['youtube', 'yt'], bg: '#FF0000', txt: '▶' },",
-            "      { k: ['disney', 'star+'], bg: '#113CCF', txt: 'D+' },",
-            "      { k: ['prime', 'amazon'], bg: '#00A8E1', txt: 'a' },",
-            "      { k: ['hbo', 'max'], bg: '#5822B4', txt: 'M' },",
-            "      { k: ['uber', '99', 'cabify', 'taxi'], bg: '#111827', txt: '🚗' },",
-            "      { k: ['nubank', 'nu '], bg: '#820AD1', txt: 'Nu' },",
-            "      { k: ['mercado pago', 'mercadopago', 'meli'], bg: '#009EE3', txt: 'MP' },",
-            "      { k: ['inter'], bg: '#FF7A00', txt: 'In' },",
-            "      { k: ['luz', 'energia', 'electricidad', 'enel', 'cemig'], bg: '#F59E0B', txt: '⚡' },",
-            "      { k: ['agua', 'sabesp', 'saneamiento'], bg: '#0284C7', txt: '💧' },",
-            "      { k: ['internet', 'wifi', 'fibra', 'claro', 'vivo', 'tim', 'movistar'], bg: '#2563EB', txt: '🌐' },",
-            "      { k: ['alquiler', 'aluguel', 'renta', 'casa', 'condominio'], bg: '#0D9488', txt: '🏠' },",
-            "      { k: ['gym', 'gimnasio', 'academia', 'smartfit'], bg: '#EA580C', txt: '💪' },",
-            "      { k: ['icloud', 'apple', 'google'], bg: '#475569', txt: '☁️' }",
+            "  // 3. LOGOS OFICIALES REALES (NETFLIX, CHATGPT, SPOTIFY, YOUTUBE, DISNEY+, PRIME, UBER, NUBANK, ETC.)",
+            "  window.getSmartBrandBadge = function(name) {",
+            "    const n = String(name || '').toLowerCase().trim();",
+            "    const officialBrands = [",
+            "      { match: ['netflix'], svg: '<svg viewBox=\"0 0 48 48\"><rect width=\"48\" height=\"48\" rx=\"10\" fill=\"#000\"/><path fill=\"#E50914\" d=\"M14 8h6l8 21V8h6v32h-6l-8-21v21h-6V8z\"/></svg>' },",
+            "      { match: ['chatgpt', 'openai', 'gpt', 'claude'], svg: '<svg viewBox=\"0 0 48 48\"><rect width=\"48\" height=\"48\" rx=\"10\" fill=\"#10A37F\"/><path fill=\"none\" stroke=\"#FFF\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M24 12c4.5 0 8 3 8.5 7.2 3.8 1.5 5.5 5.8 3.8 9.6-1.2 2.8-3.8 4.6-6.8 4.8-1.8 3.2-5.8 4.4-9.2 2.8-1.5-.7-2.7-1.9-3.4-3.4-3.8-.5-6.6-3.8-6.4-7.6.1-2 .9-3.8 2.4-5.1-.5-4.2 2.5-8 6.7-8.5 1.5-.2 3 .1 4.4.8z\"/><circle cx=\"24\" cy=\"24\" r=\"3.5\" fill=\"#FFF\"/></svg>' },",
+            "      { match: ['spotify'], svg: '<svg viewBox=\"0 0 48 48\"><rect width=\"48\" height=\"48\" rx=\"10\" fill=\"#1DB954\"/><path fill=\"none\" stroke=\"#000\" stroke-width=\"3.4\" stroke-linecap=\"round\" d=\"M13 19c7-2 15-1.5 22 2M15 25.5c5.5-1.5 12-1 17.5 1.8M17 31.5c4-1 9-.8 13 1.2\"/></svg>' },",
+            "      { match: ['youtube', 'yt'], svg: '<svg viewBox=\"0 0 48 48\"><rect width=\"48\" height=\"48\" rx=\"10\" fill=\"#FF0000\"/><polygon points=\"20,16 33,24 20,32\" fill=\"#FFF\"/></svg>' },",
+            "      { match: ['disney'], domain: 'disneyplus.com' },",
+            "      { match: ['prime', 'amazon'], domain: 'primevideo.com' },",
+            "      { match: ['max', 'hbo'], domain: 'max.com' },",
+            "      { match: ['crunchyroll'], domain: 'crunchyroll.com' },",
+            "      { match: ['apple', 'icloud'], domain: 'apple.com' },",
+            "      { match: ['google', 'drive', 'one'], domain: 'one.google.com' },",
+            "      { match: ['playstation', 'psn', 'ps plus'], domain: 'playstation.com' },",
+            "      { match: ['xbox', 'gamepass', 'game pass'], domain: 'xbox.com' },",
+            "      { match: ['steam'], domain: 'steampowered.com' },",
+            "      { match: ['uber', '99'], domain: 'uber.com' },",
+            "      { match: ['ifood', 'rappi', 'pedidosya'], domain: 'ifood.com.br' },",
+            "      { match: ['nubank', 'nu '], domain: 'nubank.com.br' },",
+            "      { match: ['mercado pago', 'mercadopago', 'meli'], domain: 'mercadopago.com.br' },",
+            "      { match: ['inter'], domain: 'inter.co' },",
+            "      { match: ['itau', 'itaú'], domain: 'itau.com.br' },",
+            "      { match: ['bradesco'], domain: 'bradesco.com.br' },",
+            "      { match: ['santander'], domain: 'santander.com.br' },",
+            "      { match: ['claro'], domain: 'claro.com.br' },",
+            "      { match: ['vivo'], domain: 'vivo.com.br' },",
+            "      { match: ['tim'], domain: 'tim.com.br' },",
+            "      { match: ['smartfit', 'smart fit', 'gym', 'gimnasio', 'academia'], domain: 'smartfit.com.br' }",
             "    ];",
-            "    for (const b of brands) { if (b.k.some(w => n.includes(w))) return '<span class=\"brand-badge\" style=\"background:' + b.bg + ';\">' + b.txt + '</span>'; }",
-            "    return fallbackIcon || '<span class=\"brand-badge\" style=\"background:var(--primary);\">$</span>';",
+            "    for (const b of officialBrands) {",
+            "      if (b.match.some(k => n.includes(k))) {",
+            "        if (b.svg) return '<span class=\"brand-logo-real\">' + b.svg + '</span>';",
+            "        return '<span class=\"brand-logo-real\" style=\"background:#fff;\"><img src=\"https://www.google.com/s2/favicons?domain=' + b.domain + '&sz=128\" alt=\"\"></span>';",
+            "      }",
+            "    }",
+            "    if (/(luz|energia|electricidad|enel|cemig)/.test(n)) return '<span class=\"brand-logo-real\" style=\"background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;font-size:19px;\">⚡</span>';",
+            "    if (/(agua|saneamiento|sabesp)/.test(n)) return '<span class=\"brand-logo-real\" style=\"background:linear-gradient(135deg,#0EA5E9,#0284C7);color:#fff;font-size:19px;\">💧</span>';",
+            "    if (/(internet|wifi|fibra)/.test(n)) return '<span class=\"brand-logo-real\" style=\"background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;font-size:19px;\">🌐</span>';",
+            "    if (/(alquiler|aluguel|renta|casa|condominio)/.test(n)) return '<span class=\"brand-logo-real\" style=\"background:linear-gradient(135deg,#10B981,#047857);color:#fff;font-size:19px;\">🏠</span>';",
+            "    return '<span class=\"brand-logo-real\" style=\"background:var(--primary-grad);color:#fff;font-size:18px;\">💳</span>';",
             "  };",
             "",
-            "  function upgradeBudgetRingAndOdometer() {",
+            "  // 4. SINCRONIZAR SALDO CON EL WIDGET COMPACTO DE SMARTY EN EL ESCRITORIO",
+            "  function upgradeBudgetWidgetSync() {",
             "    if (typeof UI === 'undefined' || !UI.renderBudgetChart) return;",
             "    const origChart = UI.renderBudgetChart.bind(UI);",
             "    UI.renderBudgetChart = function() {",
@@ -117,23 +135,10 @@ jobs:
             "      if (window.SmartyAndroid && window.SmartyAndroid.updateHomeWidget) {",
             "        window.SmartyAndroid.updateHomeWidget(UI.formatMoney(remaining), UI.formatMoney(spent), pct);",
             "      }",
-            "      const svg = document.querySelector('.circular-chart');",
-            "      if (svg && limit > 0) {",
-            "        let marker = document.getElementById('pace-day-marker');",
-            "        if (!marker) {",
-            "          marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');",
-            "          marker.id = 'pace-day-marker'; marker.setAttribute('r', '2.1'); marker.setAttribute('fill', '#FBBF24'); marker.setAttribute('stroke', '#000'); marker.setAttribute('stroke-width', '0.5');",
-            "          svg.appendChild(marker);",
-            "        }",
-            "        const now = new Date();",
-            "        const daysInM = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();",
-            "        const angle = ((now.getDate() / daysInM) * 2 * Math.PI) - (Math.PI / 2);",
-            "        marker.setAttribute('cx', (18 + 15.9155 * Math.cos(angle)).toFixed(2));",
-            "        marker.setAttribute('cy', (18 + 15.9155 * Math.sin(angle)).toFixed(2));",
-            "      }",
             "    };",
             "  }",
             "",
+            "  // 5. SUPER-CONTEXTO TOTAL PARA SMARTY AI",
             "  function stemProduct(name) {",
             "    let s = String(name || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();",
             "    s = s.replace(/[^a-z0-9\\s]/g, '').replace(/\\s+/g, ' ');",
@@ -170,6 +175,7 @@ jobs:
             "    };",
             "  }",
             "",
+            "  // 6. FINANZAS: EDITAR GASTO, LOGOS REALES Y EXPORTAR PDF",
             "  function upgradeFinanceFeatures() {",
             "    if (typeof Finance === 'undefined') return;",
             "    const origOpenExp = Finance.openExpenseModal.bind(Finance);",
@@ -217,8 +223,9 @@ jobs:
             "      origSubs();",
             "      const listEl = document.getElementById('subs-list'); if (!listEl) return;",
             "      listEl.querySelectorAll('.item-row').forEach(row => {",
+            "        row.querySelectorAll('.brand-badge, .brand-logo-real').forEach(e => e.remove());",
             "        const titleEl = row.querySelector('div[style*=\"font-weight:700\"]') || row.querySelector('div[style*=\"font-weight:800\"]');",
-            "        if (titleEl && !row.querySelector('.brand-badge')) row.insertAdjacentHTML('afterbegin', window.getSmartBrandBadge(titleEl.innerText));",
+            "        if (titleEl) row.insertAdjacentHTML('afterbegin', window.getSmartBrandBadge(titleEl.innerText));",
             "      });",
             "      this.injectFinanceSummaryBanner();",
             "    };",
@@ -265,6 +272,7 @@ jobs:
             "    };",
             "  }",
             "",
+            "  // 7. COMPRA INVERSA POR FOTO",
             "  function upgradeReverseReceiptShopping() {",
             "    if (typeof Shopping === 'undefined') return;",
             "    const topBar = document.querySelector('#view-lists .top-bar > div');",
@@ -303,6 +311,42 @@ jobs:
             "    };",
             "  }",
             "",
+            "  // 8. EXTRACTOR BANCARIO INTELIGENTE (EXTRAE COMERCIO REAL Y MONTO, IGNORA 'COMPRA APROBADA')",
+            "  function extractCleanBankDataOffline(title, text) {",
+            "    const full = ((title || '') + ' | ' + (text || '')).trim();",
+            "    const moneyRegex = /(?:r\\$|\\$|usd|brl|eur|valor|por|de)?\\s*(\\d{1,3}(?:\\.\\d{3})*(?:,\\d{1,2})|\\d+(?:\\.\\d{1,2})?)/gi;",
+            "    let amount = 0; let m;",
+            "    while ((m = moneyRegex.exec(text || full)) !== null) {",
+            "      let rawNum = m[1];",
+            "      if (rawNum.includes(',') && rawNum.includes('.')) rawNum = rawNum.replace(/\\./g, '').replace(',', '.');",
+            "      else if (rawNum.includes(',')) rawNum = rawNum.replace(',', '.');",
+            "      const val = parseFloat(rawNum);",
+            "      if (val > 0 && val < 1000000) { amount = val; break; }",
+            "    }",
+            "    let merchant = '';",
+            "    const afterPrep = (text || full).match(/(?:\\ben\\b|\\bem\\b|\\bno\\b|\\bna\\b|\\bpara\\b|\\bat\\b|\\bto\\b|\\bestabelecimento\\b|\\bcomercio\\b)\\s+([A-Za-zÀ-ÿ0-9\\s.*&-]{2,35}?)(?:\\s+(?:por|no valor|de|r\\$|\\$|el dia|em \\d|aprovad|aprobad|con tu|com seu|final|\\.|,)|$)/i);",
+            "    if (afterPrep && afterPrep[1]) {",
+            "      merchant = afterPrep[1].trim();",
+            "    } else {",
+            "      merchant = String(text || '')",
+            "        .replace(/(compra|pagamento|pago|transferencia|transferência|pix)\\s*(de|no|en|con|com|por)?\\s*(credito|crédito|debito|débito|cartao|cartão|tarjeta)?\\s*(aprovada|aprovado|aprobada|aprobado|realizada|enviado|enviada)?/gi, '')",
+            "        .replace(/(?:r\\$|\\$|usd|brl|eur)\\s*\\d+(?:[.,]\\d+)?/gi, '')",
+            "        .replace(/\\b(por|no valor de|valor de|de|en|em|para|com|con|tu tarjeta|seu cartao|final \\d+)\\b/gi, ' ')",
+            "        .replace(/[.,:;!?|()-]/g, ' ').replace(/\\s+/g, ' ').trim();",
+            "    }",
+            "    if (!merchant || merchant.length < 2) merchant = 'Pago con Tarjeta';",
+            "    merchant = merchant.charAt(0).toUpperCase() + merchant.slice(1);",
+            "    const mLow = merchant.toLowerCase();",
+            "    let category = 'cat_other';",
+            "    if (/(uber|99|taxi|cabify|gasolina|posto|shell|ipiranga|metro|onibus)/.test(mLow)) category = 'cat_transport';",
+            "    else if (/(mercado|super|carrefour|atacadao|assai|pao de acucar|extra|dia|walmart|padaria|panaderia)/.test(mLow)) category = 'cat_market';",
+            "    else if (/(ifood|rappi|burger|mcdonald|pizza|restaurante|bar|cafe|cafeteria|starbucks|sushi|lanchonete|cine)/.test(mLow)) category = 'cat_leisure';",
+            "    else if (/(farmacia|droga|raia|drogasil|pacheco|hospital|clinica|medico|dentista)/.test(mLow)) category = 'cat_health';",
+            "    else if (/(zara|nike|adidas|shein|renner|riachuelo|cea|ropa)/.test(mLow)) category = 'cat_clothes';",
+            "    return { amount, merchant, category };",
+            "  }",
+            "",
+            "  // 9. AUTO-UPDATER QUE EJECUTA OTA DESPUES DEL LOAD Y DESCARGA APK",
             "  window.SmartyUpdaterAndBackup = {",
             "    checkDailyAutoBackup() {",
             "      if (!Data?.store?.settings?.autoDailyBackup) return;",
@@ -312,33 +356,40 @@ jobs:
             "    runOverwriteBackup(silent = false) {",
             "      if (window.SmartyAndroid && window.SmartyAndroid.saveSingleOverwriteBackup) {",
             "        const ok = window.SmartyAndroid.saveSingleOverwriteBackup(Data.exportJSON());",
-            "        if (!silent && typeof UI !== 'undefined') UI.showSnackbar(ok ? '✅ Copia única actualizada (anterior reemplazada)' : 'Error al guardar copia');",
+            "        if (!silent && typeof UI !== 'undefined') UI.showSnackbar(ok ? '✅ Copia única actualizada' : 'Error al guardar copia');",
             "        return true;",
             "      }",
             "      return false;",
             "    },",
             "    async checkForAppUpdates() {",
             "      UI.showSnackbar('🔄 Buscando actualizaciones en tu GitHub...');",
-            "      const repo = window.SMARTY_REPO || '';",
-            "      if (!repo) { UI.showSnackbar('Repositorio no configurado'); return; }",
+            "      const repo = window.SMARTY_REPO || 'girsinstagramtiktok/SmartLifePro';",
             "      try {",
-            "        const otaRes = await fetch('https://raw.githubusercontent.com/' + repo + '/main/smarty-ota.js?t=' + Date.now());",
-            "        if (otaRes.ok) {",
-            "          const code = await otaRes.text();",
-            "          if (code && code.length > 20) { localStorage.setItem('smarty_ota_patch_v14', code); UI.showSnackbar('⚡ Actualización rápida instalada. Recargando...'); setTimeout(() => location.reload(), 1200); return; }",
-            "        }",
-            "        const relRes = await fetch('https://api.github.com/repos/' + repo + '/releases/latest');",
-            "        if (relRes.ok) {",
-            "          const rel = await relRes.json();",
-            "          const asset = (rel.assets || []).find(a => a.name.endsWith('.apk'));",
-            "          if (asset && asset.browser_download_url && window.SmartyAndroid?.downloadAndInstallApk) {",
-            "            UI.showSnackbar('⬇️ Descargando actualización APK directa...');",
-            "            window.SmartyAndroid.downloadAndInstallApk(asset.browser_download_url);",
+            "        const apiRes = await fetch('https://api.github.com/repos/' + repo + '/contents/smarty-ota.js?t=' + Date.now());",
+            "        if (apiRes.ok) {",
+            "          const meta = await apiRes.json();",
+            "          if (meta && meta.content) {",
+            "            const decoded = decodeURIComponent(escape(atob(meta.content.replace(/\\n/g, ''))));",
+            "            localStorage.setItem('smarty_ota_patch_v15', decoded);",
+            "            eval(decoded);",
+            "            if (typeof UI !== 'undefined') UI.renderSettingsView();",
+            "            UI.showSnackbar('⚡ ¡Actualización OTA aplicada al instante!');",
             "            return;",
             "          }",
             "        }",
-            "        UI.showSnackbar('✅ Ya tienes la última versión instalada (V' + window.SMARTY_APK_VERSION + ')');",
-            "      } catch(e) { UI.showSnackbar('No se pudo conectar con GitHub.'); }",
+            "        const rawRes = await fetch('https://raw.githubusercontent.com/' + repo + '/main/smarty-ota.js?t=' + Date.now());",
+            "        if (rawRes.ok) {",
+            "          const code = await rawRes.text();",
+            "          if (code && code.length > 20) {",
+            "            localStorage.setItem('smarty_ota_patch_v15', code);",
+            "            eval(code);",
+            "            if (typeof UI !== 'undefined') UI.renderSettingsView();",
+            "            UI.showSnackbar('⚡ ¡Actualización OTA aplicada al instante!');",
+            "            return;",
+            "          }",
+            "        }",
+            "        UI.showSnackbar('✅ Ya tienes la última versión activa (' + window.SMARTY_APK_VERSION + ')');",
+            "      } catch(e) { UI.showSnackbar('Error al verificar actualización'); }",
             "    }",
             "  };",
             "",
@@ -399,25 +450,43 @@ jobs:
             "    },",
             "    openNotificationAccessSettings() { if (window.SmartyAndroid?.openNotificationSettings) window.SmartyAndroid.openNotificationSettings(); },",
             "    async processBankNotification(notif) {",
-            "      const fullText = ((notif.title || '') + ' - ' + (notif.text || '')).trim(); if (fullText.length < 4) return;",
-            "      this.lastCapturedText = fullText.slice(0, 70); localStorage.setItem('smarty_last_notif', this.lastCapturedText);",
+            "      const title = String(notif.title || '').trim();",
+            "      const text = String(notif.text || notif.body || '').trim();",
+            "      const fullText = (title + ' - ' + text).trim(); if (fullText.length < 4) return;",
+            "      this.lastCapturedText = fullText.slice(0, 75); localStorage.setItem('smarty_last_notif', this.lastCapturedText);",
             "      const logEl = document.getElementById('smarty-last-notif-log'); if (logEl) logEl.innerText = this.lastCapturedText;",
             "      if (!Data.store.settings?.bankAutoDetect) return;",
-            "      const payRegex = /(compra|pago|pagaste|aprobada|aprovada|pix|transferencia|debito|credito|spent|paid|r\\$|\\$)/i;",
+            "      const payRegex = /(compra|pago|pagaste|aprobada|aprovada|aprovado|aprobado|pix|transferencia|debito|credito|spent|paid|r\\$|\\$)/i;",
             "      if (!payRegex.test(fullText)) return;",
-            "      const m = fullText.match(/(\\d+(?:[.,]\\d{1,2})?)/); if (!m) return;",
-            "      const amount = parseFloat(m[1].replace(',', '.')); if (!amount || amount <= 0) return;",
-            "      const desc = '🏦 ' + (notif.title || 'Pago');",
+            "      const categories = ['cat_market','cat_leisure','cat_transport','cat_clothes','cat_health','cat_bills','cat_travel','cat_beauty','cat_other'];",
+            "      let extracted = null;",
+            "      if (Data.store.settings?.groqApiKey && typeof GroqAI !== 'undefined' && navigator.onLine) {",
+            "        try {",
+            "          const schema = { type: 'object', properties: { isRealExpense: { type: 'boolean' }, amount: { type: 'number' }, merchant: { type: 'string' }, category: { type: 'string', enum: categories } }, required: ['isRealExpense','amount','merchant','category'], additionalProperties: false };",
+            "          const prompt = 'Analiza esta notificacion bancaria: Titulo=\"' + title + '\", Texto=\"' + text + '\". REGLA CRITICA: NUNCA pongas \"Compra aprobada\" ni \"Compra de credito aprobada\" como merchant. Extrae en merchant UNICAMENTE el comercio, tienda o destinatario que aparece despues del monto o despues de \"en\", \"em\", \"no\", \"para\". Categorias: ' + categories.join(', ');",
+            "          extracted = await GroqAI.textJSON(prompt, fullText, 'bank_exp_v3', schema, { maxTokens: 350 });",
+            "          if (!extracted.isRealExpense) return;",
+            "        } catch(_) {}",
+            "      }",
+            "      if (!extracted || !extracted.amount || /(compra|aprovad|aprobad)/i.test(extracted.merchant || '')) {",
+            "        extracted = extractCleanBankDataOffline(title, text);",
+            "      }",
+            "      const amount = Number(extracted.amount); if (!amount || amount <= 0) return;",
+            "      const cleanDesc = String(extracted.merchant || 'Pago').trim();",
+            "      const cat = categories.includes(extracted.category) ? extracted.category : 'cat_other';",
             "      if (Data.store.settings.bankAutoSaveMode === 'auto') {",
-            "        Data.store.expenses.push({ id: Date.now().toString(), date: Date.now(), amount, desc, category: UI.t('cat_other'), isInstallment: false });",
+            "        Data.store.expenses.push({ id: Date.now().toString(), date: Date.now(), amount, desc: cleanDesc, category: UI.t(cat), isInstallment: false });",
             "        Data.save(); UI.renderBudgetChart(); Finance.renderHomeWidgets();",
-            "        if (typeof Assistant !== 'undefined') Assistant.showReactivePopup('🏦 Auto-registrado: ' + UI.formatMoney(amount));",
-            "      } else { Finance.openSmartExpenseModal(amount, desc, 'cat_other'); }",
+            "        if (typeof Assistant !== 'undefined') Assistant.showReactivePopup('🏦 ' + cleanDesc + ': ' + UI.formatMoney(amount));",
+            "      } else { Finance.openSmartExpenseModal(amount, cleanDesc, cat); }",
             "    },",
             "    sendRealTestNotificationToStatusBar() {",
             "      Data.store.settings.bankAutoDetect = true; Data.save();",
             "      if (!this.isListenerPermissionGranted()) { UI.showSnackbar('Primero activa el Permiso de Notificaciones'); this.openNotificationAccessSettings(); return; }",
-            "      if (window.SmartyAndroid?.postRealTestNotification) { UI.showSnackbar('📲 Lanzando notificación real...'); window.SmartyAndroid.postRealTestNotification('Nubank', 'Compra aprobada en Cafeteria Central por $18.50'); }",
+            "      if (window.SmartyAndroid?.postRealTestNotification) {",
+            "        UI.showSnackbar('📲 Probando notificación realista...');",
+            "        window.SmartyAndroid.postRealTestNotification('Compra de crédito aprobada', 'Compra de crédito aprobada por $34.90 en Supermercado Carrefour con tu tarjeta final 4021');",
+            "      }",
             "    }",
             "  };",
             "",
@@ -461,12 +530,20 @@ jobs:
             "",
             "  window.addEventListener('load', () => {",
             "    renameSubscriptionsToFixedExpenses();",
-            "    upgradeBudgetRingAndOdometer();",
+            "    upgradeBudgetWidgetSync();",
             "    upgradeSmartyFullDataAccess();",
             "    upgradeFinanceFeatures();",
             "    upgradeReverseReceiptShopping();",
             "    hookSettings();",
-            "    setTimeout(() => { NativeBridge.init(); setupBioBtn(); if (typeof UI !== 'undefined') UI.refreshDOM(); }, 400);",
+            "    setTimeout(() => {",
+            "      NativeBridge.init();",
+            "      setupBioBtn();",
+            "      try {",
+            "        const otaCode = localStorage.getItem('smarty_ota_patch_v15');",
+            "        if (otaCode) eval(otaCode);",
+            "      } catch(e) {}",
+            "      if (typeof UI !== 'undefined') UI.refreshDOM();",
+            "    }, 450);",
             "  });",
             "})();"
           ].join("\n");
@@ -495,7 +572,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Set App Icon, Home Widget, PDF Exporter & Immersive Mode
+      - name: Set App Icon, Compact Smarty Mascot Widget, PDF Exporter & Immersive Mode
         run: |
           if [ -f "www/logo.png" ]; then
             rm -rf android/app/src/main/res/mipmap-anydpi-v26
@@ -508,37 +585,130 @@ jobs:
             done
           fi
 
+          # Copiar la figura de Smarty (idle.png) a los recursos drawable de Android para mostrarla en el Widget
+          mkdir -p android/app/src/main/res/drawable
+          if [ -f "www/idle.png" ]; then
+            convert www/idle.png -resize 140x140 android/app/src/main/res/drawable/smarty_mascot.png
+          elif [ -f "www/logo.png" ]; then
+            convert www/logo.png -resize 140x140 android/app/src/main/res/drawable/smarty_mascot.png
+          fi
+
           cat << 'EOF_JAVA' > setup_java.js
           const fs = require("fs");
           const pkgDir = "android/app/src/main/java/com/smartlife/pro";
           const resLayoutDir = "android/app/src/main/res/layout";
           const resXmlDir = "android/app/src/main/res/xml";
+          const resDrawableDir = "android/app/src/main/res/drawable";
           fs.mkdirSync(pkgDir, { recursive: true });
           fs.mkdirSync(resLayoutDir, { recursive: true });
           fs.mkdirSync(resXmlDir, { recursive: true });
+          fs.mkdirSync(resDrawableDir, { recursive: true });
 
           let buildGradle = fs.readFileSync("android/app/build.gradle", "utf8");
           buildGradle = buildGradle.replace("defaultConfig {", "defaultConfig {\n        ndk {\n            abiFilters 'arm64-v8a', 'armeabi-v7a'\n        }");
           fs.writeFileSync("android/app/build.gradle", buildGradle);
 
+          // Fondo redondeado elegante para el Widget compacto
+          const widgetBg = [
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
+            '    <solid android:color="#E6111827" />',
+            '    <corners android:radius="22dp" />',
+            '    <stroke android:width="1dp" android:color="#33FFFFFF" />',
+            '</shape>'
+          ].join("\n");
+          fs.writeFileSync(resDrawableDir + "/smarty_widget_bg.xml", widgetBg);
+
+          const btnExpBg = [
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
+            '    <solid android:color="#0066FF" />',
+            '    <corners android:radius="12dp" />',
+            '</shape>'
+          ].join("\n");
+          fs.writeFileSync(resDrawableDir + "/smarty_btn_blue.xml", btnExpBg);
+
+          const btnListBg = [
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
+            '    <solid android:color="#10B981" />',
+            '    <corners android:radius="12dp" />',
+            '</shape>'
+          ].join("\n");
+          fs.writeFileSync(resDrawableDir + "/smarty_btn_green.xml", btnListBg);
+
+          // Widget Compacto (1 sola fila de alto) con la figura de Smarty a la izquierda, Saldo al centro y 2 botones a la derecha
           const widgetLayout = [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"',
             '    android:layout_width="match_parent"',
             '    android:layout_height="wrap_content"',
-            '    android:orientation="vertical"',
-            '    android:padding="14dp"',
-            '    android:background="@android:color/background_dark">',
-            '    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">',
-            '        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">',
-            '            <TextView android:text="SMART LIFE PRO · RESTANTE" android:textColor="#94A3B8" android:textSize="10sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
-            '            <TextView android:id="@+id/widget_remaining" android:text="$0.00" android:textColor="#10B981" android:textSize="22sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
-            '        </LinearLayout>',
-            '        <TextView android:id="@+id/widget_spent" android:text="Gastado: $0" android:textColor="#F8FAFC" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
+            '    android:orientation="horizontal"',
+            '    android:gravity="center_vertical"',
+            '    android:padding="10dp"',
+            '    android:background="@drawable/smarty_widget_bg">',
+            '    <ImageView',
+            '        android:id="@+id/widget_mascot"',
+            '        android:layout_width="46dp"',
+            '        android:layout_height="46dp"',
+            '        android:src="@drawable/smarty_mascot"',
+            '        android:scaleType="fitCenter"',
+            '        android:layout_marginEnd="10dp" />',
+            '    <LinearLayout',
+            '        android:layout_width="0dp"',
+            '        android:layout_height="wrap_content"',
+            '        android:layout_weight="1"',
+            '        android:orientation="vertical">',
+            '        <TextView',
+            '            android:text="DISPONIBLE"',
+            '            android:textColor="#94A3B8"',
+            '            android:textSize="9sp"',
+            '            android:textStyle="bold"',
+            '            android:layout_width="wrap_content"',
+            '            android:layout_height="wrap_content" />',
+            '        <TextView',
+            '            android:id="@+id/widget_remaining"',
+            '            android:text="$0.00"',
+            '            android:textColor="#10B981"',
+            '            android:textSize="17sp"',
+            '            android:textStyle="bold"',
+            '            android:singleLine="true"',
+            '            android:layout_width="wrap_content"',
+            '            android:layout_height="wrap_content" />',
+            '        <TextView',
+            '            android:id="@+id/widget_spent"',
+            '            android:text="Gastado: $0"',
+            '            android:textColor="#CBD5E1"',
+            '            android:textSize="10sp"',
+            '            android:singleLine="true"',
+            '            android:layout_width="wrap_content"',
+            '            android:layout_height="wrap_content" />',
             '    </LinearLayout>',
-            '    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="10dp">',
-            '        <Button android:id="@+id/widget_btn_expense" android:text="+ Gasto" android:textColor="#FFFFFF" android:backgroundTint="#0066FF" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginEnd="6dp"/>',
-            '        <Button android:id="@+id/widget_btn_lists" android:text="Listas" android:textColor="#FFFFFF" android:backgroundTint="#10B981" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"/>',
+            '    <LinearLayout',
+            '        android:layout_width="wrap_content"',
+            '        android:layout_height="wrap_content"',
+            '        android:orientation="horizontal">',
+            '        <Button',
+            '            android:id="@+id/widget_btn_expense"',
+            '            android:text="+ Gasto"',
+            '            android:textColor="#FFFFFF"',
+            '            android:textSize="11sp"',
+            '            android:textStyle="bold"',
+            '            android:allCaps="false"',
+            '            android:background="@drawable/smarty_btn_blue"',
+            '            android:layout_width="68dp"',
+            '            android:layout_height="36dp"',
+            '            android:layout_marginEnd="6dp" />',
+            '        <Button',
+            '            android:id="@+id/widget_btn_lists"',
+            '            android:text="Listas"',
+            '            android:textColor="#FFFFFF"',
+            '            android:textSize="11sp"',
+            '            android:textStyle="bold"',
+            '            android:allCaps="false"',
+            '            android:background="@drawable/smarty_btn_green"',
+            '            android:layout_width="62dp"',
+            '            android:layout_height="36dp" />',
             '    </LinearLayout>',
             '</LinearLayout>'
           ].join("\n");
@@ -547,8 +717,10 @@ jobs:
           const widgetInfo = [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
-            '    android:minWidth="250dp"',
-            '    android:minHeight="90dp"',
+            '    android:minWidth="220dp"',
+            '    android:minHeight="56dp"',
+            '    android:targetCellWidth="4"',
+            '    android:targetCellHeight="1"',
             '    android:updatePeriodMillis="1800000"',
             '    android:initialLayout="@layout/smarty_widget"',
             '    android:resizeMode="horizontal|vertical"',
@@ -579,6 +751,9 @@ jobs:
             "        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.smarty_widget);",
             "        views.setTextViewText(R.id.widget_remaining, rem);",
             "        views.setTextViewText(R.id.widget_spent, \"Gastado: \" + spt);",
+            "        Intent homeIntent = new Intent(context, MainActivity.class);",
+            "        PendingIntent homePending = PendingIntent.getActivity(context, 100, homeIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);",
+            "        views.setOnClickPendingIntent(R.id.widget_mascot, homePending);",
             "        Intent expIntent = new Intent(context, MainActivity.class);",
             "        expIntent.putExtra(\"widget_action\", \"expense\");",
             "        expIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);",
@@ -622,7 +797,7 @@ jobs:
             "        String title = titleCs != null ? titleCs.toString() : \"\";",
             "        String text = textCs != null ? textCs.toString() : \"\";",
             "        if (title.isEmpty() && text.isEmpty()) return;",
-            "        if (pkg.equals(\"com.smartlife.pro\") && !title.equals(\"Nubank\")) return;",
+            "        if (pkg.equals(\"com.smartlife.pro\") && !title.contains(\"Compra\")) return;",
             "        try {",
             "            SharedPreferences prefs = getSharedPreferences(\"smarty_bank_queue\", MODE_PRIVATE);",
             "            String raw = prefs.getString(\"queue\", \"[]\");",
@@ -979,9 +1154,9 @@ jobs:
           name: SmartLifePro-Android-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Publish Release via GitHub CLI (Fast & Non-Blocking)
+      - name: Publish Release via GitHub CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create latest SmartLifePro-latest.apk --title "Smart Life Pro V14" --notes "Actualizacion automatica" || true
+          gh release create latest SmartLifePro-latest.apk --title "Smart Life Pro V15" --notes "Actualizacion automatica" || true
