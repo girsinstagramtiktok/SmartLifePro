@@ -1,5 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Descargar main.js con Huella y Rostro</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #090d16; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 90vh; margin: 0; }
+  .box { background: #151e2e; border: 1px solid #2d3b55; border-radius: 24px; padding: 32px; max-width: 440px; width: 90%; text-align: center; }
+  button { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; color: white; background: #10b981; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>🫆 main.js (Con Huella + Rostro Android)</h2>
+  <button onclick="dl()">⬇️ Descargar main.js Ahora</button>
+</div>
+<textarea id="code" style="display:none;">
 /* =========================================
-   SMART LIFE PRO - MAIN CONTROLLER (V11.0 - ANDROID & WEB READY)
+   SMART LIFE PRO - MAIN CONTROLLER (V11.2 - BIOMETRIC FINGERPRINT/FACE + ANDROID READY)
    Autor: A_True_Alpha
    ========================================= */
 
@@ -9,7 +26,7 @@ const Main = {
     isSettingUpPin: false,
 
     init() {
-        console.log("Iniciando Smart Life Pro v11.0...");
+        console.log("Iniciando Smart Life Pro v11.2...");
         if (typeof Data !== 'undefined') Data.init();
         this.injectLockScreenHTML();
         if (this.checkSecurityAtStart()) return;
@@ -177,7 +194,7 @@ const Main = {
         div.innerHTML = `
             <div style="display:flex; flex-direction:column; align-items:center;">
                 <div style="font-size:40px; margin-bottom:10px;">🔒</div>
-                <h2 style="margin-bottom:30px; color:var(--text-color);">PIN</h2>
+                <h2 style="margin-bottom:30px; color:var(--text-color);">PIN / Biometría</h2>
                 <div class="pin-display" id="pin-dots">
                     <div class="pin-dot"></div><div class="pin-dot"></div>
                     <div class="pin-dot"></div><div class="pin-dot"></div>
@@ -193,7 +210,9 @@ const Main = {
                     <div class="pin-btn" onclick="Main.pressPin(7)">7</div>
                     <div class="pin-btn" onclick="Main.pressPin(8)">8</div>
                     <div class="pin-btn" onclick="Main.pressPin(9)">9</div>
-                    <div class="pin-btn clear"></div>
+                    <div class="pin-btn" onclick="Main.triggerBiometricUnlock()" style="visibility:visible !important; pointer-events:auto !important; color:var(--primary);" title="Huella / Rostro">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/><path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"/></svg>
+                    </div>
                     <div class="pin-btn" onclick="Main.pressPin(0)">0</div>
                     <div class="pin-btn clear" onclick="Main.clearPin()" style="display:flex; align-items:center; justify-content:center;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
@@ -205,6 +224,18 @@ const Main = {
             </div>
         `;
         document.body.appendChild(div);
+    },
+
+    triggerBiometricUnlock() {
+        if (this.isSettingUpPin) return;
+        // 1. Si estamos en el APK Nativo de Android, lanza el lector nativo de Huella / Rostro
+        if (window.SmartyAndroid && typeof window.SmartyAndroid.authenticateBiometric === 'function') {
+            window.SmartyAndroid.authenticateBiometric();
+            return;
+        }
+        if (typeof UI !== 'undefined') {
+            UI.showSnackbar("Biometría disponible en la App Android instalada 🫆");
+        }
     },
 
     pressPin(num) {
@@ -237,7 +268,7 @@ const Main = {
             document.getElementById('lock-screen').classList.add('hidden');
             if (typeof UI !== 'undefined') {
                 UI.renderSettingsView();
-                UI.showSnackbar("PIN creado correctamente 🔒");
+                UI.showSnackbar("PIN y Huella activados 🔒");
             }
             return;
         }
@@ -258,7 +289,9 @@ const Main = {
             const lock = document.getElementById('lock-screen');
             if (lock) {
                 lock.classList.remove('hidden');
-                lock.querySelector('h2').innerText = "PIN";
+                lock.querySelector('h2').innerText = "PIN / Biometría";
+                // Lanzar huella/rostro automáticamente al abrir la app en Android
+                setTimeout(() => this.triggerBiometricUnlock(), 350);
             }
             return true;
         }
@@ -307,7 +340,7 @@ const Main = {
             this.updatePinUI();
             const lock = document.getElementById('lock-screen');
             if (lock) {
-                lock.querySelector('h2').innerText = "PIN";
+                lock.querySelector('h2').innerText = "Crear PIN (Respaldo de Huella)";
                 lock.classList.remove('hidden');
             }
         }
@@ -395,3 +428,17 @@ function autoScaleApp() {
 window.addEventListener('resize', autoScaleApp);
 window.addEventListener('DOMContentLoaded', autoScaleApp);
 autoScaleApp();
+</textarea>
+<script>
+function dl() {
+  const content = document.getElementById('code').value.trim();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+  a.download = 'main.js';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+</script>
+</body>
+</html>
