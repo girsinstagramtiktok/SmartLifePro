@@ -25,21 +25,24 @@ jobs:
 
       - name: Prepare Web Assets, Compress Images & Inject APK Addons
         run: |
-          rm -rf www android package.json package-lock.json capacitor.config.json
+          rm -rf www android package.json package-lock.json capacitor.config.json node_modules
           mkdir -p www
-          cp *.html *.css *.js *.json *.png www/ 2>/dev/null || true
+
+          # Copiar SOLO los archivos necesarios de la app (ignorar zips, paquetes html o basura)
+          cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
+          cp data.js ui.js assistant.js finance.js shopping.js main.js www/ 2>/dev/null || true
+          cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
-          # 1. REDUCIR PESO DEL APK (De 130MB a ~10MB): Borrar HTMLs de descarga y fondos viejos no usados, y optimizar PNGs de skins
-          rm -f www/paquete*.html www/descargar*.html www/bg1.png www/bg2.png www/bg3.png www/bg4.png www/bg5.png
-          for img in $(find www -name "*.png"); do
-            ffmpeg -y -i "$img" -vf "scale='min(420,iw)':-1" -compression_level 9 "${img}.tmp.png" </dev/null >/dev/null 2>&1 && mv "${img}.tmp.png" "$img" || true
+          # Comprimir de verdad todas las imagenes de los robots (baja de ~90MB a ~2MB)
+          for img in $(find www -type f -name "*.png"); do
+            ffmpeg -y -i "$img" -vf "scale='min(380,iw)':-1" -c:v libwebp -quality 80 "${img}.webp" </dev/null >/dev/null 2>&1 && mv "${img}.webp" "$img" || true
           done
 
           node -e '
           const fs = require("fs");
 
-          // Mejorar el modelo de texto de 20B a 120B manteniendo 100% la estructura que funciona en tu PWA
+          // Actualizar modelo de texto a openai/gpt-oss-120b (el mas potente compatible con json_schema estricto)
           if (fs.existsSync("www/assistant.js")) {
             let ast = fs.readFileSync("www/assistant.js", "utf8");
             ast = ast.replace("textModel: \x27openai/gpt-oss-20b\x27", "textModel: \x27openai/gpt-oss-120b\x27");
@@ -48,14 +51,14 @@ jobs:
 
           const addonsCode = `
           (function() {
-            console.log("[Smarty APK Native] Cargando complementos sin alterar voz ni IA original...");
+            console.log("[Smarty APK Native] Cargando mejoras exclusivas Android...");
 
-            // 1. Estilos para que capas ocultas no bloqueen toques y mostrar boton de huella
+            // 1. Estilos para desbloquear toques y mostrar boton de huella
             const st = document.createElement("style");
             st.innerHTML = "#listening-overlay:not(.active), .modal-overlay:not(.open), #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; } .pin-pad .pin-btn.bio-btn-active { visibility: visible !important; pointer-events: auto !important; color: var(--primary) !important; font-size: 26px !important; }";
             document.head.appendChild(st);
 
-            // 2. Modal para configurar API Key en Android (sin romper GroqAI original)
+            // 2. Modal para configurar API Key en Android
             window.askGroqKeyModal = function() {
               const old = document.getElementById("groq-key-modal");
               if (old) old.remove();
@@ -67,7 +70,7 @@ jobs:
               ov.innerHTML = \`
                 <div class="settings-card" onclick="event.stopPropagation()" style="max-width:350px;">
                   <h3 style="margin:0 0 8px 0; color:var(--primary);">🔑 Clave API de Groq (Smarty AI)</h3>
-                  <p style="font-size:12px; color:var(--text-sec); margin:0 0 12px 0;">Pega tu API Key de Groq (empieza por <b>gsk_</b>). Modelo activo: <b>GPT-OSS 120B + Qwen Vision</b>.</p>
+                  <p style="font-size:12px; color:var(--text-sec); margin:0 0 12px 0;">Modelo activo: <b>GPT-OSS 120B + Qwen 3.8 Vision</b>.</p>
                   <input type="text" id="groq-key-input-field" class="setting-input" placeholder="gsk_..." value="\${current}" style="width:100%; margin-bottom:12px; font-family:monospace;">
                   <div style="display:flex; gap:8px;">
                     <button class="btn-danger-outline" style="margin:0; flex:1; padding:12px;" id="gk-cancel">Cerrar</button>
@@ -85,10 +88,10 @@ jobs:
                 if (typeof GroqAI !== "undefined") GroqAI.refreshUsagePanel();
                 if (typeof UI !== "undefined") UI.showSnackbar(val ? "Smarty AI activado ✅" : "Clave borrada");
                 ov.remove();
+                if (typeof UI !== "undefined") UI.renderSettingsView();
               };
             };
 
-            // Si no hay API key guardada y el usuario intenta usar Smarty, abrir el modal en lugar de window.prompt
             if (typeof GroqAI !== "undefined") {
               GroqAI.getApiKey = function() {
                 if (!Data.store.settings) Data.store.settings = {};
@@ -99,7 +102,35 @@ jobs:
               };
             }
 
-            // 3. Puente Nativo: Huella Digital y Lector de Notificaciones Bancarias
+            // 3. Arreglar Crear Copia y Restaurar Copia en Android APK
+            if (typeof Main !== "undefined") {
+              const origBackup = Main.downloadBackup.bind(Main);
+              Main.downloadBackup = function() {
+                if (window.SmartyAndroid && window.SmartyAndroid.saveBackupFile) {
+                  const json = Data.exportJSON();
+                  const fileName = "smart_life_backup_" + new Date().toISOString().slice(0, 10) + ".json";
+                  window.SmartyAndroid.saveBackupFile(json, fileName);
+                  return;
+                }
+                origBackup();
+              };
+            }
+
+            window._onAndroidBackupFileRestored = async function(jsonString) {
+              try {
+                const success = Data.importJSON(jsonString);
+                if (success) {
+                  await UI.confirm("import_success_title", "import_success_msg");
+                  location.reload();
+                } else {
+                  UI.showSnackbar("Error: Archivo de copia inválido");
+                }
+              } catch (e) {
+                UI.showSnackbar("Error al restaurar copia");
+              }
+            };
+
+            // 4. Puente Nativo: Huella Digital y Lector de Notificaciones Bancarias
             window.NativeBridge = {
               init() {
                 if (!Data.store.settings) Data.store.settings = {};
@@ -209,6 +240,16 @@ jobs:
               const origRender = UI.renderSettingsView.bind(UI);
               UI.renderSettingsView = function() {
                 origRender();
+
+                // Conectar el boton Restaurar Copia al selector nativo de Android para que nunca falle
+                const restoreInput = document.getElementById("restore-input");
+                if (restoreInput && window.SmartyAndroid && window.SmartyAndroid.pickRestoreFile) {
+                  restoreInput.onclick = (e) => {
+                    e.preventDefault();
+                    window.SmartyAndroid.pickRestoreFile();
+                  };
+                }
+
                 const container = document.getElementById("settings-inject");
                 if (!container || document.getElementById("android-pro-settings")) return;
                 const s = Data.store.settings || {};
@@ -220,7 +261,7 @@ jobs:
                   <div class="section-label">OPCIONES ANDROID & SMARTY AI</div>
                   <div class="glass-card" style="padding:15px; margin:0;">
                     <div class="setting-item">
-                      <span>🔑 API Key de Groq (Smarty AI)</span>
+                      <span>🔑 API Key de Groq (GPT-OSS 120B)</span>
                       <button class="text-btn-small" style="background:var(--input-bg);" onclick="window.askGroqKeyModal()">\${hasKey ? "Configurada ✅" : "Poner Clave ➕"}</button>
                     </div>
                     <div class="setting-item">
@@ -286,7 +327,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Set App Icon & Grant Native WebView Mic/Camera Permissions
+      - name: Set App Icon, Optimize APK Size & Inject Native File Picker + Biometrics
         run: |
           if [ -f "logo.png" ]; then
             rm -rf android/app/src/main/res/mipmap-anydpi-v26
@@ -303,6 +344,11 @@ jobs:
           const fs = require("fs");
           const pkgDir = "android/app/src/main/java/com/smartlife/pro";
           fs.mkdirSync(pkgDir, { recursive: true });
+
+          // Reducir peso del APK compilando solo para arquitecturas moviles ARM (quita x86 de PC)
+          let buildGradle = fs.readFileSync("android/app/build.gradle", "utf8");
+          buildGradle = buildGradle.replace("defaultConfig {", "defaultConfig {\n        ndk {\n            abiFilters \x27arm64-v8a\x27, \x27armeabi-v7a\x27\n        }");
+          fs.writeFileSync("android/app/build.gradle", buildGradle);
 
           const notifService = [
             "package com.smartlife.pro;",
@@ -337,6 +383,7 @@ jobs:
           const mainActivity = [
             "package com.smartlife.pro;",
             "import android.Manifest;",
+            "import android.app.Activity;",
             "import android.content.BroadcastReceiver;",
             "import android.content.Context;",
             "import android.content.DialogInterface;",
@@ -344,25 +391,49 @@ jobs:
             "import android.content.IntentFilter;",
             "import android.content.pm.PackageManager;",
             "import android.hardware.biometrics.BiometricPrompt;",
+            "import android.net.Uri;",
             "import android.os.Build;",
             "import android.os.Bundle;",
             "import android.os.CancellationSignal;",
             "import android.provider.Settings;",
+            "import android.util.Base64;",
             "import android.webkit.JavascriptInterface;",
-            "import android.webkit.PermissionRequest;",
-            "import android.webkit.WebChromeClient;",
             "import androidx.core.app.ActivityCompat;",
             "import androidx.core.content.ContextCompat;",
             "import com.getcapacitor.BridgeActivity;",
+            "import java.io.BufferedReader;",
+            "import java.io.InputStream;",
+            "import java.io.InputStreamReader;",
+            "import java.io.OutputStream;",
+            "import java.nio.charset.StandardCharsets;",
             "import org.json.JSONObject;",
             "public class MainActivity extends BridgeActivity {",
             "    private BroadcastReceiver bankReceiver;",
+            "    private static final int PICK_RESTORE_JSON = 9901;",
+            "    private static final int CREATE_BACKUP_JSON = 9902;",
+            "    private String pendingBackupContent = \"\";",
             "    public class SmartyJSBridge {",
             "        @JavascriptInterface",
             "        public void openNotificationSettings() {",
             "            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);",
             "            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);",
             "            startActivity(intent);",
+            "        }",
+            "        @JavascriptInterface",
+            "        public void pickRestoreFile() {",
+            "            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);",
+            "            intent.addCategory(Intent.CATEGORY_OPENABLE);",
+            "            intent.setType(\"*/*\");",
+            "            startActivityForResult(intent, PICK_RESTORE_JSON);",
+            "        }",
+            "        @JavascriptInterface",
+            "        public void saveBackupFile(String jsonContent, String fileName) {",
+            "            pendingBackupContent = jsonContent;",
+            "            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);",
+            "            intent.addCategory(Intent.CATEGORY_OPENABLE);",
+            "            intent.setType(\"application/json\");",
+            "            intent.putExtra(Intent.EXTRA_TITLE, fileName);",
+            "            startActivityForResult(intent, CREATE_BACKUP_JSON);",
             "        }",
             "        @JavascriptInterface",
             "        public void authenticateBiometric() {",
@@ -397,23 +468,48 @@ jobs:
             "        }",
             "    }",
             "    @Override",
+            "    protected void onActivityResult(int requestCode, int resultCode, Intent data) {",
+            "        super.onActivityResult(requestCode, resultCode, data);",
+            "        if (requestCode == PICK_RESTORE_JSON && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {",
+            "            try {",
+            "                Uri uri = data.getData();",
+            "                InputStream is = getContentResolver().openInputStream(uri);",
+            "                BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));",
+            "                StringBuilder sb = new StringBuilder();",
+            "                String line;",
+            "                while ((line = reader.readLine()) != null) sb.append(line).append(\"\\n\");",
+            "                reader.close();",
+            "                String b64 = Base64.encodeToString(sb.toString().getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);",
+            "                final String js = \"if(window._onAndroidBackupFileRestored) window._onAndroidBackupFileRestored(decodeURIComponent(escape(atob(\x27\" + b64 + \"\x27))));\";",
+            "                getBridge().getWebView().post(new Runnable() {",
+            "                    @Override",
+            "                    public void run() {",
+            "                        getBridge().getWebView().evaluateJavascript(js, null);",
+            "                    }",
+            "                });",
+            "            } catch (Exception ignored) {}",
+            "        } else if (requestCode == CREATE_BACKUP_JSON && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {",
+            "            try {",
+            "                Uri uri = data.getData();",
+            "                OutputStream os = getContentResolver().openOutputStream(uri);",
+            "                os.write(pendingBackupContent.getBytes(StandardCharsets.UTF_8));",
+            "                os.close();",
+            "                getBridge().getWebView().post(new Runnable() {",
+            "                    @Override",
+            "                    public void run() {",
+            "                        getBridge().getWebView().evaluateJavascript(\"if(window.UI) UI.showSnackbar(\x27Copia guardada correctamente ✅\x27);\", null);",
+            "                    }",
+            "                });",
+            "            } catch (Exception ignored) {}",
+            "        }",
+            "    }",
+            "    @Override",
             "    protected void onCreate(Bundle savedInstanceState) {",
             "        super.onCreate(savedInstanceState);",
             "        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {",
-            "            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 101);",
+            "            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS}, 101);",
             "        }",
             "        getBridge().getWebView().addJavascriptInterface(new SmartyJSBridge(), \"SmartyAndroid\");",
-            "        getBridge().getWebView().setWebChromeClient(new WebChromeClient() {",
-            "            @Override",
-            "            public void onPermissionRequest(final PermissionRequest request) {",
-            "                runOnUiThread(new Runnable() {",
-            "                    @Override",
-            "                    public void run() {",
-            "                        request.grant(request.getResources());",
-            "                    }",
-            "                });",
-            "            }",
-            "        });",
             "        bankReceiver = new BroadcastReceiver() {",
             "            @Override",
             "            public void onReceive(Context context, Intent intent) {",
@@ -452,7 +548,7 @@ jobs:
 
           let manifest = fs.readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
           if (!manifest.includes("USE_BIOMETRIC")) {
-              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
+              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.CAMERA\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
           }
           if (!manifest.includes("SmartyNotificationService")) {
               const serviceTag = "<service android:name=\".SmartyNotificationService\" android:label=\"Smarty Lector Bancario\" android:exported=\"true\" android:permission=\"android.permission.BIND_NOTIFICATION_LISTENER_SERVICE\"><intent-filter><action android:name=\"android.service.notification.NotificationListenerService\" /></intent-filter></service>\n    </application>";
