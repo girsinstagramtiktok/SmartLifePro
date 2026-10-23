@@ -6,7 +6,8 @@ on:
 
 jobs:
   build-android:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -14,10 +15,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
       - name: Setup Java 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -26,24 +27,28 @@ jobs:
         run: |
           rm -rf www android package.json package-lock.json capacitor.config.json
           mkdir -p www
-          find . -maxdepth 1 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" -o -name "*.png" \) -exec cp {} www/ \;
+          cp *.html *.css *.js *.json *.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
           node -e '
           const fs = require("fs");
           if (fs.existsSync("www/index.html")) {
             let html = fs.readFileSync("www/index.html", "utf8");
-            html = html.replace("if (\x27serviceWorker\x27 in navigator)", "if (false && \x27serviceWorker\x27 in navigator)");
+            html = html.replace(/serviceWorker/g, "serviceWorkerDisabledInAPK");
             if (fs.existsSync("www/smarty-pro-addons.js") && !html.includes("smarty-pro-addons.js")) {
-              html = html.replace(\x27<script src="main.js"></script>\x27, \x27<script src="main.js"></script>\n    <script src="smarty-pro-addons.js"></script>\x27);
+              html = html.replace("main.js\"></script>", "main.js\"></script><script src=\"smarty-pro-addons.js\"></script>");
             }
             fs.writeFileSync("www/index.html", html);
           }
+          fs.writeFileSync("capacitor.config.json", JSON.stringify({
+            appId: "com.smartlife.pro",
+            appName: "Smart Life Pro",
+            webDir: "www"
+          }, null, 2));
           '
 
           npm init -y
           npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2
-          npx cap init "Smart Life Pro" "com.smartlife.pro" --web-dir www
           npx cap add android
           npx cap sync android
 
@@ -201,7 +206,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
