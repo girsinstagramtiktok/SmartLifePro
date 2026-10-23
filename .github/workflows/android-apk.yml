@@ -28,13 +28,11 @@ jobs:
           rm -rf www android package.json package-lock.json capacitor.config.json node_modules
           mkdir -p www
 
-          # Copiar SOLO los archivos necesarios de la app (ignorar zips, paquetes html o basura)
           cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
           cp data.js ui.js assistant.js finance.js shopping.js main.js www/ 2>/dev/null || true
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
-          # Comprimir de verdad todas las imagenes de los robots (baja de ~90MB a ~2MB)
           for img in $(find www -type f -name "*.png"); do
             ffmpeg -y -i "$img" -vf "scale='min(380,iw)':-1" -c:v libwebp -quality 80 "${img}.webp" </dev/null >/dev/null 2>&1 && mv "${img}.webp" "$img" || true
           done
@@ -42,23 +40,22 @@ jobs:
           node -e '
           const fs = require("fs");
 
-          // Actualizar modelo de texto a openai/gpt-oss-120b (el mas potente compatible con json_schema estricto)
+          // CRITICO: Subir maxTokens de 650 a 2500 en assistant.js para que el analisis mensual NUNCA se corte en blanco
           if (fs.existsSync("www/assistant.js")) {
             let ast = fs.readFileSync("www/assistant.js", "utf8");
-            ast = ast.replace("textModel: \x27openai/gpt-oss-20b\x27", "textModel: \x27openai/gpt-oss-120b\x27");
+            ast = ast.replace("maxTokens = 650", "maxTokens = 2500");
             fs.writeFileSync("www/assistant.js", ast);
           }
 
           const addonsCode = `
           (function() {
-            console.log("[Smarty APK Native] Cargando mejoras exclusivas Android...");
+            console.log("[Smarty APK Native] Cargando mejoras exclusivas Android V12...");
 
-            // 1. Estilos para desbloquear toques y mostrar boton de huella
             const st = document.createElement("style");
             st.innerHTML = "#listening-overlay:not(.active), .modal-overlay:not(.open), #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; } .pin-pad .pin-btn.bio-btn-active { visibility: visible !important; pointer-events: auto !important; color: var(--primary) !important; font-size: 26px !important; }";
             document.head.appendChild(st);
 
-            // 2. Modal para configurar API Key en Android
+            // 1. Modal para API Key de Groq
             window.askGroqKeyModal = function() {
               const old = document.getElementById("groq-key-modal");
               if (old) old.remove();
@@ -70,7 +67,7 @@ jobs:
               ov.innerHTML = \`
                 <div class="settings-card" onclick="event.stopPropagation()" style="max-width:350px;">
                   <h3 style="margin:0 0 8px 0; color:var(--primary);">🔑 Clave API de Groq (Smarty AI)</h3>
-                  <p style="font-size:12px; color:var(--text-sec); margin:0 0 12px 0;">Modelo activo: <b>GPT-OSS 120B + Qwen 3.8 Vision</b>.</p>
+                  <p style="font-size:12px; color:var(--text-sec); margin:0 0 12px 0;">Pega tu clave gratuita de Groq (empieza por <b>gsk_</b>).</p>
                   <input type="text" id="groq-key-input-field" class="setting-input" placeholder="gsk_..." value="\${current}" style="width:100%; margin-bottom:12px; font-family:monospace;">
                   <div style="display:flex; gap:8px;">
                     <button class="btn-danger-outline" style="margin:0; flex:1; padding:12px;" id="gk-cancel">Cerrar</button>
@@ -102,7 +99,7 @@ jobs:
               };
             }
 
-            // 3. Arreglar Crear Copia y Restaurar Copia en Android APK
+            // 2. Crear y Restaurar Copia de Seguridad Nativa Android
             if (typeof Main !== "undefined") {
               const origBackup = Main.downloadBackup.bind(Main);
               Main.downloadBackup = function() {
@@ -130,17 +127,55 @@ jobs:
               }
             };
 
-            // 4. Puente Nativo: Huella Digital y Lector de Notificaciones Bancarias
+            // 3. Puente Nativo: Huella Digital y Lector de Notificaciones con Monitor en Vivo
             window.NativeBridge = {
+              lastCapturedText: "Ninguna todavía",
+
               init() {
                 if (!Data.store.settings) Data.store.settings = {};
                 if (typeof Data.store.settings.biometricEnabled === "undefined") Data.store.settings.biometricEnabled = false;
-                if (typeof Data.store.settings.bankAutoDetect === "undefined") Data.store.settings.bankAutoDetect = false;
+                if (typeof Data.store.settings.bankAutoDetect === "undefined") Data.store.settings.bankAutoDetect = true;
                 if (typeof Data.store.settings.bankAutoSaveMode === "undefined") Data.store.settings.bankAutoSaveMode = "confirm";
 
                 window.addEventListener("SmartyBankNotification", (e) => {
                   if (e && e.detail) this.processBankNotification(e.detail);
                 });
+
+                // Revisar si llegaron notificaciones bancarias mientras la app estaba cerrada
+                this.flushPendingBackgroundNotifications();
+                document.addEventListener("visibilitychange", () => {
+                  if (document.visibilityState === "visible") {
+                    this.flushPendingBackgroundNotifications();
+                    if (typeof UI !== "undefined" && document.getElementById("android-pro-settings")) {
+                      UI.renderSettingsView();
+                    }
+                  }
+                });
+              },
+
+              isListenerPermissionGranted() {
+                try {
+                  if (window.SmartyAndroid && window.SmartyAndroid.isNotificationListenerEnabled) {
+                    return !!window.SmartyAndroid.isNotificationListenerEnabled();
+                  }
+                } catch (_) {}
+                return false;
+              },
+
+              flushPendingBackgroundNotifications() {
+                try {
+                  if (window.SmartyAndroid && window.SmartyAndroid.getPendingNotificationsJson) {
+                    const raw = window.SmartyAndroid.getPendingNotificationsJson();
+                    if (raw && raw !== "[]") {
+                      const arr = JSON.parse(raw);
+                      if (Array.isArray(arr)) {
+                        arr.forEach(item => this.processBankNotification(item));
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.warn("Error leyendo cola de notificaciones:", e);
+                }
               },
 
               toggleBiometricSetting(checked) {
@@ -162,9 +197,17 @@ jobs:
               },
 
               async processBankNotification(notif) {
-                if (!Data.store.settings?.bankAutoDetect) return;
                 const fullText = ((notif.title || "") + " - " + (notif.text || "")).trim();
-                if (fullText.length < 5) return;
+                if (fullText.length < 4) return;
+
+                // Guardar registro visual para que el usuario vea que el lector esta vivo
+                this.lastCapturedText = fullText.slice(0, 70);
+                localStorage.setItem("smarty_last_notif", this.lastCapturedText);
+                const logEl = document.getElementById("smarty-last-notif-log");
+                if (logEl) logEl.innerText = this.lastCapturedText;
+
+                if (!Data.store.settings?.bankAutoDetect) return;
+
                 const payRegex = /(compra|pago|pagaste|aprobada|aprovada|pix|transferencia|transferência|débito|debito|crédito|credito|spent|paid|r\\$|\\$)/i;
                 if (!payRegex.test(fullText)) return;
 
@@ -214,10 +257,20 @@ jobs:
                 }
               },
 
-              simulateBankNotification() {
+              sendRealTestNotificationToStatusBar() {
                 Data.store.settings.bankAutoDetect = true;
                 Data.save();
-                this.processBankNotification({ title: "Nubank", text: "Compra aprobada en Uber Trip por 24.50" });
+                if (!this.isListenerPermissionGranted()) {
+                  UI.showSnackbar("⚠️ Primero activa el Permiso de Notificaciones de Android");
+                  this.openNotificationAccessSettings();
+                  return;
+                }
+                if (window.SmartyAndroid && window.SmartyAndroid.postRealTestNotification) {
+                  UI.showSnackbar("📲 Lanzando notificación real a tu barra de Android...");
+                  window.SmartyAndroid.postRealTestNotification("Nubank", "Compra aprobada en Cafeteria Central por $18.50");
+                } else {
+                  this.processBankNotification({ title: "Nubank", text: "Compra aprobada en Cafeteria Central por $18.50" });
+                }
               }
             };
 
@@ -241,7 +294,6 @@ jobs:
               UI.renderSettingsView = function() {
                 origRender();
 
-                // Conectar el boton Restaurar Copia al selector nativo de Android para que nunca falle
                 const restoreInput = document.getElementById("restore-input");
                 if (restoreInput && window.SmartyAndroid && window.SmartyAndroid.pickRestoreFile) {
                   restoreInput.onclick = (e) => {
@@ -251,9 +303,15 @@ jobs:
                 }
 
                 const container = document.getElementById("settings-inject");
-                if (!container || document.getElementById("android-pro-settings")) return;
+                if (!container) return;
+                const oldPanel = document.getElementById("android-pro-settings");
+                if (oldPanel) oldPanel.remove();
+
                 const s = Data.store.settings || {};
                 const hasKey = !!(s.groqApiKey && s.groqApiKey.trim());
+                const permGranted = NativeBridge.isListenerPermissionGranted();
+                const lastNotif = localStorage.getItem("smarty_last_notif") || NativeBridge.lastCapturedText;
+
                 const panel = document.createElement("div");
                 panel.id = "android-pro-settings";
                 panel.style.marginBottom = "20px";
@@ -261,7 +319,7 @@ jobs:
                   <div class="section-label">OPCIONES ANDROID & SMARTY AI</div>
                   <div class="glass-card" style="padding:15px; margin:0;">
                     <div class="setting-item">
-                      <span>🔑 API Key de Groq (GPT-OSS 120B)</span>
+                      <span>🔑 API Key de Groq (Smarty AI)</span>
                       <button class="text-btn-small" style="background:var(--input-bg);" onclick="window.askGroqKeyModal()">\${hasKey ? "Configurada ✅" : "Poner Clave ➕"}</button>
                     </div>
                     <div class="setting-item">
@@ -274,7 +332,7 @@ jobs:
                     <div class="setting-item">
                       <span>🏦 Leer Notificaciones de Bancos</span>
                       <label class="switch-wrap">
-                        <input type="checkbox" \${s.bankAutoDetect ? "checked" : ""} onchange="Data.store.settings.bankAutoDetect = this.checked; Data.save(); if(this.checked) NativeBridge.openNotificationAccessSettings();">
+                        <input type="checkbox" \${s.bankAutoDetect ? "checked" : ""} onchange="Data.store.settings.bankAutoDetect = this.checked; Data.save(); if(this.checked && !NativeBridge.isListenerPermissionGranted()) NativeBridge.openNotificationAccessSettings();">
                         <span class="slider"></span>
                       </label>
                     </div>
@@ -285,9 +343,20 @@ jobs:
                         <option value="auto" \${s.bankAutoSaveMode === "auto" ? "selected" : ""}>Guardar 100% solo</option>
                       </select>
                     </div>
+
+                    <div style="background:var(--input-bg); border-radius:12px; padding:10px; margin-top:10px; font-size:11px;">
+                      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-weight:700;">📡 Estado Permiso Android:</span>
+                        <span style="font-weight:800; color:\${permGranted ? "var(--success)" : "var(--danger)"};">\${permGranted ? "CONECTADO ✅" : "FALTA ACTIVAR ⚠️"}</span>
+                      </div>
+                      <div style="color:var(--text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        <b>Última leída:</b> <span id="smarty-last-notif-log">\${lastNotif}</span>
+                      </div>
+                    </div>
+
                     <div style="display:flex; gap:8px; margin-top:10px;">
-                      <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.openNotificationAccessSettings()">⚙️ Permiso Bancos</button>
-                      <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.simulateBankNotification()">⚡ Probar Pago</button>
+                      <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.openNotificationAccessSettings()">⚙️ Activar Permiso</button>
+                      <button class="btn-data" style="padding:10px; font-size:12px;" onclick="NativeBridge.sendRealTestNotificationToStatusBar()">📲 Probar Notif. Real</button>
                     </div>
                   </div>
                 \`;
@@ -327,7 +396,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Set App Icon, Optimize APK Size & Inject Native File Picker + Biometrics
+      - name: Set App Icon, Optimize APK Size & Inject Background Queue + Real Notification Tester
         run: |
           if [ -f "logo.png" ]; then
             rm -rf android/app/src/main/res/mipmap-anydpi-v26
@@ -345,7 +414,6 @@ jobs:
           const pkgDir = "android/app/src/main/java/com/smartlife/pro";
           fs.mkdirSync(pkgDir, { recursive: true });
 
-          // Reducir peso del APK compilando solo para arquitecturas moviles ARM (quita x86 de PC)
           let buildGradle = fs.readFileSync("android/app/build.gradle", "utf8");
           buildGradle = buildGradle.replace("defaultConfig {", "defaultConfig {\n        ndk {\n            abiFilters \x27arm64-v8a\x27, \x27armeabi-v7a\x27\n        }");
           fs.writeFileSync("android/app/build.gradle", buildGradle);
@@ -353,16 +421,19 @@ jobs:
           const notifService = [
             "package com.smartlife.pro;",
             "import android.app.Notification;",
+            "import android.content.SharedPreferences;",
             "import android.os.Bundle;",
             "import android.service.notification.NotificationListenerService;",
             "import android.service.notification.StatusBarNotification;",
             "import android.content.Intent;",
+            "import org.json.JSONArray;",
+            "import org.json.JSONObject;",
             "public class SmartyNotificationService extends NotificationListenerService {",
             "    @Override",
             "    public void onNotificationPosted(StatusBarNotification sbn) {",
             "        if (sbn == null) return;",
             "        String pkg = sbn.getPackageName();",
-            "        if (pkg == null || pkg.equals(\"com.smartlife.pro\")) return;",
+            "        if (pkg == null) return;",
             "        if (sbn.getNotification() == null || sbn.getNotification().extras == null) return;",
             "        Bundle extras = sbn.getNotification().extras;",
             "        CharSequence titleCs = extras.getCharSequence(Notification.EXTRA_TITLE);",
@@ -370,6 +441,19 @@ jobs:
             "        String title = titleCs != null ? titleCs.toString() : \"\";",
             "        String text = textCs != null ? textCs.toString() : \"\";",
             "        if (title.isEmpty() && text.isEmpty()) return;",
+            "        // Evitar bucle con notificaciones propias salvo que sea la prueba bancaria",
+            "        if (pkg.equals(\"com.smartlife.pro\") && !title.equals(\"Nubank\")) return;",
+            "        try {",
+            "            SharedPreferences prefs = getSharedPreferences(\"smarty_bank_queue\", MODE_PRIVATE);",
+            "            String raw = prefs.getString(\"queue\", \"[]\");",
+            "            JSONArray arr = new JSONArray(raw);",
+            "            JSONObject item = new JSONObject();",
+            "            item.put(\"package\", pkg);",
+            "            item.put(\"title\", title);",
+            "            item.put(\"text\", text);",
+            "            arr.put(item);",
+            "            prefs.edit().putString(\"queue\", arr.toString()).apply();",
+            "        } catch (Exception ignored) {}",
             "        Intent intent = new Intent(\"SMARTY_BANK_NOTIFICATION\");",
             "        intent.setPackage(getPackageName());",
             "        intent.putExtra(\"package\", pkg);",
@@ -384,11 +468,14 @@ jobs:
             "package com.smartlife.pro;",
             "import android.Manifest;",
             "import android.app.Activity;",
+            "import android.app.NotificationChannel;",
+            "import android.app.NotificationManager;",
             "import android.content.BroadcastReceiver;",
             "import android.content.Context;",
             "import android.content.DialogInterface;",
             "import android.content.Intent;",
             "import android.content.IntentFilter;",
+            "import android.content.SharedPreferences;",
             "import android.content.pm.PackageManager;",
             "import android.hardware.biometrics.BiometricPrompt;",
             "import android.net.Uri;",
@@ -399,6 +486,7 @@ jobs:
             "import android.util.Base64;",
             "import android.webkit.JavascriptInterface;",
             "import androidx.core.app.ActivityCompat;",
+            "import androidx.core.app.NotificationCompat;",
             "import androidx.core.content.ContextCompat;",
             "import com.getcapacitor.BridgeActivity;",
             "import java.io.BufferedReader;",
@@ -418,6 +506,36 @@ jobs:
             "            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);",
             "            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);",
             "            startActivity(intent);",
+            "        }",
+            "        @JavascriptInterface",
+            "        public boolean isNotificationListenerEnabled() {",
+            "            String flat = Settings.Secure.getString(getContentResolver(), \"enabled_notification_listeners\");",
+            "            return flat != null && flat.contains(getPackageName());",
+            "        }",
+            "        @JavascriptInterface",
+            "        public String getPendingNotificationsJson() {",
+            "            SharedPreferences prefs = getSharedPreferences(\"smarty_bank_queue\", MODE_PRIVATE);",
+            "            String q = prefs.getString(\"queue\", \"[]\");",
+            "            prefs.edit().putString(\"queue\", \"[]\").apply();",
+            "            return q;",
+            "        }",
+            "        @JavascriptInterface",
+            "        public void postRealTestNotification(String title, String body) {",
+            "            try {",
+            "                NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);",
+            "                String chId = \"smarty_test_bank\";",
+            "                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {",
+            "                    NotificationChannel ch = new NotificationChannel(chId, \"Prueba Bancaria\", NotificationManager.IMPORTANCE_HIGH);",
+            "                    nm.createNotificationChannel(ch);",
+            "                }",
+            "                NotificationCompat.Builder b = new NotificationCompat.Builder(MainActivity.this, chId)",
+            "                    .setSmallIcon(android.R.drawable.ic_dialog_info)",
+            "                    .setContentTitle(title)",
+            "                    .setContentText(body)",
+            "                    .setPriority(NotificationCompat.PRIORITY_HIGH)",
+            "                    .setAutoCancel(true);",
+            "                nm.notify(7788, b.build());",
+            "            } catch (Exception ignored) {}",
             "        }",
             "        @JavascriptInterface",
             "        public void pickRestoreFile() {",
@@ -514,6 +632,8 @@ jobs:
             "            @Override",
             "            public void onReceive(Context context, Intent intent) {",
             "                try {",
+            "                    SharedPreferences prefs = getSharedPreferences(\"smarty_bank_queue\", MODE_PRIVATE);",
+            "                    prefs.edit().putString(\"queue\", \"[]\").apply();",
             "                    JSONObject obj = new JSONObject();",
             "                    obj.put(\"package\", intent.getStringExtra(\"package\"));",
             "                    obj.put(\"title\", intent.getStringExtra(\"title\"));",
