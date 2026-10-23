@@ -6,18 +6,18 @@ on:
 
 jobs:
   build-android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -26,12 +26,20 @@ jobs:
         run: |
           rm -rf www android package.json package-lock.json capacitor.config.json
           mkdir -p www
-          cp *.html *.css *.js *.json *.png www/ 2>/dev/null || true
+          find . -maxdepth 1 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" -o -name "*.png" \) -exec cp {} www/ \;
           if [ -d "skins" ]; then cp -r skins www/; fi
 
-          # Desactivar Service Worker solo en el APK y conectar smarty-pro-addons.js solo en el APK
-          sed -i "s/if ('serviceWorker' in navigator)/if (false)/g" www/index.html
-          sed -i 's|<script src="main.js"></script>|<script src="main.js"></script><script src="smarty-pro-addons.js"></script>|g' www/index.html
+          node -e '
+          const fs = require("fs");
+          if (fs.existsSync("www/index.html")) {
+            let html = fs.readFileSync("www/index.html", "utf8");
+            html = html.replace("if (\x27serviceWorker\x27 in navigator)", "if (false && \x27serviceWorker\x27 in navigator)");
+            if (fs.existsSync("www/smarty-pro-addons.js") && !html.includes("smarty-pro-addons.js")) {
+              html = html.replace(\x27<script src="main.js"></script>\x27, \x27<script src="main.js"></script>\n    <script src="smarty-pro-addons.js"></script>\x27);
+            }
+            fs.writeFileSync("www/index.html", html);
+          }
+          '
 
           npm init -y
           npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2
@@ -39,152 +47,155 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Inject Native Biometrics, App Icon & Bank Notification Service
+      - name: Inject Native Biometrics & Bank Notification Listener
         run: |
-          PKG_DIR="android/app/src/main/java/com/smartlife/pro"
-          mkdir -p "$PKG_DIR"
+          node -e '
+          const fs = require("fs");
+          const pkgDir = "android/app/src/main/java/com/smartlife/pro";
+          fs.mkdirSync(pkgDir, { recursive: true });
 
-          cat << 'EOF' > "$PKG_DIR/SmartyNotificationService.java"
-          package com.smartlife.pro;
-          import android.app.Notification;
-          import android.os.Bundle;
-          import android.service.notification.NotificationListenerService;
-          import android.service.notification.StatusBarNotification;
-          import android.content.Intent;
+          const notifService = [
+            "package com.smartlife.pro;",
+            "import android.app.Notification;",
+            "import android.os.Bundle;",
+            "import android.service.notification.NotificationListenerService;",
+            "import android.service.notification.StatusBarNotification;",
+            "import android.content.Intent;",
+            "public class SmartyNotificationService extends NotificationListenerService {",
+            "    @Override",
+            "    public void onNotificationPosted(StatusBarNotification sbn) {",
+            "        if (sbn == null) return;",
+            "        String pkg = sbn.getPackageName();",
+            "        if (pkg == null || pkg.equals(\"com.smartlife.pro\")) return;",
+            "        if (sbn.getNotification() == null || sbn.getNotification().extras == null) return;",
+            "        Bundle extras = sbn.getNotification().extras;",
+            "        CharSequence titleCs = extras.getCharSequence(Notification.EXTRA_TITLE);",
+            "        CharSequence textCs = extras.getCharSequence(Notification.EXTRA_TEXT);",
+            "        String title = titleCs != null ? titleCs.toString() : \"\";",
+            "        String text = textCs != null ? textCs.toString() : \"\";",
+            "        if (title.isEmpty() && text.isEmpty()) return;",
+            "        Intent intent = new Intent(\"SMARTY_BANK_NOTIFICATION\");",
+            "        intent.setPackage(getPackageName());",
+            "        intent.putExtra(\"package\", pkg);",
+            "        intent.putExtra(\"title\", title);",
+            "        intent.putExtra(\"text\", text);",
+            "        sendBroadcast(intent);",
+            "    }",
+            "}"
+          ].join("\n");
 
-          public class SmartyNotificationService extends NotificationListenerService {
-              @Override
-              public void onNotificationPosted(StatusBarNotification sbn) {
-                  if (sbn == null) return;
-                  String pkg = sbn.getPackageName();
-                  if (pkg == null || pkg.equals("com.smartlife.pro")) return;
-                  if (sbn.getNotification() == null || sbn.getNotification().extras == null) return;
-                  Bundle extras = sbn.getNotification().extras;
-                  CharSequence titleCs = extras.getCharSequence(Notification.EXTRA_TITLE);
-                  CharSequence textCs = extras.getCharSequence(Notification.EXTRA_TEXT);
-                  String title = titleCs != null ? titleCs.toString() : "";
-                  String text = textCs != null ? textCs.toString() : "";
-                  if (title.isEmpty() && text.isEmpty()) return;
-                  Intent intent = new Intent("SMARTY_BANK_NOTIFICATION");
-                  intent.setPackage(getPackageName());
-                  intent.putExtra("package", pkg);
-                  intent.putExtra("title", title);
-                  intent.putExtra("text", text);
-                  sendBroadcast(intent);
-              }
+          const mainActivity = [
+            "package com.smartlife.pro;",
+            "import android.app.KeyguardManager;",
+            "import android.content.BroadcastReceiver;",
+            "import android.content.Context;",
+            "import android.content.DialogInterface;",
+            "import android.content.Intent;",
+            "import android.content.IntentFilter;",
+            "import android.hardware.biometrics.BiometricPrompt;",
+            "import android.os.Build;",
+            "import android.os.Bundle;",
+            "import android.os.CancellationSignal;",
+            "import android.provider.Settings;",
+            "import android.webkit.JavascriptInterface;",
+            "import com.getcapacitor.BridgeActivity;",
+            "import org.json.JSONObject;",
+            "public class MainActivity extends BridgeActivity {",
+            "    private BroadcastReceiver bankReceiver;",
+            "    public class SmartyJSBridge {",
+            "        @JavascriptInterface",
+            "        public void openNotificationSettings() {",
+            "            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);",
+            "            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);",
+            "            startActivity(intent);",
+            "        }",
+            "        @JavascriptInterface",
+            "        public void authenticateBiometric() {",
+            "            runOnUiThread(new Runnable() {",
+            "                @Override",
+            "                public void run() {",
+            "                    try {",
+            "                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {",
+            "                            BiometricPrompt prompt = new BiometricPrompt.Builder(MainActivity.this)",
+            "                                .setTitle(\"Desbloquear Smart Life Pro\")",
+            "                                .setSubtitle(\"Usa tu huella o rostro para entrar\")",
+            "                                .setNegativeButton(\"Usar PIN\", getMainExecutor(), new DialogInterface.OnClickListener() {",
+            "                                    @Override",
+            "                                    public void onClick(DialogInterface dialog, int which) {}",
+            "                                })",
+            "                                .build();",
+            "                            prompt.authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {",
+            "                                @Override",
+            "                                public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {",
+            "                                    getBridge().getWebView().post(new Runnable() {",
+            "                                        @Override",
+            "                                        public void run() {",
+            "                                            getBridge().getWebView().evaluateJavascript(\"if(window.Main) Main.unlockApp();\", null);",
+            "                                        }",
+            "                                    });",
+            "                                }",
+            "                            });",
+            "                        } else {",
+            "                            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);",
+            "                            if (km != null && km.isKeyguardSecure()) {",
+            "                                getBridge().getWebView().evaluateJavascript(\"if(window.Main) Main.unlockApp();\", null);",
+            "                            }",
+            "                        }",
+            "                    } catch (Exception ignored) {}",
+            "                }",
+            "            });",
+            "        }",
+            "    }",
+            "    @Override",
+            "    protected void onCreate(Bundle savedInstanceState) {",
+            "        super.onCreate(savedInstanceState);",
+            "        getBridge().getWebView().addJavascriptInterface(new SmartyJSBridge(), \"SmartyAndroid\");",
+            "        bankReceiver = new BroadcastReceiver() {",
+            "            @Override",
+            "            public void onReceive(Context context, Intent intent) {",
+            "                try {",
+            "                    JSONObject obj = new JSONObject();",
+            "                    obj.put(\"package\", intent.getStringExtra(\"package\"));",
+            "                    obj.put(\"title\", intent.getStringExtra(\"title\"));",
+            "                    obj.put(\"text\", intent.getStringExtra(\"text\"));",
+            "                    final String js = \"window.dispatchEvent(new CustomEvent(\x27SmartyBankNotification\x27, { detail: \" + obj.toString() + \" }));\";",
+            "                    getBridge().getWebView().post(new Runnable() {",
+            "                        @Override",
+            "                        public void run() {",
+            "                            getBridge().getWebView().evaluateJavascript(js, null);",
+            "                        }",
+            "                    });",
+            "                } catch (Exception ignored) {}",
+            "            }",
+            "        };",
+            "        IntentFilter filter = new IntentFilter(\"SMARTY_BANK_NOTIFICATION\");",
+            "        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {",
+            "            registerReceiver(bankReceiver, filter, Context.RECEIVER_NOT_EXPORTED);",
+            "        } else {",
+            "            registerReceiver(bankReceiver, filter);",
+            "        }",
+            "    }",
+            "    @Override",
+            "    public void onDestroy() {",
+            "        if (bankReceiver != null) unregisterReceiver(bankReceiver);",
+            "        super.onDestroy();",
+            "    }",
+            "}"
+          ].join("\n");
+
+          fs.writeFileSync(pkgDir + "/SmartyNotificationService.java", notifService);
+          fs.writeFileSync(pkgDir + "/MainActivity.java", mainActivity);
+
+          let manifest = fs.readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
+          if (!manifest.includes("USE_BIOMETRIC")) {
+              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
           }
-          EOF
-
-          cat << 'EOF' > "$PKG_DIR/MainActivity.java"
-          package com.smartlife.pro;
-          import android.content.BroadcastReceiver;
-          import android.content.Context;
-          import android.content.DialogInterface;
-          import android.content.Intent;
-          import android.content.IntentFilter;
-          import android.hardware.biometrics.BiometricPrompt;
-          import android.os.Build;
-          import android.os.Bundle;
-          import android.os.CancellationSignal;
-          import android.provider.Settings;
-          import android.webkit.JavascriptInterface;
-          import com.getcapacitor.BridgeActivity;
-          import org.json.JSONObject;
-
-          public class MainActivity extends BridgeActivity {
-              private BroadcastReceiver bankReceiver;
-
-              public class SmartyJSBridge {
-                  @JavascriptInterface
-                  public void openNotificationSettings() {
-                      Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-                      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                      startActivity(intent);
-                  }
-
-                  @JavascriptInterface
-                  public void authenticateBiometric() {
-                      runOnUiThread(new Runnable() {
-                          @Override
-                          public void run() {
-                              try {
-                                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                      BiometricPrompt prompt = new BiometricPrompt.Builder(MainActivity.this)
-                                          .setTitle("Desbloquear Smart Life Pro")
-                                          .setSubtitle("Usa tu huella o rostro para entrar")
-                                          .setNegativeButton("Usar PIN", getMainExecutor(), new DialogInterface.OnClickListener() {
-                                              @Override
-                                              public void onClick(DialogInterface dialog, int which) {}
-                                          })
-                                          .build();
-                                      prompt.authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {
-                                          @Override
-                                          public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
-                                              getBridge().getWebView().post(new Runnable() {
-                                                  @Override
-                                                  public void run() {
-                                                      getBridge().getWebView().evaluateJavascript("if(window.Main) Main.unlockApp();", null);
-                                                  }
-                                              });
-                                          }
-                                      });
-                                  }
-                              } catch (Exception ignored) {}
-                          }
-                      });
-                  }
-              }
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  getBridge().getWebView().addJavascriptInterface(new SmartyJSBridge(), "SmartyAndroid");
-
-                  bankReceiver = new BroadcastReceiver() {
-                      @Override
-                      public void onReceive(Context context, Intent intent) {
-                          try {
-                              JSONObject obj = new JSONObject();
-                              obj.put("package", intent.getStringExtra("package"));
-                              obj.put("title", intent.getStringExtra("title"));
-                              obj.put("text", intent.getStringExtra("text"));
-                              final String js = "window.dispatchEvent(new CustomEvent(\"SmartyBankNotification\", { detail: " + obj.toString() + " }));";
-                              getBridge().getWebView().post(new Runnable() {
-                                  @Override
-                                  public void run() {
-                                      getBridge().getWebView().evaluateJavascript(js, null);
-                                  }
-                              });
-                          } catch (Exception ignored) {}
-                      }
-                  };
-
-                  IntentFilter filter = new IntentFilter("SMARTY_BANK_NOTIFICATION");
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                      registerReceiver(bankReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                  } else {
-                      registerReceiver(bankReceiver, filter);
-                  }
-              }
-
-              @Override
-              public void onDestroy() {
-                  if (bankReceiver != null) unregisterReceiver(bankReceiver);
-                  super.onDestroy();
-              }
+          if (!manifest.includes("SmartyNotificationService")) {
+              const serviceTag = "<service android:name=\".SmartyNotificationService\" android:label=\"Smarty Lector Bancario\" android:exported=\"true\" android:permission=\"android.permission.BIND_NOTIFICATION_LISTENER_SERVICE\"><intent-filter><action android:name=\"android.service.notification.NotificationListenerService\" /></intent-filter></service>\n    </application>";
+              manifest = manifest.replace("</application>", serviceTag);
           }
-          EOF
-
-          sed -i 's|<application|<uses-permission android:name="android.permission.POST_NOTIFICATIONS" /><uses-permission android:name="android.permission.USE_BIOMETRIC" /><uses-permission android:name="android.permission.USE_FINGERPRINT" /><application|g' android/app/src/main/AndroidManifest.xml
-          sed -i 's|</application>|<service android:name=".SmartyNotificationService" android:label="Smarty Lector Bancario" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"><intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter></service></application>|g' android/app/src/main/AndroidManifest.xml
-
-          if [ -f "logo.png" ]; then
-            for d in android/app/src/main/res/mipmap-*; do
-              cp logo.png "$d/ic_launcher.png" 2>/dev/null || true
-              cp logo.png "$d/ic_launcher_round.png" 2>/dev/null || true
-              cp logo.png "$d/ic_launcher_foreground.png" 2>/dev/null || true
-            done
-          fi
+          fs.writeFileSync("android/app/src/main/AndroidManifest.xml", manifest);
+          '
 
       - name: Compile Debug APK
         run: |
