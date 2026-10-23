@@ -55,7 +55,6 @@ jobs:
             "  window.SMARTY_APK_VERSION = '15.0';",
             "  window.SMARTY_REPO = '" + repoSlug + "';",
             "",
-            "  // 1. ESTILOS NEXT-GEN LIMPIOS (SIN SOMBRA GRIS EN EL ANILLO)",
             "  const st = document.createElement('style');",
             "  st.innerHTML = [",
             "    '#listening-overlay:not(.active), .modal-overlay:not(.open), #custom-confirm:not(.open) { display: none !important; pointer-events: none !important; }',",
@@ -71,7 +70,6 @@ jobs:
             "  ].join('\\n');",
             "  document.head.appendChild(st);",
             "",
-            "  // 2. RENOMBRAR SUSCRIPCIONES A GASTOS FIJOS",
             "  function renameSubscriptionsToFixedExpenses() {",
             "    if (typeof UI === 'undefined' || !UI.dictionary) return;",
             "    if (UI.dictionary.es) { UI.dictionary.es.tab_subs = 'Gastos Fijos'; UI.dictionary.es.btn_add_sub = '+ Nuevo Gasto Fijo'; UI.dictionary.es.mod_sub_title = 'Nuevo Gasto Fijo'; UI.dictionary.es.empty_subs = 'Sin gastos fijos activos.'; }",
@@ -79,7 +77,6 @@ jobs:
             "    if (UI.dictionary.en) { UI.dictionary.en.tab_subs = 'Fixed Exp.'; UI.dictionary.en.btn_add_sub = '+ New Fixed Expense'; UI.dictionary.en.mod_sub_title = 'New Fixed Expense'; UI.dictionary.en.empty_subs = 'No active fixed expenses.'; }",
             "  }",
             "",
-            "  // 3. LOGOS OFICIALES REALES (NETFLIX, CHATGPT, SPOTIFY, YOUTUBE, DISNEY+, PRIME, UBER, NUBANK, ETC.)",
             "  window.getSmartBrandBadge = function(name) {",
             "    const n = String(name || '').toLowerCase().trim();",
             "    const officialBrands = [",
@@ -122,7 +119,6 @@ jobs:
             "    return '<span class=\"brand-logo-real\" style=\"background:var(--primary-grad);color:#fff;font-size:18px;\">💳</span>';",
             "  };",
             "",
-            "  // 4. SINCRONIZAR SALDO CON EL WIDGET COMPACTO DE SMARTY EN EL ESCRITORIO",
             "  function upgradeBudgetWidgetSync() {",
             "    if (typeof UI === 'undefined' || !UI.renderBudgetChart) return;",
             "    const origChart = UI.renderBudgetChart.bind(UI);",
@@ -138,7 +134,6 @@ jobs:
             "    };",
             "  }",
             "",
-            "  // 5. SUPER-CONTEXTO TOTAL PARA SMARTY AI",
             "  function stemProduct(name) {",
             "    let s = String(name || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();",
             "    s = s.replace(/[^a-z0-9\\s]/g, '').replace(/\\s+/g, ' ');",
@@ -175,7 +170,6 @@ jobs:
             "    };",
             "  }",
             "",
-            "  // 6. FINANZAS: EDITAR GASTO, LOGOS REALES Y EXPORTAR PDF",
             "  function upgradeFinanceFeatures() {",
             "    if (typeof Finance === 'undefined') return;",
             "    const origOpenExp = Finance.openExpenseModal.bind(Finance);",
@@ -272,7 +266,6 @@ jobs:
             "    };",
             "  }",
             "",
-            "  // 7. COMPRA INVERSA POR FOTO",
             "  function upgradeReverseReceiptShopping() {",
             "    if (typeof Shopping === 'undefined') return;",
             "    const topBar = document.querySelector('#view-lists .top-bar > div');",
@@ -311,7 +304,6 @@ jobs:
             "    };",
             "  }",
             "",
-            "  // 8. EXTRACTOR BANCARIO INTELIGENTE (EXTRAE COMERCIO REAL Y MONTO, IGNORA 'COMPRA APROBADA')",
             "  function extractCleanBankDataOffline(title, text) {",
             "    const full = ((title || '') + ' | ' + (text || '')).trim();",
             "    const moneyRegex = /(?:r\\$|\\$|usd|brl|eur|valor|por|de)?\\s*(\\d{1,3}(?:\\.\\d{3})*(?:,\\d{1,2})|\\d+(?:\\.\\d{1,2})?)/gi;",
@@ -346,7 +338,6 @@ jobs:
             "    return { amount, merchant, category };",
             "  }",
             "",
-            "  // 9. AUTO-UPDATER QUE EJECUTA OTA DESPUES DEL LOAD Y DESCARGA APK",
             "  window.SmartyUpdaterAndBackup = {",
             "    checkDailyAutoBackup() {",
             "      if (!Data?.store?.settings?.autoDailyBackup) return;",
@@ -585,7 +576,6 @@ jobs:
             done
           fi
 
-          # Copiar la figura de Smarty (idle.png) a los recursos drawable de Android para mostrarla en el Widget
           mkdir -p android/app/src/main/res/drawable
           if [ -f "www/idle.png" ]; then
             convert www/idle.png -resize 140x140 android/app/src/main/res/drawable/smarty_mascot.png
@@ -608,7 +598,6 @@ jobs:
           buildGradle = buildGradle.replace("defaultConfig {", "defaultConfig {\n        ndk {\n            abiFilters 'arm64-v8a', 'armeabi-v7a'\n        }");
           fs.writeFileSync("android/app/build.gradle", buildGradle);
 
-          // Fondo redondeado elegante para el Widget compacto
           const widgetBg = [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">',
@@ -637,7 +626,6 @@ jobs:
           ].join("\n");
           fs.writeFileSync(resDrawableDir + "/smarty_btn_green.xml", btnListBg);
 
-          // Widget Compacto (1 sola fila de alto) con la figura de Smarty a la izquierda, Saldo al centro y 2 botones a la derecha
           const widgetLayout = [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"',
@@ -719,8 +707,6 @@ jobs:
             '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
             '    android:minWidth="220dp"',
             '    android:minHeight="56dp"',
-            '    android:targetCellWidth="4"',
-            '    android:targetCellHeight="1"',
             '    android:updatePeriodMillis="1800000"',
             '    android:initialLayout="@layout/smarty_widget"',
             '    android:resizeMode="horizontal|vertical"',
