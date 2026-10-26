@@ -2,8 +2,9 @@
    SMART LIFE PRO - LIVE OTA UPDATE (V16.0-OTA)
    1. Micrófono de Voz en el Chat de Smarty AI
    2. Separar 'Hogar' de 'Gastos Fijos' en Historial
-   3. Nuevas Categorías: 'Almuerzo' y 'Delivery & Salidas'
+   3. Nuevas Categorías: 'Almuerzo' y 'Delivery y Salidas'
    4. Cambio rápido de categoría en gastos ya guardados (1 toque)
+   5. Conexión directa a Vercel (https://smart-life-pro.vercel.app) para futuras actualizaciones
    ========================================= */
 
 (function () {
@@ -57,10 +58,9 @@
     document.getElementById("pace-day-marker")?.remove();
 
     // ---------------------------------------------------------
-    // 2. NUEVAS CATEGORIAS: 'ALMUERZO' (cat_lunch) Y 'DELIVERY & SALIDAS' (cat_dining)
+    // 2. NUEVAS CATEGORIAS: 'ALMUERZO' (cat_lunch) Y 'DELIVERY Y SALIDAS' (cat_dining)
     // ---------------------------------------------------------
     if (typeof UI !== "undefined") {
-        // Traducciones en los 3 idiomas
         if (UI.dictionary?.es) {
             UI.dictionary.es.cat_lunch = "Almuerzo";
             UI.dictionary.es.cat_dining = "Delivery y Salidas";
@@ -83,7 +83,6 @@
             UI.dictionary.en.mod_sub_title = "New Fixed Expense";
         }
 
-        // Registrar las nuevas categorías en UI.categories si aún no están
         if (Array.isArray(UI.categories)) {
             if (!UI.categories.some(c => c.id === "cat_lunch")) {
                 const leisureIdx = UI.categories.findIndex(c => c.id === "cat_leisure");
@@ -99,7 +98,6 @@
             }
         }
 
-        // Añadir iconos SVG propios para Almuerzo y Delivery & Salidas
         const origCatIcon = UI.categoryIcon.bind(UI);
         UI.categoryIcon = function (id) {
             if (id === "cat_lunch") {
@@ -118,7 +116,6 @@
         "cat_travel", "cat_beauty", "cat_other"
     ];
 
-    // Actualizar voz y recibo de Finance para que reconozcan Almuerzo y Delivery & Salidas
     if (typeof Finance !== "undefined") {
         Finance.startSmartyExpenseVoice = async function () {
             const btn = document.getElementById("expense-smarty-btn");
@@ -172,7 +169,6 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
     // 3. SEPARAR 'HOGAR' (cat_bills) DE 'GASTOS FIJOS' (cat_subs) EN EL HISTORIAL
     // ---------------------------------------------------------
     if (typeof Finance !== "undefined") {
-        // Añadir chip de filtro propio para Gastos Fijos separado de Hogar
         Finance.renderFilterChips = function () {
             let html = `<div class="filter-scroll-container">`;
             const allActive = this.selectedCategoryFilter === "ALL" ? "active" : "";
@@ -190,7 +186,6 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
             return html;
         };
 
-        // Reescribir el filtrado en renderExpensesHistory para que Hogar NO incluya Gastos Fijos (sub)
         Finance.renderExpensesHistory = function () {
             const container = document.getElementById("expenses-history-list");
             if (!container) return;
@@ -199,7 +194,6 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
             if (typeof this.injectFinanceSummaryBanner === "function") this.injectFinanceSummaryBanner();
             this.renderMonthSelector(container);
 
-            // Botón PDF
             const pdfBtn = document.createElement("button");
             pdfBtn.id = "btn-export-pdf-month";
             pdfBtn.className = "btn-data";
@@ -260,7 +254,7 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
                 }
             });
 
-            // FILTRO ESTRICTO: 'cat_bills' (Hogar) SOLO muestra gastos de Hogar, NUNCA Gastos Fijos ('sub')
+            // SEPARACION ESTRICTA: Hogar (cat_bills) NO muestra Gastos Fijos (sub)
             if (this.selectedCategoryFilter !== "ALL") {
                 allItems = allItems.filter(item => {
                     const filter = this.selectedCategoryFilter;
@@ -325,7 +319,6 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
             exp.category = newCatLabel;
             Data.save();
 
-            // Actualizar visualmente el modal de detalle
             const detCat = document.getElementById("det-exp-cat");
             if (detCat) detCat.innerHTML = `${this.getCategoryIcon(newCatId)} ${newCatLabel}`;
 
@@ -352,7 +345,6 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
             const detCatEl = document.getElementById("det-exp-cat");
             detCatEl.innerHTML = `${icon} ${catName}`;
 
-            // Inyectar selector rápido de categorías para cambiar la categoría de gastos previos con 1 toque
             let quickBox = document.getElementById("det-quick-cat-box");
             if (!quickBox) {
                 quickBox = document.createElement("div");
@@ -448,17 +440,35 @@ Allowed categories: ${ALL_CAT_IDS.join(", ")}.`;
         chatInput.parentNode.insertBefore(micBtn, chatInput.nextSibling);
     }
 
-    // Actualizar también el clasificador bancario con Almuerzo y Delivery & Salidas
-    if (window.NativeBridge) {
-        const origBank = window.NativeBridge.processBankNotification.bind(window.NativeBridge);
-        window.NativeBridge.processBankNotification = async function (notif) {
-            const text = `${notif.title || ""} ${notif.text || ""}`.toLowerCase();
-            if (/(ifood|rappi|pedidosya|heladeria|sorveteria|helado|sorvete|restaurante|pizzaria|pizzeria|burger|mcdonald|bk|sushi|cafeteria|starbucks)/.test(text)) {
-                notif._forcedCat = "cat_dining";
-            } else if (/(almuerzo|almoco|almoço|marmita|restaurante ejecutivo)/.test(text)) {
-                notif._forcedCat = "cat_lunch";
+    // ---------------------------------------------------------
+    // 6. CONECTAR FUTURAS ACTUALIZACIONES DIRECTO A TU VERCEL (https://smart-life-pro.vercel.app)
+    // Funciona aunque vuelvas a poner el repositorio de GitHub en Privado
+    // ---------------------------------------------------------
+    if (window.SmartyUpdaterAndBackup) {
+        window.SmartyUpdaterAndBackup.checkForAppUpdates = async function () {
+            UI.showSnackbar("🔄 Buscando actualización en Vercel...");
+            const urls = [
+                "https://smart-life-pro.vercel.app/smarty-ota.js?t=" + Date.now(),
+                "https://raw.githubusercontent.com/girsinstagramtiktok/SmartLifePro/main/smarty-ota.js?t=" + Date.now()
+            ];
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url, { cache: "no-store" });
+                    if (res.ok) {
+                        const code = await res.text();
+                        if (code && code.length > 20 && !code.trim().startsWith("<!DOCTYPE")) {
+                            localStorage.setItem("smarty_ota_patch_v14", code);
+                            localStorage.setItem("smarty_ota_patch_v15", code);
+                            localStorage.setItem("smarty_ota_patch_v16", code);
+                            eval(code);
+                            if (typeof UI !== "undefined") UI.renderSettingsView();
+                            UI.showSnackbar("⚡ ¡Actualizado al instante! (" + window.SMARTY_APK_VERSION + ")");
+                            return;
+                        }
+                    }
+                } catch (_) {}
             }
-            return await origBank(notif);
+            UI.showSnackbar("✅ Ya tienes la última versión (" + window.SMARTY_APK_VERSION + ")");
         };
     }
 
