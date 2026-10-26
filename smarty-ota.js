@@ -308,4 +308,20 @@
             panel.insertBefore(row, panel.children[5] || null);
         }
     }
+   // Mostrar ruta exacta o abrir selector visible al tocar "Crear Copia" manualmente
+    if (typeof Main !== "undefined") {
+        Main.downloadBackup = function () {
+            const json = Data.exportJSON();
+            // 1. Guardar también la copia automática única de respaldo
+            if (window.SmartyAndroid && window.SmartyAndroid.saveSingleOverwriteBackup) {
+                window.SmartyAndroid.saveSingleOverwriteBackup(json);
+            }
+            // 2. Abrir el selector nativo de Android para que quede en tu carpeta Descargas visible
+            if (window.SmartyAndroid && window.SmartyAndroid.saveBackupFile) {
+                window.SmartyAndroid.saveBackupFile(json, "SmartLifePro_Backup.json");
+                return;
+            }
+            UI.showSnackbar("✅ Guardado en Descargas: SmartLifePro_Backup.json");
+        };
+    }
 })();
