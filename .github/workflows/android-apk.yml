@@ -8,8 +8,8 @@ permissions:
 
 jobs:
   build-android:
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,24 +17,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Prepare Web Assets & Connect smarty-ota.js
         run: |
-          sudo apt-get update -y && sudo apt-get install -y imagemagick
           rm -rf www android package.json package-lock.json capacitor.config.json node_modules
           mkdir -p www
 
           cp *.html *.css *.js *.json *.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
+          rm -f www/paquete*.html www/descargar*.html www/bg1.png www/bg2.png www/bg3.png www/bg4.png www/bg5.png
 
-          find www -type f -name "*.png" -exec mogrify -strip -resize "360x360>" -quality 82 {} +
+          # Si imagenmagick ya viene preinstalado en ubuntu-24.04 lo usamos sin hacer apt-get update
+          if command -v mogrify >/dev/null 2>&1; then
+            find www -type f -name "*.png" -exec mogrify -strip -resize "360x360>" -quality 82 {} + || true
+          fi
 
           node -e '
           const fs = require("fs");
@@ -43,12 +47,17 @@ jobs:
             ast = ast.replace("maxTokens = 650", "maxTokens = 2500");
             fs.writeFileSync("www/assistant.js", ast);
           }
+
           const boot = `
           (function() {
-            try {
-              const savedOta = localStorage.getItem("smarty_ota_live");
-              if (savedOta) eval(savedOta);
-            } catch(e) {}
+            window.addEventListener("load", () => {
+              setTimeout(() => {
+                try {
+                  const savedOta = localStorage.getItem("smarty_ota_live");
+                  if (savedOta) eval(savedOta);
+                } catch(e) {}
+              }, 500);
+            });
           })();
           `;
           fs.writeFileSync("www/smarty-boot.js", boot);
@@ -57,8 +66,8 @@ jobs:
             let html = fs.readFileSync("www/index.html", "utf8");
             html = html.replace(/serviceWorker/g, "serviceWorkerDisabledInAPK");
             let scripts = "<script src=\"main.js\"></script>";
-            if (fs.existsSync("www/smarty-ota.js")) scripts += "<script src=\"smarty-ota.js\"></script>";
-            scripts += "<script src=\"smarty-boot.js\"></script>";
+            if (fs.existsSync("www/smarty-ota.js")) scripts += "\n<script src=\"smarty-ota.js\"></script>";
+            scripts += "\n<script src=\"smarty-boot.js\"></script>";
             html = html.replace("<script src=\"main.js\"></script>", scripts);
             fs.writeFileSync("www/index.html", html);
           }
@@ -77,21 +86,21 @@ jobs:
 
       - name: Inject Native Installed Apps Reader, Strict Filter, Widget & Immersive Mode
         run: |
-          if [ -f "www/logo.png" ]; then
+          if [ -f "www/logo.png" ] && command -v convert >/dev/null 2>&1; then
             rm -rf android/app/src/main/res/mipmap-anydpi-v26
             for d in android/app/src/main/res/mipmap-*; do
               if [ -d "$d" ]; then
-                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher.png"
-                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher_round.png"
-                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher_foreground.png"
+                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher.png" || true
+                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher_round.png" || true
+                convert www/logo.png -resize 192x192 "PNG32:$d/ic_launcher_foreground.png" || true
               fi
             done
           fi
 
-          if [ -f "www/idle.png" ]; then
+          if [ -f "www/idle.png" ] && command -v convert >/dev/null 2>&1; then
             for d in android/app/src/main/res/mipmap-*; do
               if [ -d "$d" ]; then
-                convert www/idle.png -resize 140x140 "PNG32:$d/smarty_mascot.png"
+                convert www/idle.png -resize 140x140 "PNG32:$d/smarty_mascot.png" || true
               fi
             done
           fi
@@ -112,7 +121,7 @@ jobs:
           fs.writeFileSync(resLayoutDir + "/smarty_widget.xml", [
             '<?xml version="1.0" encoding="utf-8"?>',
             '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="10dp" android:background="@android:color/background_dark">',
-            '  <ImageView android:id="@+id/widget_mascot" android:layout_width="44dp" android:layout_height="44dp" android:src="@mipmap/smarty_mascot" android:layout_marginEnd="10dp" />',
+            '  <ImageView android:id="@+id/widget_mascot" android:layout_width="44dp" android:layout_height="44dp" android:src="@mipmap/ic_launcher" android:layout_marginEnd="10dp" />',
             '  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">',
             '    <TextView android:text="DISPONIBLE" android:textColor="#94A3B8" android:textSize="9sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
             '    <TextView android:id="@+id/widget_remaining" android:text="$0.00" android:textColor="#10B981" android:textSize="17sp" android:textStyle="bold" android:singleLine="true" android:layout_width="wrap_content" android:layout_height="wrap_content"/>',
@@ -148,7 +157,6 @@ jobs:
             "}"
           ].join("\n"));
 
-          // Servicio de Notificaciones: SOLO procesa paquetes en la lista blanca elegida por el usuario
           fs.writeFileSync(pkgDir + "/SmartyNotificationService.java", [
             "package com.smartlife.pro;",
             "import android.app.Notification; import android.content.SharedPreferences; import android.os.Bundle; import android.service.notification.NotificationListenerService; import android.service.notification.StatusBarNotification; import android.content.Intent; import org.json.JSONArray; import org.json.JSONObject;",
@@ -190,7 +198,7 @@ jobs:
 
           fs.writeFileSync(pkgDir + "/MainActivity.java", [
             "package com.smartlife.pro;",
-            "import android.Manifest; import android.app.Activity; import android.app.NotificationChannel; import android.app.NotificationManager; import android.content.BroadcastReceiver; import android.content.Context; import android.content.DialogInterface; import android.content.Intent; import android.content.IntentFilter; import android.content.SharedPreferences; import android.content.pm.PackageManager; import android.content.pm.ResolveInfo; import android.hardware.biometrics.BiometricPrompt; import android.net.Uri; import android.os.Build; import android.os.Bundle; import android.os.CancellationSignal; import android.os.Environment; import android.print.PrintAttributes; import android.print.PrintDocumentAdapter; import android.print.PrintManager; import android.provider.Settings; import android.util.Base64; import android.view.View; import android.view.WindowInsets; import android.view.WindowInsetsController; import android.webkit.JavascriptInterface; import android.webkit.WebView; import android.webkit.WebViewClient; import androidx.core.app.ActivityCompat; import androidx.core.app.NotificationCompat; import androidx.core.content.ContextCompat; import com.getcapacitor.BridgeActivity; import java.io.BufferedReader; import java.io.File; import java.io.FileOutputStream; import java.io.InputStream; import java.io.InputStreamReader; import java.io.OutputStream; import java.nio.charset.StandardCharsets; import java.util.HashSet; import java.util.List; import org.json.JSONArray; import org.json.JSONObject;",
+            "import android.Manifest; import android.app.Activity; import android.app.NotificationChannel; import android.app.NotificationManager; import android.content.BroadcastReceiver; import android.content.Context; import android.content.Intent; import android.content.IntentFilter; import android.content.SharedPreferences; import android.content.pm.PackageManager; import android.content.pm.ResolveInfo; import android.hardware.biometrics.BiometricPrompt; import android.net.Uri; import android.os.Build; import android.os.Bundle; import android.os.CancellationSignal; import android.os.Environment; import android.print.PrintAttributes; import android.print.PrintManager; import android.provider.Settings; import android.util.Base64; import android.view.View; import android.view.WindowInsets; import android.view.WindowInsetsController; import android.webkit.JavascriptInterface; import android.webkit.WebView; import android.webkit.WebViewClient; import androidx.core.app.ActivityCompat; import androidx.core.app.NotificationCompat; import androidx.core.content.ContextCompat; import com.getcapacitor.BridgeActivity; import java.io.BufferedReader; import java.io.File; import java.io.FileOutputStream; import java.io.InputStream; import java.io.InputStreamReader; import java.io.OutputStream; import java.nio.charset.StandardCharsets; import java.util.HashSet; import java.util.List; import org.json.JSONArray; import org.json.JSONObject;",
             "public class MainActivity extends BridgeActivity {",
             "  private BroadcastReceiver bankReceiver;",
             "  private static final int PICK_RESTORE_JSON = 9901;",
