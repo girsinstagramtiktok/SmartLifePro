@@ -1,27 +1,27 @@
 /* =========================================
-   SMART LIFE PRO - OTA MASTER MODULE (V18.0)
+   SMART LIFE PRO - OTA MASTER MODULE (V19.0-OTA)
    ========================================= */
 (function () {
-    window.SMARTY_APK_VERSION = "18.0-OTA";
+    window.SMARTY_APK_VERSION = "19.0-OTA";
     document.getElementById("fin-bank-summary-banner")?.remove();
     document.getElementById("pace-day-marker")?.remove();
     document.getElementById("smarty-ota-styles")?.remove();
 
-    // 1. ESTILOS: CHAT BLINDADO + HORMIGA + PASTEL CLICKEABLE
+    // 1. ESTILOS: OCULTAR ALMACENAMIENTO VIEJO DE 5MB + HORMIGA + CHAT + PASTEL
     const st = document.createElement("style");
     st.id = "smarty-ota-styles";
     st.innerHTML = `
-        #budget-circle { filter: none !important; box-shadow: none !important; }
-        #pace-day-marker, #fin-bank-summary-banner { display: none !important; }
-        .tone-orange { color: #EA580C; background: rgba(234,88,12,0.14); }
-        .tone-crimson { color: #E11D48; background: rgba(225,29,72,0.14); }
-        .tone-ant { color: #D97706; background: rgba(217,119,6,0.15); }
+        #budget-circle { filter:none !important; box-shadow:none !important; }
+        #pace-day-marker, #fin-bank-summary-banner, #settings-inject .setting-group, #settings-inject .div-line { display:none !important; }
+        .tone-orange { color:#EA580C; background:rgba(234,88,12,0.14); }
+        .tone-crimson { color:#E11D48; background:rgba(225,29,72,0.14); }
+        .tone-ant { color:#D97706; background:rgba(217,119,6,0.15); }
         .brand-logo-real { width:38px; height:38px; border-radius:11px; display:inline-flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0; overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,0.12); }
         .brand-logo-real svg, .brand-logo-real img { width:100%; height:100%; object-fit:cover; display:block; }
         #smarty-chat-box > div { max-width:84% !important; box-sizing:border-box !important; overflow-wrap:anywhere !important; word-break:break-word !important; white-space:normal !important; overflow-x:hidden !important; }
         #smarty-chat-mic-btn.listening { background:var(--danger) !important; color:#fff !important; transform:scale(1.08); }
         .quick-cat-switcher { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(120,120,120,0.2); }
-        .quick-cat-pill { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:12px; font-size:11.5px; font-weight:700; background:var(--input-bg); color:var(--text-color); cursor:pointer; border:1.5px solid transparent; }
+        .quick-cat-pill { display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:12px; font-size:11.5px; font-weight:700; background:var(--input-bg); color:var(--text-color); cursor:pointer; }
         .quick-cat-pill.active-cat { background:var(--primary); color:#fff; }
         .quick-cat-pill.active-cat .category-icon-shell { background:rgba(255,255,255,0.22); color:#fff; }
         .chart-legend-interactive { padding:7px 10px; border-radius:12px; cursor:pointer; transition:0.15s; }
@@ -49,16 +49,12 @@
         }
 
         (Data?.store?.expenses || []).forEach(e => {
-            if (e.category && ["ocio", "lazer", "leisure"].includes(String(e.category).toLowerCase().trim())) {
-                e.category = UI.t("cat_leisure");
-            }
+            if (e.category && ["ocio", "lazer", "leisure"].includes(String(e.category).toLowerCase().trim())) e.category = UI.t("cat_leisure");
         });
 
         if (!UI._origCatIconBase) UI._origCatIconBase = UI.categoryIcon.bind(UI);
         UI.categoryIcon = function (id) {
-            if (id === "cat_leisure" || id === "Microgastos" || id === "Micro-expenses") {
-                return '<span class="category-icon-shell tone-ant"><svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2.2"/><circle cx="12" cy="11.5" r="2.5"/><ellipse cx="12" cy="18" rx="3.2" ry="4"/><path d="M10 4.2 8 2.5M14 4.2 16 2.5M9.8 10.5 5 8.5M14.2 10.5 19 8.5M9.5 12.2 4.5 13M14.5 12.2 19.5 13M9.2 16.5 5 19.5M14.8 16.5 19 19.5"/></svg></span>';
-            }
+            if (id === "cat_leisure" || id === "Microgastos" || id === "Micro-expenses") return '<span class="category-icon-shell tone-ant"><svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2.2"/><circle cx="12" cy="11.5" r="2.5"/><ellipse cx="12" cy="18" rx="3.2" ry="4"/><path d="M10 4.2 8 2.5M14 4.2 16 2.5M9.8 10.5 5 8.5M14.2 10.5 19 8.5M9.5 12.2 4.5 13M14.5 12.2 19.5 13M9.2 16.5 5 19.5M14.8 16.5 19 19.5"/></svg></span>';
             if (id === "cat_lunch") return '<span class="category-icon-shell tone-orange"><svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg></span>';
             if (id === "cat_dining") return '<span class="category-icon-shell tone-crimson"><svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22l-.75-12.07A4.001 4.001 0 0 1 12 2Z"/><path d="M8.5 7.5a3.5 3.5 0 1 1 7 0"/></svg></span>';
             return UI._origCatIconBase(id);
@@ -77,7 +73,7 @@
         return "cat_other";
     }
 
-    // 3. FINANZAS: ORDEN POR VALOR PERSISTENTE, GRAFICO INTERACTIVO, ICONO SVG, EDITAR CATEGORIA Y SEPARAR HOGAR
+    // 3. FINANZAS: ORDEN POR VALOR PERSISTENTE, GRAFICO INTERACTIVO Y SEPARAR HOGAR
     if (typeof Finance !== "undefined") {
         if (!Data.store.settings) Data.store.settings = {};
         if (!Data.store.settings.subscriptionSort) Data.store.settings.subscriptionSort = "value";
@@ -85,10 +81,7 @@
         Finance.injectFinanceSummaryBanner = function () { document.getElementById("fin-bank-summary-banner")?.remove(); };
 
         Finance.setSubscriptionSortOrder = function (s) {
-            this.subscriptionSort = s;
-            Data.store.settings.subscriptionSort = s;
-            Data.save();
-            this.renderSubscriptions();
+            this.subscriptionSort = s; Data.store.settings.subscriptionSort = s; Data.save(); this.renderSubscriptions();
         };
 
         Finance.renderSubscriptions = function () {
@@ -99,11 +92,9 @@
                 return;
             }
             this.subscriptionSort = Data.store.settings?.subscriptionSort || "value";
-            const sortBar = document.createElement("div");
-            sortBar.className = "subscription-sort-bar";
+            const sortBar = document.createElement("div"); sortBar.className = "subscription-sort-bar";
             sortBar.innerHTML = `<label for="subs-sort">Ordenar por</label><select id="subs-sort" onchange="Finance.setSubscriptionSortOrder(this.value)"><option value="value">Valor</option><option value="date">Fecha de cobro</option><option value="name">Orden alfabético</option></select>`;
-            sortBar.querySelector("select").value = this.subscriptionSort;
-            container.appendChild(sortBar);
+            sortBar.querySelector("select").value = this.subscriptionSort; container.appendChild(sortBar);
 
             const subs = [...Data.store.subscriptions].sort((a, b) => {
                 if (this.subscriptionSort === "value") return (parseFloat(b.cost) || 0) - (parseFloat(a.cost) || 0);
@@ -114,15 +105,12 @@
             let totalCost = 0;
             subs.forEach(sub => {
                 totalCost += parseFloat(sub.cost) || 0;
-                const div = document.createElement("div");
-                div.className = "glass-card item-row";
+                const div = document.createElement("div"); div.className = "glass-card item-row";
                 const badge = window.getSmartBrandBadge ? window.getSmartBrandBadge(sub.name) : "";
                 div.innerHTML = `${badge}<div style="flex:1"><div style="font-weight:700;">${sub.name}</div><div style="font-size:12px; opacity:0.7;">${UI.t("sub_charge_day")} ${sub.day}</div></div><div style="font-weight:800; margin-right:15px;">${UI.formatMoney(sub.cost)}</div><button class="icon-btn" style="color:var(--danger); width:36px; height:36px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
-                div.querySelector("button").onclick = () => this.deleteSub(sub.id);
-                container.appendChild(div);
+                div.querySelector("button").onclick = () => this.deleteSub(sub.id); container.appendChild(div);
             });
-            const tDiv = document.createElement("div");
-            tDiv.className = "glass-card";
+            const tDiv = document.createElement("div"); tDiv.className = "glass-card";
             tDiv.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:15px; margin-top:15px; border:2px solid var(--primary);";
             tDiv.innerHTML = `<div style="font-weight:800;">Total Mensual</div><div style="font-size:18px; font-weight:900; color:var(--primary);">${UI.formatMoney(totalCost)}</div>`;
             container.appendChild(tDiv);
@@ -132,7 +120,7 @@
             this.selectedCategoryFilter = (this.selectedCategoryFilter === catId) ? "ALL" : catId;
             if (navigator.vibrate) navigator.vibrate(10);
             this.renderExpensesHistory();
-            setTimeout(() => document.getElementById("history-filtered-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+            setTimeout(() => document.querySelector(".filter-scroll-container")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
         };
 
         Finance.handlePieClick = function (e, el) {
@@ -140,8 +128,7 @@
             const r = el.getBoundingClientRect();
             const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
             if (Math.sqrt(dx * dx + dy * dy) < r.width * 0.22) { this.selectCategoryFromChart("ALL"); return; }
-            let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
-            if (deg < 0) deg += 360;
+            let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90; if (deg < 0) deg += 360;
             const s = this._lastPieSlices.find(x => deg >= x.startDeg && deg <= x.endDeg);
             if (s?.catId) this.selectCategoryFromChart(s.catId);
         };
@@ -150,7 +137,6 @@
             const categories = {};
             const [selYear, selMonth] = this.selectedHistoryMonth.split("-").map(Number);
             let totalMonth = 0;
-
             (Data.store.expenses || []).forEach(e => {
                 const d = new Date(e.date); let match = false;
                 if (!e.isInstallment && d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) match = true;
@@ -164,20 +150,17 @@
             (Data.store.lists || []).filter(l => l.status === "completed").forEach(l => {
                 const d = new Date(l.date);
                 if (d.getMonth() === (selMonth - 1) && d.getFullYear() === selYear) {
-                    const c = UI.t("cat_market");
-                    if (!categories[c]) categories[c] = { amount: 0, catId: "cat_market" };
+                    const c = UI.t("cat_market"); if (!categories[c]) categories[c] = { amount: 0, catId: "cat_market" };
                     categories[c].amount += parseFloat(l.total); totalMonth += parseFloat(l.total);
                 }
             });
             const daysInM = new Date(selYear, selMonth, 0).getDate();
             (Data.store.subscriptions || []).forEach(s => {
                 if (s.day <= daysInM) {
-                    const c = UI.t("tab_subs");
-                    if (!categories[c]) categories[c] = { amount: 0, catId: "cat_subs" };
+                    const c = UI.t("tab_subs"); if (!categories[c]) categories[c] = { amount: 0, catId: "cat_subs" };
                     categories[c].amount += parseFloat(s.cost); totalMonth += parseFloat(s.cost);
                 }
             });
-
             if (totalMonth > 0) {
                 const colors = ["#007AFF", "#FF9500", "#FF2D55", "#AF52DE", "#34C759", "#5AC8FA", "#EC4899", "#8E8E93"];
                 let curDeg = 0; const grad = []; this._lastPieSlices = [];
@@ -202,29 +185,33 @@
         };
     }
 
-    // 4. MODAL PARA ELEGIR APPS REALES DE TU TELEFONO (SOLO ESAS ENTRARAN)
+    // 4. LISTA ESTRICTA DE APPS QUE PUEDEN ENVIAR NOTIFICACIONES A SMARTY
+    const BANK_APPS_CATALOG = [
+        { pkg: "com.nu.production", name: "Nubank", kw: "nubank" },
+        { pkg: "br.com.intermedium", name: "Banco Inter", kw: "inter" },
+        { pkg: "com.mercadopago.wallet", name: "Mercado Pago", kw: "mercado pago" },
+        { pkg: "com.itau", name: "Itaú", kw: "itau" },
+        { pkg: "com.bradesco", name: "Bradesco", kw: "bradesco" },
+        { pkg: "com.santander.app", name: "Santander", kw: "santander" },
+        { pkg: "br.com.bb.android", name: "Banco do Brasil", kw: "banco do brasil" },
+        { pkg: "br.com.gabba.Caixa", name: "Caixa", kw: "caixa" },
+        { pkg: "com.picpay", name: "PicPay", kw: "picpay" },
+        { pkg: "com.c6bank.app", name: "C6 Bank", kw: "c6" },
+        { pkg: "com.google.android.apps.walletnfcrel", name: "Google Wallet", kw: "wallet" }
+    ];
+
     window.openInstalledAppsPickerModal = function () {
         document.getElementById("installed-apps-modal")?.remove();
-        let installed = [];
-        try {
-            if (window.SmartyAndroid?.getInstalledAppsJson) installed = JSON.parse(window.SmartyAndroid.getInstalledAppsJson() || "[]");
-        } catch (_) {}
-        if (!installed.length) {
-            installed = [
-                { pkg: "com.nu.production", name: "Nubank" }, { pkg: "br.com.intermedium", name: "Banco Inter" },
-                { pkg: "com.mercadopago.wallet", name: "Mercado Pago" }, { pkg: "com.itau", name: "Itaú" },
-                { pkg: "com.bradesco", name: "Bradesco" }, { pkg: "com.santander.app", name: "Santander" },
-                { pkg: "br.com.bb.android", name: "Banco do Brasil" }, { pkg: "br.com.gabba.Caixa", name: "Caixa" },
-                { pkg: "com.picpay", name: "PicPay" }, { pkg: "com.c6bank.app", name: "C6 Bank" },
-                { pkg: "com.google.android.apps.walletnfcrel", name: "Google Wallet" }
-            ];
-        }
+        let installed = [...BANK_APPS_CATALOG];
+        const detected = JSON.parse(localStorage.getItem("smarty_detected_apps") || "[]");
+        detected.forEach(d => { if (!installed.some(x => x.pkg === d.pkg)) installed.unshift(d); });
+
         const selected = new Set(Data.store.settings?.allowedBankPackages || []);
         installed.sort((a, b) => (selected.has(b.pkg) - selected.has(a.pkg)) || a.name.localeCompare(b.name));
 
         const ov = document.createElement("div");
         ov.id = "installed-apps-modal"; ov.className = "modal-overlay open"; ov.style.zIndex = "25000";
-        ov.innerHTML = `<div class="settings-card" onclick="event.stopPropagation()" style="max-height:85vh; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3 style="margin:0; color:var(--primary);">📲 Apps Autorizadas</h3><button class="icon-btn" id="iap-close">✕</button></div><p style="font-size:11.5px; color:var(--text-sec); margin:0 0 10px;">Smarty <b>SOLO</b> recibirá notificaciones de las apps que marques aquí:</p><input type="text" id="iap-search" class="setting-input" placeholder="🔍 Buscar app..." style="width:100%; margin-bottom:10px;"><div style="flex:1; overflow-y:auto;">${installed.map(a => `<div class="setting-item iap-row" data-q="${a.name.toLowerCase()} ${a.pkg.toLowerCase()}" style="padding:10px 4px;"><div style="display:flex; flex-direction:column; overflow:hidden; padding-right:8px;"><span style="font-size:13.5px; font-weight:700;">${a.name}</span><span style="font-size:10px; color:var(--text-sec);">${a.pkg}</span></div><label class="switch-wrap"><input type="checkbox" class="iap-chk" value="${a.pkg}" ${selected.has(a.pkg) ? "checked" : ""}><span class="slider"></span></label></div>`).join("")}</div><button class="btn-full" id="iap-save" style="margin-top:12px;">Guardar Selección</button></div>`;
+        ov.innerHTML = `<div class="settings-card" onclick="event.stopPropagation()" style="max-height:85vh; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3 style="margin:0; color:var(--primary);">📲 Elegir Apps Autorizadas</h3><button class="icon-btn" id="iap-close">✕</button></div><p style="font-size:11.5px; color:var(--text-sec); margin:0 0 10px;">Smarty <b>SOLO</b> leerá notificaciones de las apps que marques con el interruptor aquí:</p><input type="text" id="iap-search" class="setting-input" placeholder="🔍 Buscar app..." style="width:100%; margin-bottom:10px;"><div style="flex:1; overflow-y:auto;">${installed.map(a => `<div class="setting-item iap-row" data-q="${a.name.toLowerCase()} ${a.pkg.toLowerCase()}" style="padding:10px 4px;"><div style="display:flex; flex-direction:column; overflow:hidden; padding-right:8px;"><span style="font-size:13.5px; font-weight:700;">${a.name}</span><span style="font-size:10px; color:var(--text-sec);">${a.pkg}</span></div><label class="switch-wrap"><input type="checkbox" class="iap-chk" value="${a.pkg}" ${selected.has(a.pkg) ? "checked" : ""}><span class="slider"></span></label></div>`).join("")}</div><button class="btn-full" id="iap-save" style="margin-top:12px;">Guardar Selección</button></div>`;
         document.body.appendChild(ov);
         ov.querySelector("#iap-close").onclick = () => ov.remove();
         ov.querySelector("#iap-search").oninput = function () {
@@ -236,29 +223,49 @@
             ov.querySelectorAll(".iap-chk:checked").forEach(c => pkgs.push(c.value));
             Data.store.settings.allowedBankPackages = pkgs;
             Data.save();
-            if (window.SmartyAndroid?.setAllowedNotificationPackages) window.SmartyAndroid.setAllowedNotificationPackages(pkgs.join(","));
             ov.remove(); UI.renderSettingsView();
             UI.showSnackbar(`✅ ${pkgs.length} apps autorizadas`);
         };
     };
 
-    // Bloqueo estricto también en JS para el APK que ya tienes instalado
     if (window.NativeBridge) {
-        const origNB = window.NativeBridge.processBankNotification.bind(window.NativeBridge);
+        if (!window.NativeBridge._origProcBase) window.NativeBridge._origProcBase = window.NativeBridge.processBankNotification.bind(window.NativeBridge);
         window.NativeBridge.processBankNotification = async function (notif) {
-            const pkg = String(notif.package || "").trim().toLowerCase();
-            const title = String(notif.title || "").trim().toLowerCase();
-            const isTest = pkg === "com.smartlife.pro" || title.includes("compra de crédito aprobada");
-            if (!isTest) {
+            const pkg = String(notif.package || "").trim();
+            const title = String(notif.title || "").trim();
+            const isTest = pkg === "com.smartlife.pro" || title.toLowerCase().includes("compra de crédito aprobada");
+            if (!isTest && pkg) {
+                try {
+                    const det = JSON.parse(localStorage.getItem("smarty_detected_apps") || "[]");
+                    if (!det.some(x => x.pkg === pkg)) { det.push({ pkg, name: title || pkg }); localStorage.setItem("smarty_detected_apps", JSON.stringify(det.slice(-30))); }
+                } catch (_) {}
                 const allowed = (Data.store.settings?.allowedBankPackages || []).map(x => x.toLowerCase());
-                const matchPkg = allowed.some(a => pkg === a || title.includes(a.split(".")[1] || a));
-                if (!matchPkg) return; // Ignorar por completo sin siquiera tocar "Última leída"
+                const pkgLow = pkg.toLowerCase(), titleLow = title.toLowerCase();
+                const isAllowed = allowed.some(a => pkgLow === a || (BANK_APPS_CATALOG.find(b => b.pkg.toLowerCase() === a && titleLow.includes(b.kw))));
+                if (!isAllowed) return;
             }
-            return await origNB(notif);
+            return await window.NativeBridge._origProcBase(notif);
         };
     }
 
-    // 5. GUIA DE GROQ EN EL MANUAL (?) Y BOTON EN AJUSTES
+    // 5. FIJAR BOTON 'ELEGIR APPS' EN AJUSTES Y QUITAR ALMACENAMIENTO VIEJO DE 5MB
+    if (typeof UI !== "undefined" && UI.renderSettingsView) {
+        if (!UI._origRenderSettingsBase) UI._origRenderSettingsBase = UI.renderSettingsView.bind(UI);
+        UI.renderSettingsView = function () {
+            UI._origRenderSettingsBase();
+            document.querySelectorAll("#settings-inject .setting-group, #settings-inject .div-line").forEach(el => el.remove());
+            const card = document.getElementById("android-pro-settings")?.querySelector(".glass-card");
+            if (card && !document.getElementById("btn-pick-installed-apps")) {
+                const cnt = (Data.store.settings?.allowedBankPackages || []).length;
+                const row = document.createElement("div");
+                row.id = "btn-pick-installed-apps"; row.className = "setting-item";
+                row.innerHTML = `<span>📲 Apps Autorizadas (${cnt})</span><button class="text-btn-small" style="background:var(--input-bg);" onclick="window.openInstalledAppsPickerModal()">Elegir Apps ➔</button>`;
+                card.insertBefore(row, card.children[4] || null);
+            }
+        };
+    }
+
+    // 6. GUIA DE GROQ EN EL MANUAL (?)
     if (typeof UI !== "undefined" && UI.toggleGuide) {
         if (!UI._origToggleGuideBase) UI._origToggleGuideBase = UI.toggleGuide.bind(UI);
         UI.toggleGuide = function () {
@@ -274,54 +281,34 @@
         };
     }
 
-    // 6. AUTO-ACTUALIZADOR (OTA + DESCARGA DE APK SI HAY VERSION NUEVA DE SISTEMA)
+    // 7. CONEXION OTA CON VERCEL Y GITHUB
     if (window.SmartyUpdaterAndBackup) {
         window.SmartyUpdaterAndBackup.checkForAppUpdates = async function () {
-            UI.showSnackbar("🔄 Buscando actualizaciones...");
-            try {
-                const res = await fetch("https://smart-life-pro.vercel.app/smarty-ota.js?t=" + Date.now(), { cache: "no-store" });
-                if (res.ok) {
-                    const code = await res.text();
-                    if (code && code.length > 20 && !code.trim().startsWith("<!DOCTYPE")) {
-                        localStorage.setItem("smarty_ota_patch_v14", code);
-                        localStorage.setItem("smarty_ota_patch_v15", code);
-                        localStorage.setItem("smarty_ota_patch_v16", code);
-                        eval(code);
-                        UI.refreshDOM();
-                        UI.showSnackbar("⚡ ¡Actualizado al instante! (" + window.SMARTY_APK_VERSION + ")");
-                        return;
+            UI.showSnackbar("🔄 Buscando actualización...");
+            const urls = [
+                "https://smart-life-pro.vercel.app/smarty-ota.js?t=" + Date.now(),
+                "https://raw.githubusercontent.com/girsinstagramtiktok/SmartLifePro/main/smarty-ota.js?t=" + Date.now()
+            ];
+            for (const u of urls) {
+                try {
+                    const res = await fetch(u, { cache: "no-store" });
+                    if (res.ok) {
+                        const code = await res.text();
+                        if (code && code.length > 20 && !code.trim().startsWith("<!DOCTYPE")) {
+                            localStorage.setItem("smarty_ota_patch_v14", code);
+                            localStorage.setItem("smarty_ota_patch_v15", code);
+                            localStorage.setItem("smarty_ota_patch_v16", code);
+                            eval(code);
+                            UI.refreshDOM();
+                            UI.showSnackbar("⚡ ¡Actualizado al instante! (" + window.SMARTY_APK_VERSION + ")");
+                            return;
+                        }
                     }
-                }
-            } catch (_) {}
+                } catch (_) {}
+            }
             UI.showSnackbar("✅ Versión activa: " + window.SMARTY_APK_VERSION);
         };
     }
 
-    if (typeof UI !== "undefined") {
-        UI.refreshDOM();
-        const panel = document.getElementById("android-pro-settings")?.querySelector(".glass-card");
-        if (panel && !document.getElementById("btn-pick-installed-apps")) {
-            const cnt = (Data.store.settings?.allowedBankPackages || []).length;
-            const row = document.createElement("div");
-            row.id = "btn-pick-installed-apps"; row.className = "setting-item";
-            row.innerHTML = `<span>📲 Apps Autorizadas (${cnt})</span><button class="text-btn-small" style="background:var(--input-bg);" onclick="window.openInstalledAppsPickerModal()">Elegir Apps ➔</button>`;
-            panel.insertBefore(row, panel.children[5] || null);
-        }
-    }
-   // Mostrar ruta exacta o abrir selector visible al tocar "Crear Copia" manualmente
-    if (typeof Main !== "undefined") {
-        Main.downloadBackup = function () {
-            const json = Data.exportJSON();
-            // 1. Guardar también la copia automática única de respaldo
-            if (window.SmartyAndroid && window.SmartyAndroid.saveSingleOverwriteBackup) {
-                window.SmartyAndroid.saveSingleOverwriteBackup(json);
-            }
-            // 2. Abrir el selector nativo de Android para que quede en tu carpeta Descargas visible
-            if (window.SmartyAndroid && window.SmartyAndroid.saveBackupFile) {
-                window.SmartyAndroid.saveBackupFile(json, "SmartLifePro_Backup.json");
-                return;
-            }
-            UI.showSnackbar("✅ Guardado en Descargas: SmartLifePro_Backup.json");
-        };
-    }
+    if (typeof UI !== "undefined") UI.refreshDOM();
 })();
