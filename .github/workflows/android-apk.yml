@@ -24,7 +24,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       - name: Prepare Web Assets & Connect smarty-ota.js
         run: |
@@ -35,7 +34,6 @@ jobs:
           if [ -d "skins" ]; then cp -r skins www/; fi
           rm -f www/paquete*.html www/descargar*.html www/bg1.png www/bg2.png www/bg3.png www/bg4.png www/bg5.png
 
-          # Si imagenmagick ya viene preinstalado en ubuntu-24.04 lo usamos sin hacer apt-get update
           if command -v mogrify >/dev/null 2>&1; then
             find www -type f -name "*.png" -exec mogrify -strip -resize "360x360>" -quality 82 {} + || true
           fi
