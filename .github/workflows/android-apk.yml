@@ -738,6 +738,28 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Verificar que el actualizador OTA quedo incluido en Android
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== Comprobando paquete npm ==='
+          npm ls @capgo/capacitor-updater --depth=0
+          echo '=== Complementos Capacitor detectados ==='
+          npx cap ls android
+          echo '=== Comprobando registro nativo en Gradle ==='
+          for archivo in android/capacitor.settings.gradle android/app/capacitor.build.gradle; do
+            if [ ! -f "$archivo" ]; then
+              echo "::error::No se genero el archivo: $archivo"
+              exit 1
+            fi
+            if ! grep -iq 'capacitor-updater' "$archivo"; then
+              echo "::error::OTA no figura en $archivo. No se generara un APK sin el plugin."
+              exit 1
+            fi
+            grep -in 'capacitor-updater' "$archivo"
+          done
+          echo 'OK: actualizador OTA incluido en la configuracion nativa de Android.'
+
       - name: Set App Icon from logo.png, Native App Picker & Strict Filter
         run: |
           if [ -f "www/logo.png" ]; then
