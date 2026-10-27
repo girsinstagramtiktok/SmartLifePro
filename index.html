@@ -36,65 +36,111 @@
                 </button>
             </header>
 
-            <div class="scroll-content">
-                
-                <div class="mascot-compact-row">
+            <div class="scroll-content fin-home-scroll">
+                <!-- Panel financiero. IDs de resumen conservados para la lógica existente. -->
+                <section class="fin-overview" id="home-finance-overview" aria-label="Resumen financiero">
+                    <div class="fin-overview-top">
+                        <div>
+                            <span class="fin-eyebrow" data-i18n="home_overview">RESUMEN FINANCIERO</span>
+                            <h1 id="home-month-title" class="fin-month-title">Mes actual</h1>
+                        </div>
+                        <span class="fin-period-chip" data-i18n="home_month_badge">ESTE MES</span>
+                    </div>
+
+                    <div class="fin-hero-main">
+                        <div class="fin-hero-balance">
+                            <span class="fin-balance-label" data-i18n="home_available">Disponible del presupuesto</span>
+                            <strong class="fin-balance-amount" id="budget-remaining">$0.00</strong>
+                            <div id="home-budget-health" class="fin-health-pill" aria-live="polite">Presupuesto mensual</div>
+                        </div>
+                        <button class="chart-donut-wrap fin-hero-donut" onclick="Main.router('finance'); Finance.setTab('history');" aria-label="Ver historial de gastos">
+                            <svg viewBox="0 0 36 36" class="circular-chart" aria-hidden="true">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="circle" id="budget-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <span class="donut-text">
+                                <span class="donut-label" data-i18n="home_used">Usado</span>
+                                <span class="fin-ring-value" id="home-budget-percent">0%</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="fin-budget-progress-labels">
+                        <span data-i18n="home_budget_progress">Uso del presupuesto</span>
+                        <strong id="home-budget-progress-value">0%</strong>
+                    </div>
+                    <div class="fin-budget-track" role="progressbar" aria-label="Porcentaje de presupuesto gastado" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="home-budget-track">
+                        <span id="home-budget-progress-fill" class="fin-budget-fill" style="width:0%"></span>
+                    </div>
+
+                    <div class="fin-summary-details summary-details">
+                        <button class="fin-metric" onclick="Finance.openBudgetModal()" aria-label="Editar presupuesto mensual">
+                            <span class="fin-metric-top"><span class="fin-metric-icon fin-metric-icon-budget" aria-hidden="true">↗</span><span id="budget-limit-lbl" data-i18n="budget_label">Presupuesto</span></span>
+                            <strong id="budget-limit">$0.00</strong>
+                        </button>
+                        <button class="fin-metric" onclick="Main.router('finance'); Finance.setTab('history');" aria-label="Ver gastos del mes">
+                            <span class="fin-metric-top"><span class="fin-metric-icon fin-metric-icon-spent" aria-hidden="true">↘</span><span id="budget-spent-lbl" data-i18n="spent_label">Gastado</span></span>
+                            <strong id="budget-spent">$0.00</strong>
+                        </button>
+                    </div>
+                    <button class="fin-budget-note" id="touch-budget-txt" onclick="Finance.openBudgetModal()" data-i18n="touch_budget">Configurar presupuesto</button>
+                </section>
+
+                <section class="fin-action-section" aria-label="Accesos rápidos">
+                    <div class="fin-section-heading">
+                        <h2 data-i18n="home_quick_actions">Accesos rápidos</h2>
+                    </div>
+                    <div class="fin-action-grid">
+                        <button class="fin-action-tile" onclick="Finance.openExpenseModal()">
+                            <span class="fin-action-symbol fin-action-expense" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 10h18M12 13v5m-2.5-2.5h5"/></svg>
+                            </span>
+                            <span data-i18n="home_add_expense">Nuevo gasto</span>
+                        </button>
+                        <button class="fin-action-tile" onclick="Shopping.createList()">
+                            <span class="fin-action-symbol fin-action-list" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 9h8M8 13h5M15 15v5m-2.5-2.5h5"/></svg>
+                            </span>
+                            <span data-i18n="home_add_list">Nueva lista</span>
+                        </button>
+                        <button class="fin-action-tile" onclick="Main.router('finance'); Finance.setTab('history');">
+                            <span class="fin-action-symbol fin-action-history" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+                            </span>
+                            <span data-i18n="home_view_history">Historial</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="fin-activity-section" aria-label="Movimientos recientes">
+                    <div class="fin-section-heading">
+                        <h2 data-i18n="recent_expenses_title">Movimientos recientes</h2>
+                        <button class="fin-see-more" onclick="Main.router('finance'); Finance.setTab('history');"><span data-i18n="see_all">Ver todos</span><span aria-hidden="true">›</span></button>
+                    </div>
+                    <div id="home-recent-expenses"></div>
+                </section>
+
+                <section class="fin-categories-section" aria-label="Categorías principales">
+                    <div class="fin-section-heading">
+                        <h2 data-i18n="top_categories_title">Principales categorías</h2>
+                    </div>
+                    <div id="home-top-categories"></div>
+                </section>
+
+                <!-- Smarty continúa disponible, sin competir con el resumen financiero. -->
+                <section class="mascot-compact-row fin-smarty-card" aria-label="Smarty, asistente financiero">
                     <div class="xp-vertical-track" onclick="if(typeof Main !== 'undefined') { event.stopPropagation(); Main.openProfile(); }">
                         <div id="xp-fill" class="xp-fill-vertical"></div>
                     </div>
-
-                    <img src="idle.png" id="mascot-img" class="mascot-img-compact" alt="Asistente" 
+                    <img src="idle.png" id="mascot-img" class="mascot-img-compact" alt="Smarty"
                          onclick="if(typeof Assistant !== 'undefined') { event.stopPropagation(); Assistant.giveTip(); }"
                          onerror="this.style.display='none'">
-
-                    <div class="mascot-bubble-side" id="mascot-bubble" data-i18n="greeting">
-                        Hola Master.
+                    <div class="fin-smarty-copy">
+                        <div class="fin-smarty-heading">Smarty <span data-i18n="home_ai_hint">· Tu asistente</span></div>
+                        <div class="mascot-bubble-side" id="mascot-bubble" data-i18n="greeting">Hola, ¿todo bien?</div>
                     </div>
-                </div>
-
-                <div class="glass-card summary-card compact-budget">
-                    <div class="chart-donut-wrap small-donut" onclick="Main.router('finance'); Finance.setTab('history');">
-                        <svg viewBox="0 0 36 36" class="circular-chart">
-                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="circle" id="budget-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        </svg>
-                        <div class="donut-text">
-                            <span class="donut-label" data-i18n="remaining_label">Restante</span>
-                            <span class="donut-value small-val" id="budget-remaining">$0</span>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-details" onclick="Finance.openBudgetModal()" style="cursor:pointer; display:flex; flex-direction:column; justify-content:center; gap:5px;">
-                        <div>
-                            <div style="display:flex; align-items:center; margin-bottom:2px;">
-                                <span class="dot-label dot-green"></span> 
-                                <span id="budget-limit-lbl" style="font-size:11px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="budget_label">Presupuesto</span>
-                            </div> 
-                            <div id="budget-limit" style="font-size:16px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
-                        </div>
-                        <div>
-                            <div style="display:flex; align-items:center; margin-bottom:2px;">
-                                <span class="dot-label dot-red"></span> 
-                                <span id="budget-spent-lbl" style="font-size:11px; color:var(--text-sec); font-weight:700; text-transform:uppercase;" data-i18n="spent_label">Gastado</span>
-                            </div>
-                            <div id="budget-spent" style="font-size:16px; font-weight:800; color:var(--text-color); line-height:1.2;">$0</div>
-                        </div>
-                        <div id="touch-budget-txt" style="font-size:11px; color:var(--primary); margin-top:5px;" data-i18n="touch_budget">
-                            Toca para a&ntilde;adir
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section-header" style="padding-bottom: 5px; margin-top:0;">
-                    <span class="section-label" data-i18n="recent_expenses_title">Gastos Recientes</span>
-                </div>
-                <div id="home-recent-expenses"></div>
-
-                <div class="section-header" style="padding-bottom: 5px;">
-                    <span class="section-label" data-i18n="top_categories_title">Top Categorías</span>
-                </div>
-                <div id="home-top-categories"></div>
-
+                    <button class="fin-smarty-open" onclick="Assistant.openSmartyChat()" aria-label="Abrir Smarty" title="Abrir Smarty">›</button>
+                </section>
             </div>
         </div>
 

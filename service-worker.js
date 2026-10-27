@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v22.3-payment-date'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v22.4-financial-home'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

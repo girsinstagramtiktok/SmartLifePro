@@ -23,6 +23,20 @@ const UI = {
             exp_post_original: "Mantener el mes original",
             month_names: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
             
+            home_overview: "RESUMEN FINANCIERO",
+            home_month_badge: "ESTE MES",
+            home_available: "Disponible del presupuesto",
+            home_used: "Usado",
+            home_budget_progress: "Uso del presupuesto",
+            home_quick_actions: "Accesos rápidos",
+            home_add_expense: "Nuevo gasto",
+            home_add_list: "Nueva lista",
+            home_view_history: "Historial",
+            home_ai_hint: "· Tu asistente",
+            home_budget_ok: "Dentro del presupuesto",
+            home_budget_warn: "Presupuesto casi agotado",
+            home_budget_over: "Presupuesto excedido",
+            home_budget_unset: "Configura tu presupuesto",
             app_slogan: "Inteligencia para tus finanzas", // Nuevo Slogan
             profile_title: "Cuartel General",
             analysis_title: "Análisis de Smarty",
@@ -35,9 +49,9 @@ const UI = {
             spent_label: "Gastado",
             remaining_label: "Restante",
             active_lists_title: "Listas Activas",
-            recent_expenses_title: "Gastos Recientes",
-            top_categories_title: "Top Categorías Mes",
-            see_all: "Ver todas",
+            recent_expenses_title: "Movimientos recientes",
+            top_categories_title: "Categorías principales",
+            see_all: "Ver todos",
             touch_budget: "Toca para definir presupuesto \u270D\uFE0F",
             greeting: "Hola Master, \u00BFtodo bien?",
             
@@ -200,6 +214,20 @@ pin_forgot: "Olvidé mi PIN"
             exp_post_original: "Manter o mês original",
             month_names: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
             
+            home_overview: "RESUMO FINANCEIRO",
+            home_month_badge: "ESTE MÊS",
+            home_available: "Disponível no orçamento",
+            home_used: "Usado",
+            home_budget_progress: "Uso do orçamento",
+            home_quick_actions: "Acesso rápido",
+            home_add_expense: "Nova despesa",
+            home_add_list: "Nova lista",
+            home_view_history: "Histórico",
+            home_ai_hint: "· Seu assistente",
+            home_budget_ok: "Dentro do orçamento",
+            home_budget_warn: "Orçamento quase esgotado",
+            home_budget_over: "Orçamento excedido",
+            home_budget_unset: "Defina seu orçamento",
             app_slogan: "Intelig\u00eancia para suas finan\u00e7as", // Nuevo Slogan
             profile_title: "Quartel General",
             analysis_title: "Análise do Smarty",
@@ -212,9 +240,9 @@ pin_forgot: "Olvidé mi PIN"
             spent_label: "Gasto:",
             remaining_label: "Restante",
             active_lists_title: "Listas Ativas",
-            recent_expenses_title: "Despesas Recentes",
-            top_categories_title: "Top Categorias",
-            see_all: "Ver todas",
+            recent_expenses_title: "Movimentações recentes",
+            top_categories_title: "Principais categorias",
+            see_all: "Ver tudo",
             touch_budget: "Toque para definir or\u00E7amento \u270D\uFE0F",
             greeting: "Ol\u00E1 Master, tudo bem?",
             
@@ -379,6 +407,20 @@ pin_forgot: "Esqueci meu PIN"
             exp_post_original: "Keep original month",
             month_names: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
             
+            home_overview: "FINANCIAL OVERVIEW",
+            home_month_badge: "THIS MONTH",
+            home_available: "Available budget",
+            home_used: "Used",
+            home_budget_progress: "Budget usage",
+            home_quick_actions: "Quick actions",
+            home_add_expense: "New expense",
+            home_add_list: "New list",
+            home_view_history: "History",
+            home_ai_hint: "· Your assistant",
+            home_budget_ok: "Within budget",
+            home_budget_warn: "Budget nearly reached",
+            home_budget_over: "Over budget",
+            home_budget_unset: "Set your budget",
             app_slogan: "Intelligence for your finances", // Nuevo Slogan
             profile_title: "Headquarters",
             analysis_title: "Smarty's Analysis",
@@ -391,8 +433,8 @@ pin_forgot: "Esqueci meu PIN"
             spent_label: "Spent:",
             remaining_label: "Remaining",
             active_lists_title: "Active Lists",
-            recent_expenses_title: "Recent Expenses",
-            top_categories_title: "Top Categories",
+            recent_expenses_title: "Recent activity",
+            top_categories_title: "Top categories",
             see_all: "See all",
             touch_budget: "Tap to set budget \u270D\uFE0F",
             greeting: "Hello Master, all good?",
@@ -650,61 +692,57 @@ msg_bio_inactive: "Lock Disabled 🔓"
     }, // <--- ¡IMPORTANTE! Esta coma es necesaria porque hay más funciones debajo
     
 
-    // --- CHART DEL HOME (CÍRCULO DE PRESUPUESTO) ---
+    // --- RESUMEN FINANCIERO DEL HOME ---
     renderBudgetChart() {
-        const limit = (typeof Data !== 'undefined' && Data.store.budget) ? parseFloat(Data.store.budget.limit) : 0;
-        let spent = 0;
-        
-        if (typeof Finance !== 'undefined') {
-            spent = Finance.calculateMonthlySpent();
-        }
-
+        const limitRaw = (typeof Data !== 'undefined' && Data.store.budget) ? Number(Data.store.budget.limit) : 0;
+        const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 0;
+        const spentRaw = (typeof Finance !== 'undefined') ? Finance.calculateMonthlySpent() : 0;
+        const spent = Number.isFinite(Number(spentRaw)) ? Number(spentRaw) : 0;
         const remaining = limit - spent;
-        let percent = limit > 0 ? (spent / limit) * 100 : 0;
-        const visualPercent = Math.min(percent, 100);
-        
+        const percent = limit > 0 ? Math.max(0, (spent / limit) * 100) : 0;
+        const displayPercent = Math.round(percent);
+        const fraction = Math.min(percent, 100);
+        const over = limit > 0 && percent > 100;
+        const warning = limit > 0 && percent >= 85 && !over;
+        const overview = document.getElementById('home-finance-overview');
+        if (overview) {
+            overview.classList.toggle('fin-is-over', over);
+            overview.classList.toggle('fin-is-warning', warning);
+            overview.classList.toggle('fin-no-budget', limit === 0);
+        }
+        const text = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+        text('budget-remaining', remaining < 0 ? '− ' + this.formatMoney(Math.abs(remaining)) : this.formatMoney(remaining));
+        text('budget-limit', this.formatMoney(limit));
+        text('budget-spent', this.formatMoney(spent));
+        text('home-budget-percent', limit > 0 ? `${displayPercent}%` : '—');
+        text('home-budget-progress-value', limit > 0 ? `${displayPercent}%` : '—');
+        text('budget-limit-lbl', this.t('budget_label').replace(/:$/, ''));
+        text('budget-spent-lbl', this.t('spent_label').replace(/:$/, ''));
+        const remLabel = document.querySelector('#view-home .donut-label');
+        if (remLabel) remLabel.textContent = this.t('home_used');
+        const health = limit === 0 ? this.t('home_budget_unset') : over ? this.t('home_budget_over') : warning ? this.t('home_budget_warn') : this.t('home_budget_ok');
+        text('home-budget-health', health);
         const circle = document.getElementById('budget-circle');
-        const remainText = document.getElementById('budget-remaining');
-        const limitText = document.getElementById('budget-limit');
-        const spentText = document.getElementById('budget-spent');
-
-        if (circle) {
-            circle.setAttribute('stroke-dasharray', `${visualPercent}, 100`);
-            
-            if (percent > 100) {
-                circle.style.stroke = 'var(--danger)'; 
-                if(remainText) remainText.style.color = 'var(--danger)';
-            } else if (percent > 85) {
-                circle.style.stroke = 'var(--warning)'; 
-                if(remainText) remainText.style.color = 'var(--warning)';
-            } else {
-                circle.style.stroke = 'var(--success)';
-                if(remainText) remainText.style.color = 'var(--success)'; 
-            }
+        if (circle) circle.setAttribute('stroke-dasharray', `${fraction}, 100`);
+        const fill = document.getElementById('home-budget-progress-fill');
+        if (fill) fill.style.width = `${fraction}%`;
+        const track = document.getElementById('home-budget-track');
+        if (track) {
+            track.setAttribute('aria-valuenow', String(Math.round(fraction)));
+            track.setAttribute('aria-valuetext', limit > 0 ? `${displayPercent}%` : this.t('home_budget_unset'));
         }
-
-        if (remainText) remainText.innerText = this.formatMoney(remaining);
-        if (limitText) limitText.innerText = this.formatMoney(limit);
-        if (spentText) spentText.innerText = this.formatMoney(spent);
-        
-        const lblSpent = document.getElementById('budget-spent-lbl');
-        const lblBudget = document.getElementById('budget-limit-lbl');
-        const lblRem = document.querySelector('.donut-label');
-        
-        if(lblSpent) lblSpent.innerText = this.t('spent_label');
-        if(lblBudget) lblBudget.innerText = this.t('budget_label');
-        if(lblRem) lblRem.innerText = this.t('remaining_label');
-        
-        const touchTxt = document.getElementById('touch-budget-txt');
-        if(touchTxt) {
-            if (limit <= 0) {
-                touchTxt.innerText = this.t('touch_budget');
-                touchTxt.style.color = 'var(--primary)';
-            } else {
-                touchTxt.innerText = `${Math.round(percent)}% ${this.t('spent_label').replace(':','')}`;
-                touchTxt.style.color = 'var(--text-sec)';
-            }
+        const month = document.getElementById('home-month-title');
+        if (month) {
+            const lang = (typeof Data !== 'undefined' && Data.store.settings?.lang) || 'es';
+            const locale = {es:'es-ES',pt:'pt-BR',en:'en-US'}[lang] || 'es-ES';
+            const monthText = new Intl.DateTimeFormat(locale, {month:'long',year:'numeric'}).format(new Date());
+            month.textContent = monthText.charAt(0).toLocaleUpperCase(locale) + monthText.slice(1);
         }
+        const touch = document.getElementById('touch-budget-txt');
+        if (touch) touch.textContent = this.t('touch_budget');
     },
 
     // --- RENDERIZADO DE CHIPS (CATEGORÍAS) ---
