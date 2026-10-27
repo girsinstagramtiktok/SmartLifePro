@@ -171,7 +171,8 @@ const Finance = {
         
         const current = months + 1;
         
-        return { current: current > 0 ? current : 1 };
+        // Un pago aplazado no inicia sus cuotas antes de su mes programado.
+        return { current };
     },
 
     calculateProgress(startDateTimestamp, totalInstallments) {
@@ -202,6 +203,7 @@ const Finance = {
             // A. Gastos
             if (Data.store.expenses) {
                 Data.store.expenses.forEach(exp => {
+                    if (new Date(exp.date).getTime() > Date.now()) return;
                     allMovements.push({
                         type: 'expense', name: exp.desc, amount: parseFloat(exp.amount),
                         date: new Date(exp.date).getTime(), icon: this.getCategoryIcon(exp.category)
@@ -614,8 +616,14 @@ const Finance = {
         
         // LIMPIEZA DE NUEVOS CAMPOS
         document.getElementById('exp-link').value = ''; 
-        this.clearPhoto(); 
-        
+        this.clearPhoto();
+        const postingMonth = document.getElementById('exp-posting-month');
+        if (postingMonth) {
+            postingMonth.querySelector('option[value="original"]')?.remove();
+            postingMonth.value = 'current';
+        }
+        this.editingOriginalDate = null;
+
         document.getElementById('exp-is-install').checked = false;
         this.toggleInstallmentInputs();
         if (typeof UI.renderCategoryChips === 'function') UI.renderCategoryChips();
@@ -699,7 +707,14 @@ const Finance = {
         const desc = document.getElementById('exp-desc').value.trim() || UI.t('cat_other');
         const isInstall = document.getElementById('exp-is-install').checked;
         const linkVal = document.getElementById('exp-link').value.trim();
-        
+        const postingMonth = document.getElementById('exp-posting-month')?.value || 'current';
+        const now = new Date();
+        const nextMonthLastDay = new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate();
+        const plannedDate = new Date(now.getFullYear(), now.getMonth() + 1,
+            Math.min(now.getDate(), nextMonthLastDay), 12, 0, 0).getTime();
+        const expenseDate = postingMonth === 'next' ? plannedDate :
+            (postingMonth === 'original' && this.editingOriginalDate ? this.editingOriginalDate : Date.now());
+
         const catChip = document.querySelector('.cat-chip.selected');
         let category = UI.t('cat_other');
         if (catChip) category = catChip.dataset.id ? UI.t(catChip.dataset.id) : catChip.innerText.split(' ')[1];
@@ -717,7 +732,9 @@ const Finance = {
 
         const newExpense = {
             id: Date.now().toString(),
-            date: Date.now(),
+            date: expenseDate,
+            recordedAt: Date.now(),
+            scheduled: postingMonth === 'next' || (postingMonth === 'original' && !!this.editingOriginalScheduled),
             amount: finalAmount,
             desc: desc,
             category: category,
@@ -860,7 +877,7 @@ const Finance = {
         activeInstalls.forEach(inst => {
             const { current } = this.calculateProgress(inst.date, inst.installments.total);
             if (current > inst.installments.total) return;
-            const pct = (current / inst.installments.total) * 100;
+            const pct = (Math.max(0, current) / inst.installments.total) * 100;
             const div = document.createElement('div');
             div.className = 'glass-card';
             div.style.padding = '15px';
@@ -871,7 +888,7 @@ const Finance = {
                     <span style="font-weight:800;">${UI.formatMoney(inst.amount)}/mes</span>
                 </div>
                 <div style="font-size:12px; opacity:0.7; margin-bottom:8px; display:flex; justify-content:space-between;">
-                    <span>${UI.t('inst_current')} <strong>${current}</strong>/${inst.installments.total}</span>
+                    <span>${current <= 0 ? 'Comienza el ' + new Date(inst.date).toLocaleDateString() : UI.t('inst_current') + ' <strong>' + current + '</strong>/' + inst.installments.total}</span>
                     <span>Total: ${UI.formatMoney(inst.installments.originalTotal)}</span>
                 </div>
                 <div style="background:rgba(0,0,0,0.1); height:6px; border-radius:3px; overflow:hidden;">

@@ -1,3 +1,5 @@
+(function () {
+'use strict';
 /* =========================================
    SMART LIFE PRO - MASTER MODULE COMPLETO (V22.0) - PARTE 2/2
    ========================================= */
@@ -25,7 +27,11 @@
 
     // 6. FINANZAS: ORDEN POR VALOR PERSISTENTE, GRAFICO INTERACTIVO, EDITAR CATEGORIA, PDF Y SEPARAR HOGAR
     if (typeof Finance !== "undefined") {
-        const resolveCatId = window._resolveSmartyCatId;
+        const resolveCatId = window._resolveSmartyCatId || function (value) {
+            const raw = String(value || '').toLowerCase().trim();
+            const match = (UI.categories || []).find(c => c.id.toLowerCase() === raw || UI.t(c.id).toLowerCase() === raw);
+            return match ? match.id : 'cat_other';
+        };
         if (!Data.store.settings) Data.store.settings = {};
         if (!Data.store.settings.subscriptionSort) Data.store.settings.subscriptionSort = "value";
         Finance.subscriptionSort = Data.store.settings.subscriptionSort;

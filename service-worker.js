@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v12.3-smarty-context-voice'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v22.1-bank-month'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -19,14 +19,9 @@ const ASSETS_TO_CACHE = [
   './assistant.js',
   './finance.js',
   './shopping.js',
+  './bank-bridge.js',
 
   // --- IMÁGENES DE FONDO ---
-  './bg1.png',
-  './bg2.png',
-  './bg3.png',
-  './bg4.png',
-  './bg5.png',
-
   // --- IMÁGENES DE LA MASCOTA ---
   './idle.png',
   './happy.png',

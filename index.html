@@ -242,6 +242,12 @@
         <input type="text" id="exp-desc" class="setting-input" placeholder="&iquest;En qu&eacute; gastaste?" data-i18n-ph="ph_desc">
         
         <div class="chips-container" id="cat-chips"></div>
+        <label for="exp-posting-month" data-i18n="exp_posting_month" style="display:block; font-size:13px; font-weight:700; margin-top:12px; margin-bottom:6px; color:var(--text-color);">¿En qué mes se pagará?</label>
+        <select id="exp-posting-month" class="setting-input" style="width:100%;">
+            <option value="current" data-i18n="exp_post_current">Este mes</option>
+            <option value="next" data-i18n="exp_post_next">El próximo mes (gasto previsto)</option>
+        </select>
+        <div data-i18n="exp_post_hint" style="font-size:11px; color:var(--text-sec); margin:5px 0 10px;">Los gastos del próximo mes no se descuentan del presupuesto actual.</div>
 
         <div class="setting-item" style="margin-top:10px;">
             <span data-i18n="lbl_is_inst">&iquest;Es Parcelado?</span>
@@ -500,6 +506,7 @@
     <script src="finance.js"></script>
     <script src="shopping.js"></script>
     <script src="main.js"></script>
+    <script src="bank-bridge.js"></script>
     
     <script>
     let newWorker;
