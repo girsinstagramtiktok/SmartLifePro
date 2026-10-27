@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v22.1-bank-month'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v22.2-native-camera'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const ASSETS_TO_CACHE = [
   './finance.js',
   './shopping.js',
   './bank-bridge.js',
+  './camera-bridge.js',
 
   // --- IMÁGENES DE FONDO ---
   // --- IMÁGENES DE LA MASCOTA ---

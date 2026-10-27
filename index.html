@@ -226,11 +226,12 @@
                 <button class="icon-btn" onclick="Main.closeModal('expense')">&#10005;</button>
             </div>
         </div>
-        <!-- NUEVO: Boton de Autocompletado IA -->
-        <div style="margin-bottom: 15px;">
-            <label class="btn-data" style="margin: 0; padding: 10px; cursor: pointer; border-style: dashed; border-color: var(--primary); display:flex; justify-content:center; align-items:center; gap:8px;">
+        <!-- La camara usa Capacitor; la galeria conserva el selector que ya funcionaba. -->
+        <div style="margin-bottom:15px; display:flex; gap:8px;">
+            <button type="button" class="btn-data" style="margin:0; padding:10px; flex:1; border-style:dashed; border-color:var(--primary);" onclick="SmartyCamera.take('expense-ai')">📷 Cámara Smarty</button>
+            <label class="btn-data" style="margin:0; padding:10px; flex:1; cursor:pointer; border-style:dashed; border-color:var(--primary);">
                 <input type="file" accept="image/*" style="display:none;" onchange="Finance.handleExpenseAutoFill(this)">
-                <span id="exp-autofill-status">🪄 Autocompletar con Recibo</span>
+                <span id="exp-autofill-status">🖼️ Galería Smarty</span>
             </label>
         </div>
 
@@ -350,10 +351,7 @@
                 <div class="manual-total-row"><label for="finish-manual-total">Total pagado (opcional)</label><input id="finish-manual-total" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Usar suma por artículo" oninput="Shopping.updateFinishTotal()"></div>
 <!-- NUEVO: Botones separados para Cámara y Galería -->
 <div style="margin-top: 15px; margin-bottom: 5px; display: flex; gap: 8px;">
-    <label class="btn-data" style="margin: 0; padding: 12px; flex: 1; cursor: pointer; border-style: dashed; border-color: var(--primary);">
-        <input type="file" id="receipt-photo-cam" accept="image/*" capture="environment" style="display:none;" onchange="Shopping.handleReceiptPhoto(this)">
-        <span>📷 Cámara</span>
-    </label>
+    <button type="button" class="btn-data" style="margin:0; padding:12px; flex:1; border-style:dashed; border-color:var(--primary);" onclick="SmartyCamera.take('list-finish')">📷 Cámara</button>
     <label class="btn-data" style="margin: 0; padding: 12px; flex: 1; cursor: pointer; border-style: dashed; border-color: var(--primary);">
         <input type="file" id="receipt-photo-gal" accept="image/*" style="display:none;" onchange="Shopping.handleReceiptPhoto(this)">
         <span>🖼️ Galería</span>
@@ -507,6 +505,7 @@
     <script src="shopping.js"></script>
     <script src="main.js"></script>
     <script src="bank-bridge.js"></script>
+    <script src="camera-bridge.js"></script>
     
     <script>
     let newWorker;
