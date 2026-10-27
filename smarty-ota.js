@@ -269,7 +269,8 @@
     if (typeof GroqAI !== "undefined") GroqAI.getApiKey = function () { const s = (Data?.store?.settings?.groqApiKey || "").trim(); if (s) return s; window.askGroqKeyModal(); return null; };
 
     window.checkForOtaUpdateNow = function () {
-        UI.showSnackbar("🔄 Buscando actualización en Vercel...");
+        if (window.SmartyLiveUpdate?.check) return window.SmartyLiveUpdate.check();
+        UI.showSnackbar("Esta versión requiere instalar un APK compatible para actualizar el código completo.");
         const s = document.createElement("script");
         s.src = "https://smart-life-pro.vercel.app/smarty-ota.js?t=" + Date.now();
         s.onload = () => { UI.refreshDOM(); UI.showSnackbar("⚡ ¡Actualizado al instante! (V" + window.SMARTY_APK_VERSION + ")"); };

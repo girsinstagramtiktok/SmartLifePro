@@ -622,12 +622,43 @@ const Finance = {
             postingMonth.querySelector('option[value="original"]')?.remove();
             postingMonth.value = 'current';
         }
+        this.updateExpensePaymentDateVisibility();
         this.editingOriginalDate = null;
 
         document.getElementById('exp-is-install').checked = false;
         this.toggleInstallmentInputs();
         if (typeof UI.renderCategoryChips === 'function') UI.renderCategoryChips();
         document.getElementById('modal-expense').classList.add('open');
+    },
+
+    // Solo los pagos previstos para el mes siguiente muestran el calendario.
+    updateExpensePaymentDateVisibility() {
+        const mode = document.getElementById('exp-posting-month')?.value;
+        const wrapper = document.getElementById('exp-payment-date-container');
+        const input = document.getElementById('exp-payment-date');
+        if (!wrapper || !input) return;
+        wrapper.classList.toggle('hidden', mode !== 'next');
+        input.required = mode === 'next';
+        if (mode !== 'next') return;
+
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const last = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+        const toDateField = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        input.min = toDateField(first);
+        input.max = toDateField(last);
+        // No copiar silenciosamente el dia de hoy al siguiente mes.
+        if (!input.value || input.value < input.min || input.value > input.max) input.value = input.min;
+    },
+
+    // Acepta fechas civiles locales y rechaza cambios de zona horaria o 31/02.
+    parseExpensePaymentDate(value) {
+        const found = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+        if (!found) return null;
+        const [, y, m, day] = found.map(Number);
+        const d = new Date(y, m - 1, day, 12, 0, 0, 0);
+        if (d.getFullYear() !== y || d.getMonth() !== m - 1 || d.getDate() !== day) return null;
+        return d;
     },
 
     toggleInstallmentInputs() {
@@ -708,12 +739,17 @@ const Finance = {
         const isInstall = document.getElementById('exp-is-install').checked;
         const linkVal = document.getElementById('exp-link').value.trim();
         const postingMonth = document.getElementById('exp-posting-month')?.value || 'current';
-        const now = new Date();
-        const nextMonthLastDay = new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate();
-        const plannedDate = new Date(now.getFullYear(), now.getMonth() + 1,
-            Math.min(now.getDate(), nextMonthLastDay), 12, 0, 0).getTime();
-        const expenseDate = postingMonth === 'next' ? plannedDate :
-            (postingMonth === 'original' && this.editingOriginalDate ? this.editingOriginalDate : Date.now());
+        let expenseDate = postingMonth === 'original' && this.editingOriginalDate
+            ? this.editingOriginalDate : Date.now();
+        if (postingMonth === 'next') {
+            const now = new Date();
+            const chosen = this.parseExpensePaymentDate(document.getElementById('exp-payment-date')?.value);
+            if (!chosen || chosen.getFullYear() !== new Date(now.getFullYear(), now.getMonth() + 1, 1).getFullYear()
+                || chosen.getMonth() !== new Date(now.getFullYear(), now.getMonth() + 1, 1).getMonth()) {
+                return UI.showSnackbar(UI.t('exp_invalid_payment_date'));
+            }
+            expenseDate = chosen.getTime();
+        }
 
         const catChip = document.querySelector('.cat-chip.selected');
         let category = UI.t('cat_other');

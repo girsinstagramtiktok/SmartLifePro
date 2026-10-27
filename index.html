@@ -244,10 +244,14 @@
         
         <div class="chips-container" id="cat-chips"></div>
         <label for="exp-posting-month" data-i18n="exp_posting_month" style="display:block; font-size:13px; font-weight:700; margin-top:12px; margin-bottom:6px; color:var(--text-color);">¿En qué mes se pagará?</label>
-        <select id="exp-posting-month" class="setting-input" style="width:100%;">
+        <select id="exp-posting-month" class="setting-input" style="width:100%;" onchange="Finance.updateExpensePaymentDateVisibility()">
             <option value="current" data-i18n="exp_post_current">Este mes</option>
             <option value="next" data-i18n="exp_post_next">El próximo mes (gasto previsto)</option>
         </select>
+        <div id="exp-payment-date-container" class="hidden" style="margin-top:10px;">
+            <label for="exp-payment-date" data-i18n="exp_payment_date" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:var(--text-color);">Fecha exacta del pago</label>
+            <input type="date" id="exp-payment-date" class="setting-input" style="width:100%; box-sizing:border-box;" required>
+        </div>
         <div data-i18n="exp_post_hint" style="font-size:11px; color:var(--text-sec); margin:5px 0 10px;">Los gastos del próximo mes no se descuentan del presupuesto actual.</div>
 
         <div class="setting-item" style="margin-top:10px;">
@@ -506,6 +510,8 @@
     <script src="main.js"></script>
     <script src="bank-bridge.js"></script>
     <script src="camera-bridge.js"></script>
+    <script src="ota-config.js"></script>
+    <script src="ota-client.js"></script>
     
     <script>
     let newWorker;
