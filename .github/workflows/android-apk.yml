@@ -32,7 +32,7 @@ jobs:
           mkdir -p www
 
           cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js www/
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
@@ -176,8 +176,8 @@ jobs:
             "        '<h3 style=\"margin:0 0 8px; color:var(--primary);\">📸 Crear Lista desde Ticket</h3>' +",
             "        '<p style=\"font-size:12px; color:var(--text-sec); margin:0 0 16px;\">Toma una foto al recibo del supermercado o elígela de tu galería para armar la lista ya con todos los precios:</p>' +",
             "        '<div style=\"display:flex; gap:10px; margin-bottom:12px;\">' +",
-            "          '<label class=\"btn-data\" style=\"margin:0; padding:14px; flex:1; cursor:pointer; border:1.5px dashed var(--primary);\"><input type=\"file\" accept=\"image/*\" capture=\"environment\" style=\"display:none;\" onchange=\"document.getElementById(\\x27ticket-source-modal\\x27)?.remove(); Shopping.createCompletedListFromReceipt(this);\"><span style=\"font-size:22px;\">📷</span><span>Cámara</span></label>' +",
-            "          '<label class=\"btn-data\" style=\"margin:0; padding:14px; flex:1; cursor:pointer; border:1.5px dashed var(--primary);\"><input type=\"file\" accept=\"image/*\" style=\"display:none;\" onchange=\"document.getElementById(\\x27ticket-source-modal\\x27)?.remove(); Shopping.createCompletedListFromReceipt(this);\"><span style=\"font-size:22px;\">🖼️</span><span>Galería</span></label>' +",
+            "          '<button type=\"button\" class=\"btn-data\" style=\"margin:0; padding:14px; flex:1; border:1.5px dashed var(--primary);\" onclick=\"SmartyCamera.take(\\x27list-new\\x27)\"><span style=\"font-size:22px;\">📷</span><span>Cámara</span></button>' +",
+            "          '<label class=\"btn-data\" style=\"margin:0; padding:14px; flex:1; cursor:pointer; border:1.5px dashed var(--primary);\"><input type=\"file\" accept=\"image/*\" style=\"display:none;\" onchange=\"Shopping.createCompletedListFromReceipt(this);\"><span style=\"font-size:22px;\">🖼️</span><span>Galería</span></label>' +",
             "        '</div>' +",
             "        '<button class=\"btn-danger-outline\" style=\"margin:0; padding:10px;\" onclick=\"document.getElementById(\\x27ticket-source-modal\\x27)?.remove()\">Cancelar</button>' +",
             "      '</div>';",
@@ -197,7 +197,7 @@ jobs:
             "    Shopping.createCompletedListFromReceipt = async function(input) {",
             "      const file = input?.files?.[0]; if (!file) return;",
             "      if (typeof GroqAI === 'undefined' || !GroqAI.getApiKey()) return;",
-            "      input.value = ''; UI.showSnackbar('⏳ Leyendo todos los productos y precios del ticket...');",
+            "      input.value = ''; document.getElementById('ticket-source-modal')?.remove(); UI.showSnackbar('⏳ Leyendo todos los productos y precios del ticket...');",
             "      try {",
             "        const parsed = await this.extractFullReceiptWithAI(file);",
             "        this.createList(true);",
@@ -220,7 +220,7 @@ jobs:
             "      const detailBox = document.getElementById('detail-items-list');",
             "      if (detailBox && !document.getElementById('hist-replace-receipt-bar')) {",
             "        const bar = document.createElement('div'); bar.id = 'hist-replace-receipt-bar'; bar.style.cssText = 'display:flex; gap:8px; margin-bottom:12px;';",
-            "        bar.innerHTML = '<label class=\"btn-data\" style=\"margin:0; padding:10px; flex:1; cursor:pointer; border-style:dashed; border-color:var(--primary); font-size:12px;\"><input type=\"file\" accept=\"image/*\" capture=\"environment\" style=\"display:none;\" onchange=\"Shopping.replaceCompletedListWithPhoto(this)\"><span>📷 Ticket Cámara</span></label>' +",
+            "        bar.innerHTML = '<button type=\"button\" class=\"btn-data\" style=\"margin:0; padding:10px; flex:1; border-style:dashed; border-color:var(--primary); font-size:12px;\" onclick=\"SmartyCamera.take(\\x27list-history\\x27)\">📷 Ticket Cámara</button>' +",
             "          '<label class=\"btn-data\" style=\"margin:0; padding:10px; flex:1; cursor:pointer; border-style:dashed; border-color:var(--primary); font-size:12px;\"><input type=\"file\" accept=\"image/*\" style=\"display:none;\" onchange=\"Shopping.replaceCompletedListWithPhoto(this)\"><span>🖼️ Ticket Galería</span></label>';",
             "        detailBox.parentNode.insertBefore(bar, detailBox);",
             "      }",
@@ -731,7 +731,7 @@ jobs:
           rm -f inject_apk.js
 
           npm init -y
-          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2
+          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2 @capacitor/camera@6.0.2 @capacitor/app@6.0.0
           npx cap add android
           npx cap sync android
 
@@ -958,7 +958,7 @@ jobs:
             "  @Override protected void onCreate(Bundle s) {",
             "    super.onCreate(s); hideSysNav();",
             "    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {",
-            "      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA}, 101);",
+            "      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 101);",
             "    }",
             "    if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {",
             "      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 102);",
@@ -983,7 +983,7 @@ jobs:
 
           let manifest = fs.readFileSync("android/app/src/main/AndroidManifest.xml", "utf8");
           if (!manifest.includes("QUERY_ALL_PACKAGES")) {
-              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.QUERY_ALL_PACKAGES\" />\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.CAMERA\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
+              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.QUERY_ALL_PACKAGES\" />\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
           }
           if (!manifest.includes("SmartyNotificationService")) {
               const svcs = [
