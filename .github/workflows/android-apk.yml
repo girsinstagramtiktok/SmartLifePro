@@ -1,6 +1,12 @@
 name: Build Smarty Android APK
 on:
-  # Una unica compilacion manual cuando cambia algo nativo; los cambios web van via OTA.
+  # Compila automaticamente al modificar este workflow en la rama principal.
+  # Los cambios solo de HTML, CSS o JS siguen el workflow OTA independiente.
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
 permissions:
@@ -744,9 +750,13 @@ jobs:
           set -euo pipefail
           echo '=== Android API 35, AGP 8.6.1 y Gradle 8.7 ==='
           sed -i -E 's/compileSdkVersion[[:space:]]*=[[:space:]]*34/compileSdkVersion = 35/' android/variables.gradle
+          # Google Play Services Tasks 18.4.1 exige al menos Android API 23.
+          # No se cambia targetSdkVersion; solo la version minima compatible.
+          sed -i -E 's/minSdkVersion[[:space:]]*=[[:space:]]*22/minSdkVersion = 23/' android/variables.gradle
           sed -i 's/com.android.tools.build:gradle:8.2.1/com.android.tools.build:gradle:8.6.1/g' android/build.gradle
           sed -i 's/gradle-8.2.1-all.zip/gradle-8.7-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           grep -Eq 'compileSdkVersion[[:space:]]*=[[:space:]]*35' android/variables.gradle || { echo '::error::compileSdk 35 no configurado'; exit 1; }
+          grep -Eq 'minSdkVersion[[:space:]]*=[[:space:]]*23' android/variables.gradle || { echo '::error::minSdk 23 no configurado'; exit 1; }
           grep -q 'com.android.tools.build:gradle:8.6.1' android/build.gradle || { echo '::error::AGP 8.6.1 no configurado'; exit 1; }
           grep -q 'gradle-8.7-all.zip' android/gradle/wrapper/gradle-wrapper.properties || { echo '::error::Gradle 8.7 no configurado'; exit 1; }
           if command -v sdkmanager >/dev/null 2>&1; then
@@ -754,6 +764,7 @@ jobs:
           fi
           echo '=== Versiones Android verificadas ==='
           grep 'compileSdkVersion' android/variables.gradle
+          grep 'minSdkVersion' android/variables.gradle
           grep 'com.android.tools.build:gradle:' android/build.gradle
           grep 'distributionUrl' android/gradle/wrapper/gradle-wrapper.properties
 
