@@ -1,0 +1,54 @@
+name: Publicar Smarty OTA (sin compilar APK)
+
+on:
+  push:
+    paths:
+      - '*.js'
+      - '*.html'
+      - '*.css'
+      - '*.json'
+      - '*.png'
+      - 'skins/**'
+      - 'tools/build-ota-bundle.cjs'
+      - '.github/workflows/android-apk.yml'
+      - '.github/workflows/ota-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: smarty-ota-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-web:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probar fechas, notificaciones y actualizador
+        run: |
+          TZ=America/Sao_Paulo node smarty-tests.cjs
+          node ota-tests.cjs
+      - name: Preparar archivos web (igual al APK)
+        run: node tools/build-ota-bundle.cjs
+      - name: Crear ZIP web con index.html en la raíz
+        run: |
+          cd www
+          zip -qr ../smarty-web.zip .
+          test -f index.html && test -f smarty-pro-addons.js
+      - name: Publicar una nueva version web en GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="ota-${GITHUB_SHA:0:12}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" smarty-web.zip --clobber
+          else
+            gh release create "$TAG" smarty-web.zip --title "Smarty Web $TAG" --notes "Actualizacion de archivos web. No requiere APK nuevo." --latest
+          fi

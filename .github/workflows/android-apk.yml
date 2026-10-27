@@ -1,6 +1,6 @@
 name: Build Smarty Android APK
 on:
-  push:
+  # Una unica compilacion manual cuando cambia algo nativo; los cambios web van via OTA.
   workflow_dispatch:
 
 permissions:
@@ -32,7 +32,8 @@ jobs:
           mkdir -p www
 
           cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js www/
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js ota-client.js www/
+          printf "window.SMARTY_OTA_REPOSITORY = %s;\n" "$(node -p 'JSON.stringify(process.env.GITHUB_REPOSITORY || "")')" > www/ota-config.js
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
@@ -622,7 +623,8 @@ jobs:
             "",
             "  // ACTUALIZADOR OTA SIN BLOQUEO CORS (Usa <script> directo + puente nativo Java)",
             "  window.checkForOtaUpdateNow = function() {",
-            "    UI.showSnackbar('🔄 Buscando actualización en Vercel...');",
+            "    if (window.SmartyLiveUpdate?.check) return window.SmartyLiveUpdate.check();",
+            "    UI.showSnackbar('Este APK necesita instalar la version compatible con actualizaciones.');",
             "    const oldVer = window.SMARTY_APK_VERSION;",
             "    const s = document.createElement('script');",
             "    s.src = 'https://smart-life-pro.vercel.app/smarty-ota.js?t=' + Date.now();",
@@ -723,7 +725,8 @@ jobs:
           fs.writeFileSync("capacitor.config.json", JSON.stringify({
             appId: "com.smartlife.pro",
             appName: "Smart Life Pro",
-            webDir: "www"
+            webDir: "www",
+            plugins: { CapacitorUpdater: { autoUpdate: false } }
           }, null, 2));
           EOF_SCRIPT
 
@@ -731,7 +734,7 @@ jobs:
           rm -f inject_apk.js
 
           npm init -y
-          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2 @capacitor/camera@6.0.2 @capacitor/app@6.0.0
+          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2 @capacitor/camera@6.0.2 @capacitor/app@6.0.0 @capgo/capacitor-updater@lts-v6
           npx cap add android
           npx cap sync android
 
