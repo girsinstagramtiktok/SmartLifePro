@@ -738,6 +738,25 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Configurar Android API 35 para Capacitor Updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== Android API 35, AGP 8.6.1 y Gradle 8.7 ==='
+          sed -i -E 's/compileSdkVersion[[:space:]]*=[[:space:]]*34/compileSdkVersion = 35/' android/variables.gradle
+          sed -i 's/com.android.tools.build:gradle:8.2.1/com.android.tools.build:gradle:8.6.1/g' android/build.gradle
+          sed -i 's/gradle-8.2.1-all.zip/gradle-8.7-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
+          grep -Eq 'compileSdkVersion[[:space:]]*=[[:space:]]*35' android/variables.gradle || { echo '::error::compileSdk 35 no configurado'; exit 1; }
+          grep -q 'com.android.tools.build:gradle:8.6.1' android/build.gradle || { echo '::error::AGP 8.6.1 no configurado'; exit 1; }
+          grep -q 'gradle-8.7-all.zip' android/gradle/wrapper/gradle-wrapper.properties || { echo '::error::Gradle 8.7 no configurado'; exit 1; }
+          if command -v sdkmanager >/dev/null 2>&1; then
+            sdkmanager 'platforms;android-35' 'build-tools;35.0.0' || { echo '::error::No se pudo instalar Android SDK 35'; exit 1; }
+          fi
+          echo '=== Versiones Android verificadas ==='
+          grep 'compileSdkVersion' android/variables.gradle
+          grep 'com.android.tools.build:gradle:' android/build.gradle
+          grep 'distributionUrl' android/gradle/wrapper/gradle-wrapper.properties
+
       - name: Verificar que el actualizador OTA quedo incluido en Android
         shell: bash
         run: |
