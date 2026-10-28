@@ -1,150 +1,110 @@
-/*
- * Smarty OTA - consulta manual de actualizaciones web desde GitHub Releases.
- * Compatible con Capacitor Updater (Capgo) v6 y con el codigo base de Smarty.
- * No modifica ni elimina registros financieros.
- */
+/* Smarty OTA: cliente integrado, preparado para funcionar sin Vercel */
 (function () {
-    'use strict';
+  'use strict';
+  if (window.__smartyOtaClientInstalled) return;
+  window.__smartyOtaClientInstalled = true;
+  var busy = false;
+  var REPO = 'girsinstagramtiktok/SmartLifePro';
+  var RELEASES_URL = 'https://api.github.com/repos/' + REPO + '/releases?per_page=30';
+  var VERSION_RE = /^ota-[a-f0-9]{12}$/i;
 
-    let busy = false;
-    const updater = () => window.Capacitor?.Plugins?.CapacitorUpdater;
-    const repo = () => String(window.SMARTY_OTA_REPOSITORY || '').trim();
-
-    // En Smarty, UI se declara con `const UI`, NO como `window.UI`.
-    // Por eso la comprobacion anterior con window.UI dejaba los errores invisibles.
-    function feedback(message, isError = false) {
-        const text = String(message);
-        const button = document.querySelector?.('button[onclick*="checkForOtaUpdateNow"]');
-        if (button && button.parentNode) {
-            let status = document.getElementById('smarty-ota-status');
-            if (!status || !status.isConnected) {
-                status = document.createElement('div');
-                status.id = 'smarty-ota-status';
-                status.setAttribute('role', 'status');
-                status.setAttribute('aria-live', 'polite');
-                status.style.cssText = 'font-size:12px;line-height:1.4;padding:9px 11px;margin:0 0 12px;border-radius:10px;white-space:normal;overflow-wrap:anywhere;';
-                button.insertAdjacentElement('afterend', status);
-            }
-            status.style.background = isError ? 'rgba(229,62,62,.12)' : 'var(--input-bg,rgba(127,127,127,.12))';
-            status.style.color = isError ? 'var(--danger,#d33b3b)' : 'var(--text-color,inherit)';
-            status.textContent = text;
-        }
-        try {
-            if (typeof UI !== 'undefined' && typeof UI.showSnackbar === 'function') {
-                UI.showSnackbar(text.replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[ch] || ch)));
-            } else if (window.UI?.showSnackbar) {
-                window.UI.showSnackbar(text.replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[ch] || ch)));
-            }
-        } catch (err) {
-            console.warn('[SmartyOTA] No se pudo mostrar el aviso:', err);
-        }
-        console.info('[SmartyOTA]', text);
+  function inform(message, isError) {
+    var text = String(message || '');
+    var button = document.querySelector('button[onclick*="checkForOtaUpdateNow"]');
+    if (button) {
+      var pane = document.getElementById('smarty-ota-rescue-status');
+      if (!pane || !pane.isConnected) {
+        pane = document.createElement('div');
+        pane.id = 'smarty-ota-rescue-status';
+        pane.setAttribute('role', 'status');
+        pane.setAttribute('aria-live', 'polite');
+        pane.style.cssText = 'padding:10px 12px;margin:0 0 12px;border-radius:10px;font-size:12px;line-height:1.5;overflow-wrap:anywhere;';
+        button.insertAdjacentElement('afterend', pane);
+      }
+      pane.style.background = isError ? 'rgba(220,38,38,.12)' : 'rgba(75,135,160,.15)';
+      pane.style.color = isError ? 'var(--danger,#d22)' : 'var(--text-color,inherit)';
+      pane.textContent = text;
     }
+    console[isError ? 'error' : 'info']('[Smarty OTA]', text);
+  }
 
-    function getReleaseAsset(release, repository) {
-        if (!/^ota-[0-9a-f]{12}$/.test(release?.tag_name || '')) return null;
-        const asset = (release.assets || []).find(a => a.name === 'smarty-web.zip');
-        if (!asset?.browser_download_url || !Number.isFinite(asset.size) || asset.size < 512) return null;
-        const expected = `https://github.com/${repository}/releases/download/${release.tag_name}/smarty-web.zip`;
-        if (asset.browser_download_url !== expected) return null;
-        return { version: release.tag_name, url: expected };
-    }
-
-    async function fetchGitHub(url) {
-        // Cada consulta tiene un plazo maximo para no dejar el boton congelado.
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        let timer;
-        try {
-            if (controller) timer = setTimeout(() => controller.abort(), 15000);
-            const response = await fetch(url, {
-                cache: 'no-store',
-                headers: { Accept: 'application/vnd.github+json' },
-                ...(controller ? { signal: controller.signal } : {})
-            });
-            if (response.status === 404) throw new Error('No se puede consultar el repositorio. Comprueba que sea publico y tenga Releases.');
-            if (!response.ok) throw new Error(`GitHub devolvio HTTP ${response.status}`);
-            return await response.json();
-        } catch (err) {
-            if (err?.name === 'AbortError') throw new Error('La consulta a GitHub excedio 15 segundos. Comprueba la conexion.');
-            throw err;
-        } finally {
-            if (timer) clearTimeout(timer);
-        }
-    }
-
-    async function getLatestOta(repository) {
-        const base = `https://api.github.com/repos/${repository}`;
-        const latest = await fetchGitHub(`${base}/releases/latest`);
-        const result = getReleaseAsset(latest, repository);
-        if (result) return result;
-        // Si la ultima publicacion es un APK, buscar el ultimo Release OTA.
-        const releases = await fetchGitHub(`${base}/releases?per_page=15`);
-        if (!Array.isArray(releases)) throw new Error('GitHub devolvio una respuesta inesperada.');
-        const otaRelease = releases.find(r => !r.draft && !r.prerelease && getReleaseAsset(r, repository));
-        if (!otaRelease) throw new Error('No hay una publicacion OTA valida con smarty-web.zip en los ultimos 15 Releases.');
-        return getReleaseAsset(otaRelease, repository);
-    }
-
-    async function check() {
-        if (busy) {
-            feedback('Ya hay una comprobacion o descarga en curso.');
-            return;
-        }
-        const plugin = updater();
-        if (!plugin?.download || !plugin?.set || !plugin?.current) {
-            feedback('No se detecta el complemento OTA. Comprueba que este APK incluya Capacitor Updater.', true);
-            return;
-        }
-        const repository = repo();
-        if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
-            feedback('No esta configurado el repositorio OTA de GitHub.', true);
-            return;
-        }
-
-        busy = true;
-        try {
-            feedback('Consultando actualizaciones de Smarty en GitHub...');
-            const update = await getLatestOta(repository);
-            feedback(`Ultima version publicada: ${update.version}. Comprobando instalacion...`);
-            const current = await plugin.current();
-            const installedVersion = current?.bundle?.version || '';
-            if (installedVersion === update.version) {
-                feedback('Smarty ya tiene instalada la última actualización web.');
-                return;
-            }
-            feedback('Actualizacion disponible. Descargando el paquete web...');
-            const bundle = await plugin.download(update);
-            if (!bundle?.id) throw new Error('El complemento no devolvio un paquete valido.');
-            feedback('Descarga finalizada. Aplicando actualizacion; Smarty se reiniciara...');
-            // El metodo `set` recibe un BundleId, no el objeto completo devuelto por download.
-            await plugin.set({ id: bundle.id });
-        } catch (err) {
-            console.error('[SmartyOTA] Error al actualizar:', err);
-            feedback(`No se pudo actualizar: ${err?.message || 'Error desconocido.'}`, true);
-        } finally {
-            busy = false;
-        }
-    }
-
-    window.SmartyLiveUpdate = { check, getReleaseAsset };
-    window.checkForOtaUpdateNow = check;
-
-    // En la version antigua, el codigo exigia un evento de carga exitoso.
-    // Se mantiene para evitar un rollback del paquete instalado.
-    window.addEventListener('load', () => {
-        const plugin = updater();
-        if (plugin?.notifyAppReady) {
-            Promise.resolve(plugin.notifyAppReady()).catch(err => console.error('[SmartyOTA] AppReady:', err));
-        }
+  function chooseOta(releases) {
+    if (!Array.isArray(releases)) throw new Error('Respuesta incorrecta de GitHub Releases.');
+    var candidates = releases.filter(function (release) {
+      return !release.draft && !release.prerelease && VERSION_RE.test(release.tag_name || '') &&
+        Array.isArray(release.assets) && release.assets.some(function (asset) {
+          return asset.name === 'smarty-web.zip' && Number(asset.size) > 512;
+        });
     });
+    if (!candidates.length) throw new Error('No existe un Release OTA publico con smarty-web.zip. Comprueba GitHub > Releases.');
+    candidates.sort(function (a, b) {
+      return Date.parse(b.published_at || b.created_at || 0) - Date.parse(a.published_at || a.created_at || 0);
+    });
+    var r = candidates[0];
+    // Construir la direccion de descarga desde un origen fijo, no desde datos arbitrarios de la API.
+    return {
+      version: r.tag_name,
+      url: 'https://github.com/' + REPO + '/releases/download/' + r.tag_name + '/smarty-web.zip'
+    };
+  }
 
-    // El modulo inyectado en APK puede redefinir el onclick del boton.
-    // La captura delegada garantiza que se ejecute un unico comprobador OTA.
-    document.addEventListener('click', event => {
-        const button = event.target?.closest?.('button[onclick*="checkForOtaUpdateNow"]');
-        if (!button) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        void check();
-    }, true);
+  async function check() {
+    if (busy) { inform('Ya hay una comprobacion o descarga en curso.'); return; }
+    var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater;
+    if (!plugin || typeof plugin.current !== 'function' || typeof plugin.download !== 'function' || typeof plugin.set !== 'function') {
+      inform('Capacitor Updater no esta disponible en este APK. La version web no puede instalarlo.', true);
+      return;
+    }
+    busy = true;
+    var timer;
+    try {
+      inform('Buscando paquetes OTA en GitHub Releases...');
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      if (controller) timer = setTimeout(function () { controller.abort(); }, 20000);
+      var response = await fetch(RELEASES_URL, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/vnd.github+json' },
+        ...(controller ? { signal: controller.signal } : {})
+      });
+      if (response.status === 404) throw new Error('GitHub devuelve 404. Comprueba que el repositorio y sus Releases sean publicos.');
+      if (!response.ok) throw new Error('GitHub devuelve HTTP ' + response.status + '.');
+      var release = chooseOta(await response.json());
+      var current = await plugin.current();
+      var version = current && current.bundle && current.bundle.version || '';
+      if (version === release.version) {
+        inform('Smarty ya tiene instalada la version OTA ' + release.version + '.');
+        return;
+      }
+      inform('Nueva version ' + release.version + '. Descargando el paquete...');
+      var bundle = await plugin.download(release);
+      if (!bundle || !bundle.id) throw new Error('Android no devolvio un paquete descargado valido.');
+      inform('Paquete descargado. Aplicando cambios y reiniciando Smarty...');
+      await plugin.set(bundle);
+    } catch (error) {
+      var msg = error && error.name === 'AbortError' ? 'La conexion con GitHub excedio 20 segundos.' :
+        (error && error.message || String(error));
+      inform('La actualizacion no se pudo completar: ' + msg, true);
+    } finally {
+      if (timer) clearTimeout(timer);
+      busy = false;
+    }
+  }
+
+  // En el APK antiguo ota-client.js intercepta el clic en la fase de captura de document.
+  // Escuchar en window (que recibe la captura antes de document) permite rescatarlo desde Vercel.
+  window.addEventListener('click', function (event) {
+    var target = event.target;
+    var button = target && target.closest && target.closest('button[onclick*="checkForOtaUpdateNow"]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    check();
+  }, true);
+  window.checkForOtaUpdateNow = check;
+  window.SmartyLiveUpdate = { check: check, chooseOta: chooseOta };
+  var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater;
+  if (plugin && typeof plugin.notifyAppReady === 'function') {
+    Promise.resolve(plugin.notifyAppReady()).catch(function (err) { console.error('[Smarty OTA] AppReady', err); });
+  }
 })();
