@@ -1,8 +1,8 @@
 {
   "channel": "stable",
-  "tag": "ota-ef0b1ad4a4de",
-  "version": "1.0.0-ef0b1ad4a4de",
-  "url": "https://github.com/girsinstagramtiktok/SmartLifePro/releases/download/ota-ef0b1ad4a4de/smarty-web.zip",
-  "sha256": "42254051f611f7703c6f1e7b6e6de1c3654ca06a119883668ab931a7a0a6a324",
-  "publishedAt": "2026-10-28T01:13:10.477Z"
+  "tag": "ota-e2c74fde0aca",
+  "version": "1.0.0-e2c74fde0aca",
+  "url": "https://github.com/girsinstagramtiktok/SmartLifePro/releases/download/ota-e2c74fde0aca/smarty-web.zip",
+  "sha256": "00495ce302f37bce68a7d32c3094934e8a2e63fcebb50fdf962565c24641d0cc",
+  "publishedAt": "2026-10-28T01:29:41.944Z"
 }
