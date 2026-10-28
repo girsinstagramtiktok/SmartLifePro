@@ -67,3 +67,52 @@ jobs:
           unzip -t /tmp/smarty-published.zip
           cmp smarty-web.zip /tmp/smarty-published.zip || { echo '::error::El ZIP publicado no coincide con el validado.'; exit 1; }
           echo 'OK: el paquete publicado puede descargarse sin autenticación y coincide con el aprobado.'
+
+      # El teléfono consulta un JSON público estático, no api.github.com.
+      # Solo se anuncia una versión cuando el ZIP publicado ha sido verificado.
+      - name: Publicar canal estable (rama smarty-ota)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="ota-${GITHUB_SHA:0:12}"
+          VERSION="1.0.0-${GITHUB_SHA:0:12}"
+          HASH="$(sha256sum smarty-web.zip | cut -d' ' -f1)"
+          export TAG VERSION HASH
+          mkdir -p .ota-publish
+          git -C .ota-publish init -q
+          git -C .ota-publish remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git -C .ota-publish config user.name 'github-actions[bot]'
+          git -C .ota-publish config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git -C .ota-publish ls-remote --exit-code --heads origin smarty-ota >/dev/null 2>&1; then
+            git -C .ota-publish fetch -q --depth=1 origin smarty-ota
+            git -C .ota-publish checkout -q -b smarty-ota FETCH_HEAD
+          else
+            git -C .ota-publish checkout -q -b smarty-ota
+          fi
+          node -e '
+            const fs=require("fs");
+            const p={channel:"stable",tag:process.env.TAG,version:process.env.VERSION,url:`https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${process.env.TAG}/smarty-web.zip`,sha256:process.env.HASH,publishedAt:new Date().toISOString()};
+            fs.writeFileSync(".ota-publish/manifest.json",JSON.stringify(p,null,2)+"\n");
+          ' 
+          git -C .ota-publish add manifest.json
+          if ! git -C .ota-publish diff --cached --quiet; then
+            git -C .ota-publish commit -q -m "Publicar Smarty ${TAG}"
+            AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+            git -C .ota-publish -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${AUTH}" push -q origin HEAD:refs/heads/smarty-ota
+          fi
+      - name: Verificar canal público sin API GitHub
+        run: |
+          set -euo pipefail
+          TAG="ota-${GITHUB_SHA:0:12}"
+          URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/smarty-ota/manifest.json"
+          for i in $(seq 1 10); do
+            if curl -fsSL --max-time 20 "${URL}?check=${GITHUB_SHA}-${i}" -o /tmp/smarty-ota-manifest.json && \
+              node -e 'const f=require("/tmp/smarty-ota-manifest.json");if(f.tag!==process.argv[1]||f.channel!=="stable")process.exit(1)' "$TAG"; then
+              echo "OK: canal OTA público operativo, versión ${TAG}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo '::error::El manifiesto no está disponible públicamente. Comprueba que el repositorio sea público.'
+          exit 1

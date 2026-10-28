@@ -1,6 +1,7 @@
 name: Build Smarty Android APK
 on:
-  # Compila automaticamente al modificar este workflow en la rama principal.
+  # Compila automáticamente al modificar este workflow en main.
+  # Recuperación OTA: cliente de manifiesto estático sin api.github.com (oct. 2026).
   # Los cambios solo de HTML, CSS o JS siguen el workflow OTA independiente.
   push:
     branches:
