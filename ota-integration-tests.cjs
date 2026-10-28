@@ -30,8 +30,11 @@ assert.ok(!scripts.includes('ota-client.js'),
   'El APK todavía carga ota-client.js, que REEMPLAZA el botón Vercel por el ZIP de GitHub');
 assert.ok(!scripts.includes('ota-config.js'),
   'El APK todavía carga la configuración del cliente ZIP anterior');
-assert.ok(!scripts.includes('smarty-ota.js'),
-  'El parche remoto debe cargarse bajo demanda, no desde un archivo local desactualizado');
+assert.equal(scripts[mainIndex + 2], 'smarty-ota.js',
+  'El parche visual DEBE ejecutarse localmente, antes del primer render del inicio');
+assert.match(read('smarty-ota.js'), /smarty-light-2026-10-28-05/, 'Parche local equivocado');
+assert.match(html, /id=\"smarty-prepaint\"/, 'Falta ocultación anti-parpadeo');
+assert.match(html, /#view-home\{visibility:hidden!important\}/, 'La ocultación debe empezar antes del primer render');
 assert.ok(!html.includes("'serviceWorker' in navigator"),
   'El APK no debe registrar un service worker PWA antiguo');
 
@@ -71,4 +74,4 @@ window.SMARTY_PATCH_BUILD_ID='smarty-light-test';
 remoteScript.onload();
 assert.match(status.textContent,/Actualización ligera aplicada: smarty-light-test/);
 
-console.log('OK: APK generado utiliza exclusivamente Vercel; botón probado; ningún cliente ZIP carga ni sobrescribe la función.');
+console.log('OK: APK usa estilo inicial local, sin parpadeo; Vercel permanece como actualizador manual y remoto.');

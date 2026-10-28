@@ -575,6 +575,8 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     setupMascot();
     applyTheme(readSetting(STORE_KEY,'glass'));
     installTips();
+    // La vista se muestra solo cuando la estructura y los estilos ya están colocados.
+    document.getElementById('smarty-prepaint')?.remove();
   }
   document.addEventListener('keydown',e=>{if(e.key==='Escape') closePicker();});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',run,{once:true});
