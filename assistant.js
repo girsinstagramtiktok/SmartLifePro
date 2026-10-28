@@ -1275,14 +1275,22 @@ const Assistant = {
     giveTip() {
         this.updateMood('thinking.png');
         const tip = this.getSmartTip();
-        let bubble = document.getElementById('mascot-bubble');
-        if(!bubble) {
-            bubble = document.createElement('div'); bubble.id = 'mascot-bubble'; bubble.className = 'mascot-bubble-side'; 
-            bubble.style.cssText = "position:absolute; top:-40px; right:-20px; background:white; padding:10px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); font-size:11px; z-index:99; pointer-events:none; opacity:0; transition:all 0.3s; min-width:120px;";
-            const img = document.getElementById('mascot-img'); if(img && img.parentElement) img.parentElement.appendChild(bubble);
+        let overlay = document.getElementById('smarty-floating-tip');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'smarty-floating-tip';
+            overlay.setAttribute('role', 'status');
+            overlay.setAttribute('aria-live', 'polite');
+            overlay.setAttribute('aria-atomic', 'true');
+            document.body.appendChild(overlay); // NO dentro del panel con overflow:hidden
         }
-        bubble.innerText = tip; bubble.style.opacity = '1'; bubble.style.transform = 'scale(1)';
-        setTimeout(() => { bubble.style.opacity = '0'; bubble.style.transform = 'scale(0.8)'; this.updateMood(); }, 5000);
+        overlay.textContent = tip;
+        overlay.classList.add('is-visible');
+        clearTimeout(this._smartyTipTimeout);
+        this._smartyTipTimeout = setTimeout(() => {
+            overlay.classList.remove('is-visible');
+            this.updateMood();
+        }, 8500);
     },
 
     getSmartTip() {
