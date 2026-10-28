@@ -37,11 +37,14 @@ jobs:
           node ota-tests.cjs
       - name: Preparar archivos web (igual al APK)
         run: node tools/build-ota-bundle.cjs
+      - name: Verificar bundle OTA completo
+        run: node ota-integration-tests.cjs
       - name: Crear ZIP web con index.html en la raíz
         run: |
           cd www
           zip -qr ../smarty-web.zip .
-          test -f index.html && test -f smarty-pro-addons.js
+          test -f index.html && test -f smarty-pro-addons.js && test -f ota-client.js
+          unzip -t ../smarty-web.zip
       - name: Publicar una nueva version web en GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,3 +55,15 @@ jobs:
           else
             gh release create "$TAG" smarty-web.zip --title "Smarty Web $TAG" --notes "Actualizacion de archivos web. No requiere APK nuevo." --latest
           fi
+      - name: Verificar descarga publica del Release OTA
+        env:
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="ota-${GITHUB_SHA:0:12}"
+          URL="https://github.com/${GH_REPOSITORY}/releases/download/${TAG}/smarty-web.zip"
+          echo "Verificando descarga pública de ${TAG} (sin credenciales)..."
+          curl -fLsS --retry 4 --retry-all-errors --retry-delay 4 --max-time 90 "$URL" -o /tmp/smarty-published.zip
+          unzip -t /tmp/smarty-published.zip
+          cmp smarty-web.zip /tmp/smarty-published.zip || { echo '::error::El ZIP publicado no coincide con el validado.'; exit 1; }
+          echo 'OK: el paquete publicado puede descargarse sin autenticación y coincide con el aprobado.'

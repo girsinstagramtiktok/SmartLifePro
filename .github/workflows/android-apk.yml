@@ -37,6 +37,9 @@ jobs:
           rm -rf www android package.json package-lock.json capacitor.config.json node_modules
           mkdir -p www
 
+          TZ=America/Sao_Paulo node smarty-tests.cjs
+          node ota-tests.cjs
+
           cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
           cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js ota-client.js www/
           printf "window.SMARTY_OTA_REPOSITORY = %s;\n" "$(node -p 'JSON.stringify(process.env.GITHUB_REPOSITORY || "")')" > www/ota-config.js
@@ -627,19 +630,11 @@ jobs:
             "  };",
             "  if (typeof GroqAI !== 'undefined') GroqAI.getApiKey = function() { const s = (Data?.store?.settings?.groqApiKey || '').trim(); if (s) return s; window.askGroqKeyModal(); return null; };",
             "",
-            "  // ACTUALIZADOR OTA SIN BLOQUEO CORS (Usa <script> directo + puente nativo Java)",
+            "  // Actualizador único: no cargar ni ejecutar scripts desde Vercel.",
             "  window.checkForOtaUpdateNow = function() {",
             "    if (window.SmartyLiveUpdate?.check) return window.SmartyLiveUpdate.check();",
-            "    UI.showSnackbar('Este APK necesita instalar la version compatible con actualizaciones.');",
-            "    const oldVer = window.SMARTY_APK_VERSION;",
-            "    const s = document.createElement('script');",
-            "    s.src = 'https://smart-life-pro.vercel.app/smarty-ota.js?t=' + Date.now();",
-            "    s.onload = () => {",
-            "      if (typeof UI !== 'undefined') UI.refreshDOM();",
-            "      UI.showSnackbar('⚡ ¡Actualizado al instante! (V' + window.SMARTY_APK_VERSION + ')');",
-            "    };",
-            "    s.onerror = () => UI.showSnackbar('✅ Versión activa: V' + oldVer);",
-            "    document.head.appendChild(s);",
+            "    const btn = document.querySelector('button[onclick*=\"checkForOtaUpdateNow\"]');",
+            "    if (btn) btn.insertAdjacentText('afterend', 'El cliente OTA no se ha cargado; comprueba ota-client.js.');",
             "  };",
             "",
             "  function hookSettingsAndExtras() {",
@@ -710,10 +705,7 @@ jobs:
             "    hookSettingsAndExtras();",
             "    setTimeout(() => {",
             "      if (typeof UI !== 'undefined') UI.refreshDOM();",
-            "      // Auto-cargar smarty-ota.js desde Vercel sin bloqueo CORS",
-            "      const s = document.createElement('script');",
-            "      s.src = 'https://smart-life-pro.vercel.app/smarty-ota.js?t=' + Date.now();",
-            "      document.head.appendChild(s);",
+            "      // OTA local: ya está inicializado por ota-client.js, sin Vercel.",
             "    }, 450);",
             "  });",
             "})();"
@@ -737,6 +729,7 @@ jobs:
           EOF_SCRIPT
 
           node inject_apk.js
+          node ota-integration-tests.cjs
           rm -f inject_apk.js
 
           npm init -y
