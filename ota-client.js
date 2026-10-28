@@ -1,5 +1,7 @@
 /* Smarty Live Update v2 — un único mecanismo OTA para APK Capacitor 6.
- * Paquetes: GitHub Releases públicos (smarty-web.zip). No se ejecuta JS remoto desde Vercel.
+ * Paquetes: manifest.json estático en la rama smarty-ota + ZIP público de GitHub Releases.
+ * La aplicación no consulta la API REST pública de GitHub, por lo que no consume el límite REST anónimo.
+ * No se ejecuta JS remoto desde Vercel.
  * API y lógica de versiones comprobadas por ota-tests.cjs y ota-integration-tests.cjs.
  */
 (function () {
@@ -9,6 +11,8 @@
   const ZIP_NAME = 'smarty-web.zip';
   const TAG_PATTERN = /^ota-[0-9a-f]{12}$/;
   let busy = false;
+  const MANIFEST_BRANCH = "smarty-ota";
+  const VERSION_PATTERN = /^1\.0\.0-[0-9a-f]{12}$/;
 
   function repositoryName() {
     return String(window.SMARTY_OTA_REPOSITORY || DEFAULT_REPOSITORY).trim();
@@ -59,6 +63,26 @@
     return matches.length ? matches[0].asset : null;
   }
 
+  function manifestURL(repository, nonce) {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repository || '')) throw new Error('Repositorio inválido.');
+    const [owner, repo] = repository.split('/');
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${MANIFEST_BRANCH}/manifest.json?t=${encodeURIComponent(nonce)}`;
+  }
+
+  function parseManifest(data, repository) {
+    if (!data || typeof data !== 'object' || data.channel !== 'stable') {
+      throw new Error('El manifiesto OTA es inválido.');
+    }
+    const tag = String(data.tag || '');
+    const version = String(data.version || '');
+    if (!TAG_PATTERN.test(tag) || !VERSION_PATTERN.test(version) || version !== `1.0.0-${tag.slice(4)}`) {
+      throw new Error('La versión publicada no es válida.');
+    }
+    const url = `https://github.com/${repository}/releases/download/${tag}/${ZIP_NAME}`;
+    if (data.url !== url) throw new Error('Origen del paquete OTA no autorizado.');
+    return { version, url };
+  }
+
   async function clearLegacyNativeCache() {
     if (!(window.Capacitor?.isNativePlatform?.() || window.SmartyAndroid)) return;
     try {
@@ -88,21 +112,19 @@
     busy = true;
     let timer;
     try {
-      visibleStatus('Consultando actualizaciones de Smarty en GitHub...');
+      visibleStatus('Consultando el canal estable de Smarty...');
       const controller = typeof AbortController === 'function' ? new AbortController() : null;
       if (controller) timer = setTimeout(() => controller.abort(), 20000);
-      const response = await fetch(`https://api.github.com/repos/${repository}/releases?per_page=50`, {
+      const response = await fetch(manifestURL(repository, Date.now()), {
         cache: 'no-store',
-        headers: { 'Accept': 'application/vnd.github+json' },
+        headers: { 'Accept': 'application/json' },
         ...(controller ? { signal: controller.signal } : {})
       });
       if (!response.ok) {
-        if (response.status === 404) throw new Error('GitHub devuelve 404. Revisa que el repositorio y sus Releases sean públicos.');
-        if (response.status === 403) throw new Error('GitHub ha limitado las consultas (HTTP 403). Reintenta más tarde.');
-        throw new Error(`GitHub devolvió HTTP ${response.status}.`);
+        if (response.status === 404) throw new Error('Canal OTA no publicado. Comprueba que Actions haya creado la rama smarty-ota.');
+        throw new Error(`Canal OTA inaccesible (HTTP ${response.status}).`);
       }
-      const update = chooseLatestOta(await response.json(), repository);
-      if (!update) throw new Error('No hay ningún Release OTA válido con smarty-web.zip. Revisa Actions y Releases.');
+      const update = parseManifest(await response.json(), repository);
       const current = await installed.current();
       if (current?.bundle?.version === update.version) {
         visibleStatus(`Smarty ya tiene instalada la última actualización (${update.version}).`);
@@ -115,7 +137,7 @@
       visibleStatus('Actualización descargada. Aplicando y reiniciando Smarty...');
       await installed.set({ id: bundle.id }); // API pública: set espera BundleId { id }
     } catch (err) {
-      const reason = err?.name === 'AbortError' ? 'La conexión con GitHub superó 20 segundos.' : (err?.message || String(err));
+      const reason = err?.name === 'AbortError' ? 'La consulta del canal de actualizaciones superó 20 segundos.' : (err?.message || String(err));
       visibleStatus(`No se pudo actualizar: ${reason}`, true);
     } finally {
       if (timer) clearTimeout(timer);
@@ -131,10 +153,9 @@
   }
 
   // Llamada estable desde el botón del complemento Smarty. No hay interceptores globales ni Vercel.
-  window.SmartyLiveUpdate = { check, getReleaseAsset, chooseLatestOta, clearLegacyNativeCache };
+  window.SmartyLiveUpdate = { check, getReleaseAsset, chooseLatestOta, manifestURL, parseManifest, clearLegacyNativeCache };
   window.checkForOtaUpdateNow = check;
-  if (document.readyState === 'complete') notifyReady();
-  else window.addEventListener('load', notifyReady, { once:true });
+  notifyReady(); // Debe ejecutarse al inicializar, sin esperar solicitudes HTTP.
   // Evita que los cachés de un service worker antiguo anulen los nuevos bundles nativos.
   clearLegacyNativeCache();
 })();

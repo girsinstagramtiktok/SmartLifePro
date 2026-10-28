@@ -19,6 +19,7 @@ assert(!addons.includes('smart-life-pro.vercel.app'),'El bundle sigue ejecutando
 assert(!addons.includes('document.head.appendChild(s)'),'El bundle incluye el cargador heredado de scripts');
 assert(!index.includes('src="smarty-ota.js"'),'No debe cargar el módulo heredado');
 assert(!index.includes("'serviceWorker' in navigator"),'El APK no debe registrar PWA Service Worker');
-assert(client.includes('chooseLatestOta') && client.includes('notifyAppReady'),'Falta mecanismo OTA completo');
+assert(client.includes('parseManifest') && client.includes('notifyAppReady'),'Falta mecanismo OTA por manifiesto');
+assert(!client.includes('api.github.com'), 'La app no debe usar la API REST pública de GitHub');
 assert(config.includes('SMARTY_OTA_REPOSITORY'),'No se configuró repo OTA');
 console.log('OK: bundle web real integra el botón, cliente, repo y módulos sin Vercel ni service worker PWA.');

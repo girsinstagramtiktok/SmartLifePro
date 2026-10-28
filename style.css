@@ -1280,3 +1280,35 @@ body.dark-mode #view-home .fin-categories-section .fin-module-icon{background:rg
 #view-home .fin-smarty-dialog .mascot-bubble-side{opacity:1!important;transform:none!important}
 @media(max-width:365px){#view-home .fin-smarty-portrait #mascot-img{width:76px!important;height:68px!important;margin-left:-38px!important}}
 @media(max-height:750px){#view-home .fin-smarty-portrait #mascot-img{height:67px!important}}
+
+
+/* 2026-10-27: panel compacto — círculo más a la izquierda y Smarty sin recorte facial.
+   Alcance limitado a la pantalla de inicio, sin cambiar otros avatares. */
+#view-home .fin-hero-main { padding-right: 13px; }
+#view-home .fin-hero-donut { transform: translateX(-3px); }
+#view-home .fin-smarty-dock { margin-top: 7px; }
+#view-home .fin-smarty-portrait { height: 60px; overflow: visible; }
+#view-home .fin-smarty-aura { bottom: 0; }
+#view-home .fin-smarty-portrait #mascot-img {
+  position: relative!important;
+  left: auto!important;
+  bottom: auto!important;
+  width: 77px!important;
+  height: 71px!important;
+  max-width: 77px!important;
+  max-height: 71px!important;
+  margin: 0 auto!important;
+  object-fit: cover!important;
+  object-position: center 24%!important;
+}
+@media(max-width:365px) {
+  #view-home .fin-hero-main { padding-right: 9px; }
+  #view-home .fin-smarty-dock { margin-top: 7px; }
+  #view-home .fin-smarty-portrait { height: 57px; }
+  #view-home .fin-smarty-portrait #mascot-img { width: 72px!important; height: 67px!important; max-width:72px!important; max-height:67px!important; }
+}
+@media(max-height:750px) {
+  #view-home .fin-smarty-dock { margin-top: 6px; }
+  #view-home .fin-smarty-portrait { height: 56px; }
+  #view-home .fin-smarty-portrait #mascot-img { height: 66px!important; max-height:66px!important; }
+}

@@ -29,9 +29,9 @@ async function run(options={}) {
   };
   const document={readyState:'complete',querySelector(){return button},getElementById(){return null},createElement(){return status}};
   const navigator={serviceWorker:{async getRegistrations(){return [{async unregister(){counts.unregister++;}}]}}};
-  const response={status:options.http||200,ok:(options.http||200)===200,async json(){return options.releases || [release('v1','2026-10-28T23:00:00Z'),older,release()]}};
+  const response={status:options.http||200,ok:(options.http||200)===200,async json(){return options.manifest || {channel:'stable',tag,version:ver,url:`https://github.com/${repo}/releases/download/${tag}/smarty-web.zip`}}};
   const sandbox={window,document,navigator,console:{info(...args){output.push(args.join(' '))},error(...args){output.push(args.join(' '))},warn(){}},
-    fetch:async (url)=>{assert.equal(url,`https://api.github.com/repos/${repo}/releases?per_page=50`);return response;},
+    fetch:async (url)=>{assert.match(url,new RegExp(`^https://raw\\.githubusercontent\\.com/${repo}/smarty-ota/manifest\\.json\\?t=\\d+$`));return response;},
     AbortController, setTimeout, clearTimeout};
   vm.runInNewContext(code,sandbox,{filename:'ota-client.js'});
   const ota=window.SmartyLiveUpdate;
@@ -41,10 +41,13 @@ async function run(options={}) {
   assert.equal(ota.getReleaseAsset({...release(),assets:[{...asset(),browser_download_url:'https://attacker.example/a.zip'}]},repo),null);
   assert.equal(ota.getReleaseAsset({...release(),prerelease:true},repo),null);
   assert.equal(ota.chooseLatestOta([release('v1','2026-11-01T00:00:00Z'),older,release()],repo).version,ver);
+  assert.equal(ota.parseManifest({channel:'stable',tag,version:ver,url:`https://github.com/${repo}/releases/download/${tag}/smarty-web.zip`},repo).version,ver);
+  assert.throws(()=>ota.parseManifest({channel:'stable',tag,version:ver,url:'https://evil.com/x.zip'},repo),/no autorizado/);
   await new Promise(r=>setImmediate(r));
   await ota.check();
   if(options.noPlugin) assert.equal(status.textContent.includes('complemento'),true);
-  else if(options.http && options.http !== 200) assert.equal(status.textContent.includes('HTTP')||status.textContent.includes('404'),true);
+  else if(options.http && options.http !== 200) assert.match(status.textContent,/HTTP|Canal OTA/);
+  else if(options.manifest?.url?.startsWith('https://evil')) {assert.match(status.textContent,/no autorizado/);assert.equal(counts.download,0);}
   else if(options.installedVersion===ver) {assert.equal(counts.download,0);assert.equal(counts.set,0);}
   else {assert.equal(counts.download,1);assert.equal(counts.set,1);await ota.check();assert.equal(counts.download,1);}
   if(!options.noPlugin) assert.equal(counts.ready,1);
@@ -57,5 +60,7 @@ async function run(options={}) {
   await run({installedVersion:ver});
   await run({http:404});
   await run({noPlugin:true});
-  console.log('OK: release OTA válido, versiones, botón, estados visibles, plugin, caché y descarga/activación.');
+  await run({http:403});
+  await run({manifest:{channel:'stable',tag,version:ver,url:'https://evil.com/x.zip'}});
+  console.log('OK: manifiesto estático sin GitHub API (incluye 403), versiones, errores, plugin y descarga/activación.');
 })().catch(e=>{console.error(e);process.exitCode=1});
