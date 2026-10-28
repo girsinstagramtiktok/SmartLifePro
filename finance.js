@@ -50,6 +50,32 @@ const Finance = {
         }
     },
 
+    // Accesos directos del inicio. Cada movimiento abre su sección real.
+    openHomeMovements(type = 'expense') {
+        if (type === 'list') {
+            Main.router('history');
+            if (typeof Shopping !== 'undefined' && typeof Shopping.setHistoryMode === 'function') Shopping.setHistoryMode('lists');
+            return;
+        }
+        Main.router('finance');
+        this.setTab(type === 'sub' ? 'subs' : 'history');
+    },
+
+    // Muestra el gráfico del mes y, si procede, el filtro de la categoría tocada.
+    openHomeCategory(categoryId = null) {
+        if (categoryId === 'cat_subs') {
+            this.openHomeMovements('sub');
+            return;
+        }
+        const now = new Date();
+        this.selectedHistoryMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        this.selectedCategoryFilter = categoryId && typeof UI !== 'undefined' && UI.categories.some(c => c.id === categoryId) ? categoryId : 'ALL';
+        Main.router('finance');
+        this.setTab('history');
+        const financeScroll = document.querySelector('#view-finance .scroll-content');
+        if (financeScroll) financeScroll.scrollTop = 0;
+    },
+
     // --- GENERADOR DE CHIPS DE FILTRO ---
     renderFilterChips() {
         let html = `<div class="filter-scroll-container">`;
@@ -233,7 +259,7 @@ const Finance = {
             }
 
             allMovements.sort((a, b) => b.date - a.date);
-            const last3 = allMovements.slice(0, 3);
+            const last3 = allMovements.slice(0, 2);
             
             if (last3.length === 0) {
                  recentContainer.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">Sin gastos recientes.</div>`;
@@ -241,6 +267,12 @@ const Finance = {
                 last3.forEach(item => {
                     const row = document.createElement('div');
                     row.className = 'home-expense-row';
+                    row.tabIndex = 0;
+                    row.setAttribute('role', 'button');
+                    row.setAttribute('aria-label', `Abrir ${item.name} en su historial`);
+                    const openMovement = () => this.openHomeMovements(item.type);
+                    row.addEventListener('click', openMovement);
+                    row.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openMovement(); } });
                     row.innerHTML = `
                         <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
                             <span style="font-size:18px;">${item.icon}</span>
@@ -300,7 +332,7 @@ const Finance = {
                 });
             }
 
-            const sorted = Object.entries(groups).sort((a,b) => b[1] - a[1]).slice(0, 3);
+            const sorted = Object.entries(groups).sort((a,b) => b[1] - a[1]).slice(0, 2);
             
             if (sorted.length === 0) {
                 catContainer.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:10px;">Sin datos este mes.</div>`;
@@ -311,6 +343,14 @@ const Finance = {
                     const icon = this.getCategoryIcon(cat);
                     const row = document.createElement('div');
                     row.className = 'home-cat-row';
+                    const category = UI.categories.find(c => c.id === cat || UI.t(c.id) === cat);
+                    const catId = category ? category.id : (cat === UI.t('tab_subs') ? 'cat_subs' : null);
+                    row.tabIndex = 0;
+                    row.setAttribute('role', 'button');
+                    row.setAttribute('aria-label', `Ver gastos de ${cat}`);
+                    const openCategory = () => this.openHomeCategory(catId);
+                    row.addEventListener('click', openCategory);
+                    row.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openCategory(); } });
                     row.innerHTML = `
                         <div style="width:35%; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                             ${icon} ${cat}

@@ -1141,3 +1141,142 @@ body.dark-mode #view-home .fin-overview{box-shadow:0 16px 34px rgba(0,0,0,.35)}
 #view-home .fin-overview button:focus-visible,#view-home .fin-action-tile:focus-visible,#view-home .fin-see-more:focus-visible{outline:2px solid #6ee7c1;outline-offset:3px}
 @media(max-width:365px){#view-home .fin-overview{padding:19px 15px 15px;margin-left:12px;margin-right:12px}#view-home .fin-balance-amount{font-size:24px}#view-home .fin-hero-donut{width:79px!important;height:79px!important;flex-basis:79px}#view-home .fin-action-section,#view-home .fin-activity-section,#view-home .fin-categories-section{margin-left:12px;margin-right:12px}#view-home .fin-action-grid{gap:7px}#view-home .fin-action-tile{padding:12px 9px;font-size:10px;min-height:100px}#view-home .fin-metric strong{font-size:13px}}
 @media(prefers-reduced-motion:reduce){#view-home .fin-budget-fill{transition:none}}
+
+/* =============================================================
+   SMARTY HOME · COMPACT FINANCE DASHBOARD 2026-10-27
+   Scoped to the home view; preserves the native bottom dock.
+   ============================================================= */
+#view-home .home-header{
+  margin-top:max(5px,env(safe-area-inset-top));
+  padding:9px 17px 9px;
+  min-height:62px;
+}
+#view-home .home-brand-name{font-size:16px;letter-spacing:-.6px}
+#view-home .home-brand-copy .app-title-text{font-size:10px}
+#view-home .fin-home-scroll{
+  padding:3px 0 calc(111px + env(safe-area-inset-bottom));
+  scrollbar-width:none;
+}
+#view-home .fin-home-scroll::-webkit-scrollbar{display:none}
+#view-home .fin-overview{
+  margin:0 13px 11px;
+  padding:14px 15px 12px;
+  border-radius:24px;
+  background:linear-gradient(141deg,#1b3655 0%,#112a45 54%,#0c243d 100%);
+  box-shadow:0 12px 28px rgba(15,37,62,.17);
+}
+#view-home .fin-overview:before{inset:-140px -110px auto auto;width:250px;height:245px}
+#view-home .fin-overview:after{bottom:-130px}
+#view-home .fin-overview-top{align-items:flex-start;min-height:75px;position:relative;z-index:1}
+#view-home .fin-heading-copy{padding-top:4px;min-width:0;flex:1}
+#view-home .fin-eyebrow{font-size:9px;letter-spacing:1.2px}
+#view-home .fin-month-title{font-size:18px;margin-top:4px;line-height:1.23;letter-spacing:-.45px}
+/* Mascot: part of the summary, above the financial values. */
+#view-home .fin-smarty-dock{width:101px;min-width:101px;position:relative;display:flex;flex-direction:column;align-items:center;margin:-11px -6px -3px 0;z-index:3}
+#view-home .fin-smarty-portrait{width:84px;height:59px;position:relative;display:flex;justify-content:center;align-items:flex-end;overflow:visible}
+#view-home .fin-smarty-aura{position:absolute;width:70px;height:57px;left:8px;bottom:-3px;border-radius:50% 50% 38% 38%;border:1px solid rgba(176,233,240,.2);background:radial-gradient(ellipse at 50% 65%,rgba(74,209,201,.24),rgba(123,177,207,.07) 66%,transparent 80%);pointer-events:none}
+#view-home .fin-smarty-portrait #mascot-img{position:relative!important;display:block;width:auto!important;height:auto!important;max-width:74px!important;max-height:76px!important;object-fit:contain!important;cursor:pointer;filter:drop-shadow(0 6px 9px rgba(2,17,33,.35));z-index:2;margin:0 auto!important}
+#view-home .fin-smarty-xp{position:absolute;z-index:3;left:1px;bottom:3px;width:3px!important;height:35px!important;margin:0!important;border-radius:8px;background:rgba(207,232,241,.18);cursor:pointer}
+#view-home .fin-smarty-dialog{position:relative;z-index:4;display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%;max-width:105px;min-height:28px;padding:3px 5px 4px;border:1px solid rgba(185,235,234,.24);border-radius:9px;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(2,14,27,.12)}
+#view-home .fin-smarty-dialog-label{font-size:9px;font-weight:850;line-height:1.2;letter-spacing:.08px;color:#d4fff2}
+#view-home .fin-smarty-dialog-label span{font-size:10px}
+#view-home .fin-smarty-dialog .mascot-bubble-side{display:block!important;position:static!important;flex:none!important;max-width:100%!important;min-width:0!important;max-height:11px!important;min-height:0!important;overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;font-size:8px!important;line-height:1.2!important;color:#b8d8e4!important;font-weight:550!important;opacity:1;transform:none}
+#view-home .fin-hero-main{gap:8px;margin:0 0 7px;min-height:60px;align-items:center}
+#view-home .fin-balance-label{font-size:10.5px;line-height:1.25}
+#view-home .fin-balance-amount{font-size:clamp(20px,6.2vw,29px);letter-spacing:-1px;line-height:1.1;margin:5px 0 0}
+#view-home .fin-health-pill{font-size:9px;margin-top:5px;padding:4px 8px 4px 7px}
+#view-home .fin-hero-donut{width:65px!important;height:65px!important;flex:0 0 65px}
+#view-home .fin-hero-donut .donut-label{font-size:8px}
+#view-home .fin-ring-value{font-size:14px}
+#view-home .fin-budget-progress-labels{font-size:9px;margin:3px 0 5px}
+#view-home .fin-budget-progress-labels strong{font-size:9.5px}
+#view-home .fin-budget-track{height:5px;margin-bottom:9px}
+#view-home .fin-summary-details{gap:7px!important}
+#view-home .fin-summary-details .fin-metric{padding:8px 9px!important;min-height:47px;gap:3px;border-radius:12px}
+#view-home .fin-metric-top{gap:5px;font-size:9px}
+#view-home .fin-metric-icon{width:16px;height:16px;flex-basis:16px;font-size:12px;border-radius:6px}
+#view-home .fin-metric strong{font-size:clamp(12px,3.6vw,15px);line-height:1.16}
+#view-home .fin-budget-note{display:none!important}
+/* Both lower widgets use a coherent card treatment and work as navigation. */
+#view-home .fin-home-module{
+  margin:0 13px 11px!important;
+  padding:0;
+  overflow:hidden;
+  border:1px solid var(--glass-border);
+  border-radius:19px;
+  background:var(--glass-bg);
+  box-shadow:0 6px 19px rgba(21,45,73,.055);
+}
+#view-home .fin-module-header{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;height:43px;padding:8px 13px 6px;border:0;background:transparent;color:var(--text-color);font:800 12px/1.25 var(--font-main);letter-spacing:-.2px;text-align:left;cursor:pointer}
+#view-home .fin-module-heading-left{display:flex;align-items:center;gap:9px;min-width:0}
+#view-home .fin-module-heading-left>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#view-home .fin-module-icon{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:rgba(32,153,173,.10);color:#168ca2;flex:0 0 26px}
+#view-home .fin-categories-section .fin-module-icon{background:rgba(81,112,195,.1);color:#5571b3}
+#view-home .fin-module-icon svg{width:16px;height:16px}
+#view-home .fin-module-chevron{font-size:24px;font-weight:500;color:var(--text-sec);line-height:1;flex:0 0 12px;text-align:right}
+#view-home .fin-module-body{padding:0 12px 7px;display:flex;flex-direction:column;gap:2px!important}
+#view-home .home-expense-row,#view-home .home-cat-row{display:flex;align-items:center;min-width:0;min-height:34px;margin:0!important;padding:4px 1px!important;border-radius:8px!important;background:transparent!important;box-shadow:none!important;border:0!important;color:var(--text-color);cursor:pointer}
+#view-home .home-expense-row+.home-expense-row,#view-home .home-cat-row+.home-cat-row{border-top:1px solid var(--glass-border)!important;border-radius:0!important}
+#view-home .home-expense-row>div:first-child{min-width:0;flex:1;gap:7px!important}
+#view-home .home-expense-row>div:first-child>span:first-child{width:27px;height:27px;flex-basis:27px;border-radius:9px}
+#view-home .home-expense-row .category-icon-shell{width:20px;height:20px}
+#view-home .home-expense-row .category-icon{width:14px;height:14px}
+#view-home .home-expense-row>div:first-child>div{min-width:0}
+#view-home .home-expense-row>div:first-child>div>span:first-child{font-size:11px!important;font-weight:750!important}
+#view-home .home-expense-row>div:first-child>div>span:last-child{font-size:9px!important}
+#view-home .home-expense-row>div:last-child{font-size:11px!important;font-weight:800!important;white-space:nowrap}
+#view-home .home-cat-row>div:first-child{width:43%!important;display:flex;align-items:center;gap:5px!important;font-size:11px!important;overflow:hidden}
+#view-home .home-cat-row>div:first-child .category-icon-shell{width:19px;height:19px;flex:0 0 19px}
+#view-home .home-cat-row .cat-bar-bg{height:5px;margin:0 8px}
+#view-home .home-cat-row>div:last-child{width:36px!important;flex:0 0 36px!important;font-size:10px!important}
+#view-home .home-expense-row:active,#view-home .home-cat-row:active{background:rgba(80,142,176,.08)!important}
+#view-home .fin-module-header:focus-visible,#view-home .home-expense-row:focus-visible,#view-home .home-cat-row:focus-visible,#view-home .fin-smarty-dialog:focus-visible,#view-home #mascot-img:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+body.dark-mode #view-home .fin-home-module{box-shadow:0 5px 18px rgba(0,0,0,.25)}
+body.dark-mode #view-home .fin-module-icon{background:rgba(78,191,210,.16);color:#79d6e1}
+body.dark-mode #view-home .fin-categories-section .fin-module-icon{background:rgba(125,140,215,.18);color:#a8baf8}
+@media(max-width:365px){
+  #view-home .fin-overview{margin-left:10px;margin-right:10px;padding:12px}
+  #view-home .fin-home-module{margin-left:10px!important;margin-right:10px!important}
+  #view-home .fin-smarty-dock{width:85px;min-width:85px;margin-right:-5px}
+  #view-home .fin-smarty-portrait{width:75px}
+  #view-home .fin-smarty-portrait #mascot-img{max-width:69px!important;max-height:69px!important}
+  #view-home .fin-month-title{font-size:16px}
+  #view-home .fin-balance-amount{font-size:clamp(18px,6vw,24px)}
+}
+@media(max-height:750px){
+  #view-home .home-header{min-height:51px;padding-top:6px;padding-bottom:6px}
+  #view-home .fin-overview{padding-top:10px;padding-bottom:9px;margin-bottom:8px}
+  #view-home .fin-overview-top{min-height:69px}
+  #view-home .fin-smarty-portrait{height:53px}
+  #view-home .fin-smarty-portrait #mascot-img{max-height:68px!important}
+  #view-home .fin-hero-main{min-height:55px}
+  #view-home .fin-hero-donut{width:59px!important;height:59px!important;flex-basis:59px}
+  #view-home .fin-home-module{margin-bottom:8px!important}
+  #view-home .fin-module-header{height:38px}
+  #view-home .home-expense-row,#view-home .home-cat-row{min-height:31px}
+}
+@media(max-height:630px){
+  /* Keep access to content on very short displays / large-font devices. */
+  #view-home .fin-home-scroll{overflow-y:auto}
+  #view-home .fin-module-body{padding-bottom:4px}
+}
+@media(prefers-reduced-motion:reduce){#view-home .fin-smarty-portrait #mascot-img{animation:none!important}}
+/* Crop the transparent canvas of each existing Smarty skin in CSS, without changing images. */
+#view-home .fin-smarty-dock{margin-top:3px}
+#view-home .fin-smarty-portrait{height:58px}
+#view-home .fin-smarty-portrait #mascot-img{
+  display:block!important;
+  position:absolute!important;
+  left:50%!important;
+  bottom:-2px!important;
+  width:86px!important;
+  height:73px!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin-left:-43px!important;
+  object-fit:cover!important;
+  object-position:center 62%!important;
+}
+#view-home .fin-smarty-dialog .mascot-bubble-side{opacity:1!important;transform:none!important}
+@media(max-width:365px){#view-home .fin-smarty-portrait #mascot-img{width:76px!important;height:68px!important;margin-left:-38px!important}}
+@media(max-height:750px){#view-home .fin-smarty-portrait #mascot-img{height:67px!important}}
