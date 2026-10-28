@@ -1,8 +1,8 @@
 name: Build Smarty Android APK
 on:
   # Compila automáticamente al modificar este workflow en main.
-  # Recuperación OTA: cliente de manifiesto estático sin api.github.com (oct. 2026).
-  # Los cambios solo de HTML, CSS o JS siguen el workflow OTA independiente.
+  # OTA ligera: solo smarty-ota.js desde Vercel (oct. 2026).
+  # Los parches en smarty-ota.js se publican en Vercel sin generar APK.
   push:
     branches:
       - main
@@ -39,11 +39,10 @@ jobs:
           mkdir -p www
 
           TZ=America/Sao_Paulo node smarty-tests.cjs
-          node ota-tests.cjs
+          node quick-ota-tests.cjs
 
           cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js ota-client.js www/
-          printf "window.SMARTY_OTA_REPOSITORY = %s;\n" "$(node -p 'JSON.stringify(process.env.GITHUB_REPOSITORY || "")')" > www/ota-config.js
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
 
@@ -737,6 +736,8 @@ jobs:
             let html = fs.readFileSync("www/index.html", "utf8");
             html = html.replace(/serviceWorker/g, "serviceWorkerDisabledInAPK");
             html = html.replace('main.js"></script>', 'main.js"></script><script src="smarty-pro-addons.js"></script>');
+            // Eliminar el cliente ZIP antiguo: sobrescribe checkForOtaUpdateNow.
+            html = html.replace(/<script\s+src=["\']ota-(?:client|config)\.js["\']><\/script>\s*/gi, "");
             fs.writeFileSync("www/index.html", html);
           }
 
