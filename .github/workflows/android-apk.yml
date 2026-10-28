@@ -45,6 +45,9 @@ jobs:
           cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
+          # Incluir la ultima interfaz OTA como diseño BASE local, sin depender de la red al iniciar.
+          test -s smarty-ota.js || { echo "::error::Falta smarty-ota.js en la raiz del proyecto"; exit 1; }
+          cp smarty-ota.js www/smarty-ota.js
 
           find www -type f -name "*.png" -exec mogrify -strip -resize "360x360>" -quality 82 {} +
 
@@ -735,9 +738,18 @@ jobs:
           if (fs.existsSync("www/index.html")) {
             let html = fs.readFileSync("www/index.html", "utf8");
             html = html.replace(/serviceWorker/g, "serviceWorkerDisabledInAPK");
-            html = html.replace('main.js"></script>', 'main.js"></script><script src="smarty-pro-addons.js"></script>');
-            // Eliminar el cliente ZIP antiguo: sobrescribe checkForOtaUpdateNow.
-            html = html.replace(/<script\s+src=["\']ota-(?:client|config)\.js["\']><\/script>\s*/gi, "");
+            // Eliminar clientes de ZIP y cualquier referencia duplicada al parche local.
+            html = html.replace(/<script\s+src=["']ota-(?:client|config)\.js["']><\/script>\s*/gi, "");
+            html = html.replace(/<script\s+src=["']smarty-ota\.js["']><\/script>\s*/gi, "");
+            // Ocultar SOLO el inicio durante la preparación local para evitar mostrar la versión vieja.
+            html = html.replace(/<\/head>/i,
+              '<style id="smarty-prepaint">#view-home{visibility:hidden!important}</style></head>');
+            // Cargar sincrónicamente, desde los assets del APK. No espera a Vercel.
+            html = html.replace('main.js"></script>',
+              'main.js"></script><script src="smarty-pro-addons.js"></script><script src="smarty-ota.js"></script>');
+            // Failsafe: si el parche tuviera un error, la pantalla nunca quedará oculta permanentemente.
+            html = html.replace(/<\/body>/i,
+              '<script>window.addEventListener("load",function(){setTimeout(function(){document.getElementById("smarty-prepaint")?.remove()},1800)},{once:true});</script></body>');
             fs.writeFileSync("www/index.html", html);
           }
 
