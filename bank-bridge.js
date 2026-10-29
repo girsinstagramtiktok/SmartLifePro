@@ -10,6 +10,9 @@
     let draining = false;
     let reviewOpen = false;
     let ready = false;
+    let nativeAckSupported = false;
+    let lastError = '';
+    let lastDrainAt = 0;
 
     function readJSON(key, fallback) {
         try {
@@ -19,8 +22,8 @@
     }
 
     function saveJSON(key, value) {
-        try { localStorage.setItem(key, JSON.stringify(value)); }
-        catch (e) { console.warn('[Banco] No se pudo guardar estado local', e); }
+        try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+        catch (e) { console.warn('[Banco] No se pudo guardar estado local', e); return false; }
     }
 
     const restored = readJSON(SEEN_KEY, []);
@@ -122,57 +125,107 @@
         if (!ready || reviewOpen || !Data?.store?.settings?.bankAutoDetect) return;
         const pending = readJSON(REVIEW_KEY, []);
         if (!Array.isArray(pending) || !pending.length) return;
-        const expenseModal = document.getElementById('modal-expense');
-        if (expenseModal?.classList.contains('open')) return;
-        const item = pending.shift();
-        saveJSON(REVIEW_KEY, pending);
-        if (typeof Finance?.openSmartExpenseModal !== 'function') return;
-        reviewOpen = true;
-        Finance.openSmartExpenseModal(item.amount, item.desc, item.category);
+        const modal = document.getElementById('modal-expense');
+        if (modal?.classList.contains('open')) return;
+        if (typeof Finance?.openSmartExpenseModal !== 'function') {
+            lastError = 'El formulario de confirmación no está disponible';
+            return; // Nunca descartar un gasto sin mostrarlo.
+        }
+        try {
+            const item = pending[0];
+            Finance.openSmartExpenseModal(item.amount, item.desc, item.category);
+            if (!modal?.classList.contains('open')) {
+                lastError = 'No se abrió el formulario de confirmación';
+                return;
+            }
+            reviewOpen = true;
+            if (!saveJSON(REVIEW_KEY, pending.slice(1))) {
+                lastError = 'No se pudo guardar la cola de confirmaciones';
+            }
+        } catch (e) {
+            lastError = 'Fallo abriendo confirmación: ' + (e?.message || e);
+            console.error('[Banco]', e);
+        }
     }
 
+    // true significa "registrada o descartada intencionalmente"; false = reintentar después.
     function process(notification) {
-        if (!ready || !Data?.store?.settings?.bankAutoDetect) return;
+        if (!ready || !Data?.store?.settings?.bankAutoDetect) return false;
         const key = String(notification.key || '');
         const fallbackKey = [notification.package, notification.title, notification.text].join('|');
         const dedup = key ? 'id:' + key : 'text:' + fallbackKey;
-        if (seen.has(dedup)) return;
-        if (!key && seen.has('text:' + fallbackKey)) return;
+        if (seen.has(dedup)) return true;
         const expense = parse(notification);
-        if (!expense) return;
-        remember(dedup);
-        // Dos eventos próximos con un mismo contenido pueden ser una notificación actualizada.
+        if (!expense) return true; // Mensaje no bancario; se puede confirmar como leído.
         if (Data.store.settings.bankAutoSaveMode === 'auto') {
-            recordExpense(expense);
+            try { recordExpense(expense); }
+            catch (e) {
+                lastError = 'No se guardó el gasto: ' + (e?.message || e);
+                console.error('[Banco]', e);
+                return false;
+            }
         } else {
             const pending = readJSON(REVIEW_KEY, []);
-            pending.push(expense);
-            saveJSON(REVIEW_KEY, pending.slice(-100));
-            reviewNext();
+            if (!Array.isArray(pending) || !saveJSON(REVIEW_KEY, [...pending, expense].slice(-100))) {
+                lastError = 'No fue posible guardar la confirmación pendiente';
+                return false;
+            }
         }
+        remember(dedup);
+        return true;
     }
 
     function drainPending() {
-        if (!ready || draining || typeof window.SmartyAndroid?.getPendingNotificationsJson !== 'function') return;
+        const native = window.SmartyAndroid;
+        if (!ready || draining || !native) return;
+        const safe = typeof native.peekPendingNotificationsJson === 'function' &&
+                     typeof native.ackPendingNotificationsJson === 'function';
+        if (!safe && typeof native.getPendingNotificationsJson !== 'function') return;
+        nativeAckSupported = safe;
         draining = true;
         try {
-            const raw = window.SmartyAndroid.getPendingNotificationsJson();
+            const raw = safe ? native.peekPendingNotificationsJson() : native.getPendingNotificationsJson();
             const items = JSON.parse(raw || '[]');
-            if (Array.isArray(items)) items.forEach(process);
+            if (!Array.isArray(items)) throw Error('Cola inválida');
+            const acknowledged = [];
+            for (const item of items) {
+                if (!item || typeof item !== 'object') continue;
+                try {
+                    if (process(item) && item.key) acknowledged.push(String(item.key));
+                } catch (e) {
+                    lastError = 'Error procesando la notificación: ' + (e?.message || e);
+                    console.error('[Banco]', e);
+                }
+            }
+            if (safe && acknowledged.length) native.ackPendingNotificationsJson(JSON.stringify(acknowledged));
+            lastDrainAt = Date.now();
         } catch (e) {
-            console.error('[Banco] No fue posible leer la cola nativa:', e);
-        } finally {
-            draining = false;
-        }
+            lastError = 'No fue posible leer la cola nativa: ' + (e?.message || e);
+            console.error('[Banco]', e);
+        } finally { draining = false; }
         reviewNext();
     }
 
-    window.SmartyBankBridge = { drainPending, parse, process, normalizeMoney };
+    function diagnostics() {
+        let native = null;
+        try {
+            if (typeof window.SmartyAndroid?.getNotificationDiagnosticsJson === 'function')
+                native = JSON.parse(window.SmartyAndroid.getNotificationDiagnosticsJson());
+        } catch (e) { lastError = String(e); }
+        return { ready, nativeAckSupported, enabled: !!Data?.store?.settings?.bankAutoDetect,
+            mode: Data?.store?.settings?.bankAutoSaveMode,
+            reviewCount: readJSON(REVIEW_KEY, []).length,
+            lastDrainAt, lastError, native };
+    }
+
+    window.SmartyBankBridge = { drainPending, parse, process, normalizeMoney, diagnostics, reviewNext };
     window.addEventListener('SmartyBankNotification', () => drainPending());
-    window.addEventListener('load', () => {
-        // Main.init se ejecuta en el mismo evento de load, un poco después.
-        setTimeout(() => {
-            ready = true;
+    function activate() {
+        if (ready) return;
+        // No vaciar la cola antes de que Main.init haya cargado los ajustes guardados.
+        if (typeof Data === 'undefined' || !Data.store?.settings ||
+            typeof window.SmartyAndroid?.getPendingNotificationsJson !== 'function') return;
+        ready = true;
             // Los ajustes restaurados de una copia deben sincronizarse con Android.
             const native = window.SmartyAndroid;
             const configured = Data?.store?.settings?.allowedBankPackages || [];
@@ -182,13 +235,15 @@
                 native.setAllowedNotificationPackages(configured.join(','));
             }
             drainPending(); reviewNext();
-        }, 700);
-    });
+    }
+    window.addEventListener('load', () => setTimeout(activate, 700));
+    if (document.readyState === 'complete') setTimeout(activate, 900);
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') { drainPending(); reviewNext(); }
     });
     window.addEventListener('focus', () => { drainPending(); reviewNext(); });
     setInterval(() => {
+        if (!ready && document.readyState === 'complete') activate();
         drainPending();
         if (reviewOpen && !document.getElementById('modal-expense')?.classList.contains('open')) reviewOpen = false;
         reviewNext();
