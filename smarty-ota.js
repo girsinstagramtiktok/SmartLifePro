@@ -588,26 +588,23 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
 
 
 /* ====================================================================
-   Finanzas seguras: las 9 categorias, orden, etiquetas e iconos del ZIP
-   original permanecen intactos. Solo corregir filtros multinlingues,
+   Finanzas seguras: las categorías e iconos que añade el WORKFLOW Android
+   permanecen intactos. Corregir solo la lectura multilingüe,
    sumar topes por categoria y promedios sin migrar los gastos.
    ==================================================================== */
 (function () {
   'use strict';
-  const VERSION = 'smarty-light-2026-11-02-12';
-  const IDS = ['cat_market','cat_leisure','cat_transport','cat_clothes','cat_health','cat_bills','cat_travel','cat_beauty','cat_other'];
+  const VERSION = 'smarty-light-2026-11-02-13';
+  const IDS = ['cat_market','cat_lunch','cat_dining','cat_leisure','cat_transport','cat_clothes','cat_health','cat_bills','cat_travel','cat_beauty','cat_other','cat_subs'];
   const LOCAL = {
     es:{daily:'Puedes gastar por día',days:'días restantes',limit:'Tope mensual',save:'Guardar tope',clear:'Quitar tope',spent:'Gastado',near:'Cerca del límite',over:'Límite superado',safe:'Dentro del límite',alert:'Alerta de categoría',avg:'Promedios de gastos',monthly:'Promedio mensual',perCategory:'Promedio por categoría',months:'meses completos',empty:'No hay datos históricos suficientes.',invalid:'Introduce un importe válido.',saved:'Tope actualizado',available:'Sin presupuesto'},
     pt:{daily:'Disponível por dia',days:'dias restantes',limit:'Limite mensal',save:'Salvar limite',clear:'Remover limite',spent:'Gasto',near:'Perto do limite',over:'Limite ultrapassado',safe:'Dentro do limite',alert:'Alerta de categoria',avg:'Médias de gastos',monthly:'Média mensal',perCategory:'Média por categoria',months:'meses completos',empty:'Sem histórico suficiente.',invalid:'Informe um valor válido.',saved:'Limite atualizado',available:'Sem orçamento'},
     en:{daily:'Available per day',days:'days remaining',limit:'Monthly cap',save:'Save cap',clear:'Remove cap',spent:'Spent',near:'Near cap',over:'Cap exceeded',safe:'Within cap',alert:'Category alert',avg:'Spending averages',monthly:'Monthly average',perCategory:'Average by category',months:'completed months',empty:'Not enough history yet.',invalid:'Enter a valid amount.',saved:'Cap updated',available:'No budget'}
   };
   const EXTRA = {
-    fixed:['Gastos Fijos','Despesas Fixas','Fixed Expenses'],
-    dining:['Delivery y Salida','Delivery e Saídas','Delivery & Dining'],
     entertainment:['Entretenimiento','Entretenimento','Entertainment'],
     food:['Comida','Comida','Food'],
-    shopping:['Compras','Compras','Shopping'],
-    subscriptions:['Suscripciones','Assinaturas','Subscriptions']
+    shopping:['Compras','Compras','Shopping']
   };
   const LANG_INDEX={es:0,pt:1,en:2};
   const ui=()=>typeof UI!=='undefined'?UI:null;
@@ -619,33 +616,47 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('en').replace(/^[^\p{L}\p{N}_]+/u,'').replace(/[^\p{L}\p{N}_\s-]/gu,'').replace(/\s+/g,' ').trim();
   const aliases = new Map();
   function alias(key,...labels){for(const text of labels)aliases.set(norm(text),key);}
+  // Mapeo SOLO de valores persistidos a IDs que el APK ya conoce.
+  // No añadir/remover categorías ni cambiar UI.categoryIcon.
   const tr = {
     cat_market:['supermercado','supermercados','mercado','groceries','grocery'],
-    cat_leisure:['ocio','lazer','leisure'],
+    cat_lunch:['almuerzo','almoço','almoco','lunch','cat_lunch'],
+    cat_dining:['delivery y salidas','delivery y salida','delivery e saidas','delivery e saídas','delivery & dining','delivery and dining','cat_dining','cat_delivery','extra:dining'],
+    cat_leisure:['microgasto','microgastos','micro-expenses','micro expenses','ocio','lazer','leisure'],
     cat_transport:['transporte','transport','transportation'],
     cat_clothes:['ropa','roupa','clothes'],
     cat_health:['salud','saúde','saude','health'],
-    cat_bills:['hogar','casa','home','bills'],
+    cat_bills:['hogar','casa','home','bills','cat_home'],
     cat_travel:['viaje','viagem','travel'],
     cat_beauty:['belleza','beleza','beauty'],
     cat_other:['otros','otro','outros','outro','other'],
-    'extra:fixed':['gastos fijos','gasto fijo','despesas fixas','fixed expenses','cat_fixed','cat_fijos'],
-    'extra:dining':['delivery y salida','delivery y salidas','delivery e saídas','delivery e saidas','delivery & dining','cat_dining','cat_delivery'],
+    cat_subs:['gastos fijos','gasto fijo','gastos fixos','despesas fixas','fixed exp.','fixed expenses','suscripciones','assinaturas','subscriptions','cat_sub','cat-sub','cat_fixed','cat_fijos','tab_subs','extra:fixed','extra:subscriptions'],
     'extra:entertainment':['entretenimiento','entretenimento','entertainment','cat_ent'],
     'extra:food':['comida','food','cat_food'],
-    'extra:shopping':['compras','shopping','cat_shop'],
-    'extra:subscriptions':['suscripciones','assinaturas','subscriptions','cat_subs','cat_sub','cat-sub','tab_subs']
+    'extra:shopping':['compras','shopping','cat_shop']
   };
-  for(const [key,words] of Object.entries(tr))alias(key,key,...words);
-  alias('cat_bills','cat_home'); // el diccionario original presenta cat_home como Hogar
+  for (const [key,words] of Object.entries(tr)) alias(key,key,...words);
+  // También aceptar todas las traducciones que estén presentes en ui.js.
+  function dynamicKeyOf(n){
+    const u=ui();if(!u?.dictionary)return null;
+    for(const id of IDS){
+      for(const language of ['es','pt','en']){
+        const dict=u.dictionary[language];
+        const value=dict?.[id==='cat_subs'?'tab_subs':id];
+        if(value&&norm(value)===n)return id;
+      }
+    }
+    return null;
+  }
   function keyOf(raw){
     if(raw==null||String(raw).trim()==='')return 'cat_other';
     const literal=String(raw).trim();
     if(literal.startsWith('extra:') && EXTRA[literal.slice(6)])return literal;
-    if(literal.startsWith('raw:'))return `raw:${norm(literal.slice(4))}`;
+    if(literal.startsWith('raw:')){const rawNorm=norm(literal.slice(4));return aliases.get(rawNorm)||dynamicKeyOf(rawNorm)||`raw:${rawNorm}`;}
     let n=norm(raw);
     if(n.startsWith('legacy:'))n=norm(n.slice(7));
     if(aliases.has(n))return aliases.get(n);
+    const dynamic=dynamicKeyOf(n);if(dynamic)return dynamic;
     if(/^cat_[a-z0-9_-]+$/.test(n))return `raw:${n}`;
     return n?`raw:${n}`:'cat_other';
   }
@@ -656,7 +667,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   }
   function label(key){
     const k=keyOf(key);
-    if(IDS.includes(k))return ui()?.t(k)||k;
+    if(IDS.includes(k))return ui()?.t(k==='cat_subs'?'tab_subs':k)||k;
     if(k.startsWith('extra:'))return EXTRA[k.slice(6)]?.[LANG_INDEX[lang()]]||originalLabel(k)||k.slice(6);
     if(k.startsWith('raw:')){
       const original=originalLabel(k);
@@ -682,11 +693,11 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     for(const x of data()?.store?.subscriptions||[]){
       const day=Number(x.day),last=new Date(year,month+1,0).getDate();
       if(day<1||day>last)continue;
-      if(wanted===indexOfMonth(now)){if(day<=now.getDate())add('extra:subscriptions',x.cost);}
+      if(wanted===indexOfMonth(now)){if(day<=now.getDate())add('cat_subs',x.cost);}
       else{
         const joined=date(x.createdAt||x.date||(Number(x.id)>946684800000&&Number(x.id)<Date.now()+86400000?Number(x.id):null));
         // Si no hay fecha de alta, no inventar suscripciones en meses pasados.
-        if(joined&&indexOfMonth(joined)<=wanted)add('extra:subscriptions',x.cost);
+        if(joined&&indexOfMonth(joined)<=wanted)add('cat_subs',x.cost);
       }
     }
     return map;
@@ -784,50 +795,20 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     panel.style.setProperty('grid-template-rows','auto auto auto auto auto auto','important');
     strip.style.setProperty('grid-row','6','important');
   }
-  // Proyección TEMPORAL de copias para reutilizar la apariencia, SVG y layout
-  // ORIGINAL de Finance. Los objetos persistidos nunca se alteran.
+  // La app genera filtros e iconos en el workflow Android.
+  // Una copia temporal traduce únicamente categorías persistidas durante el render;
+  // NO cambia Data.store ni UI.categories ni el gráfico del APK.
   let depth=0;
   function projectForRender(fn){
     const d=data();if(!d?.store||!Array.isArray(d.store.expenses)||depth)return fn();
-    depth++;const originals=d.store.expenses;
-    d.store.expenses=originals.map(e=>({...e,category:label(keyOf(e.category))}));
-    try{return fn();}finally{d.store.expenses=originals;depth--;}
-  }
-  function activeKeys(){
-    const f=fin(),p=f?.selectedHistoryMonth||period(),[year,month]=p.split('-').map(Number);
-    const map=monthTotals(year,month-1);
-    for(const k of Object.keys(readCaps()))if(map.has(k))map.set(k,map.get(k));
-    return [...map.keys()];
-  }
-  function extraHistoryChips(){
-    const f=fin(),container=document.getElementById('expenses-history-list');
-    const strip=container?.querySelector('.filter-scroll-container');if(!f||!strip)return;
-    const custom=activeKeys().filter(k=>!IDS.includes(k)&&k!=='extra:subscriptions');
-    for(const key of custom){
-      const el=addNode('div','filter-chip'+(key===f.selectedCategoryFilter?' active':''));
-      el.textContent=label(key);el.setAttribute('role','button');el.tabIndex=0;
-      const select=()=>{f.selectedCategoryFilter=key;f.renderExpensesHistory();};
-      el.addEventListener('click',select);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}});
-      strip.appendChild(el);
-    }
-  }
-  function chartActions(){
-    // Gráfico original: conservar sus iconos SVG y colores; hacer clic en una
-    // categoría del gráfico filtra el historial y muestra su tope.
-    const container=document.getElementById('expenses-history-list');
-    const card=container?.querySelector('.glass-card');if(!card)return;
-    const legend=[...card.querySelectorAll('div')].find(el=>el.getAttribute('style')?.includes('margin-top:25px'));
-    if(!legend)return;
-    for(const row of [...legend.children]){
-      const spans=row.querySelectorAll('span');
-      if(spans.length<3)continue;
-      const text=spans[2]?.textContent;if(!text)continue;
-      const key=keyOf(text);
-      const go=()=>{if(key==='extra:subscriptions'){fin().openHomeMovements('sub');return;}fin().selectedCategoryFilter=key;fin().renderExpensesHistory();};
-      row.style.cursor='pointer';row.tabIndex=0;row.setAttribute('role','button');
-      row.addEventListener('click',go);
-      row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
-    }
+    depth++;const original=d.store.expenses;
+    d.store.expenses=original.map(e=>{
+      const key=keyOf(e.category);
+      if(!IDS.includes(key))return e; // categorías desconocidas: conservar literalmente
+      const translated=label(key);
+      return translated===e.category?e:{...e,category:translated};
+    });
+    try{return fn();}finally{d.store.expenses=original;depth--;}
   }
   function parseAmount(x){
     const s=String(x||'').trim().replace(/\s/g,'');if(!s)return 0;
@@ -886,7 +867,6 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   function openAverages(){const modal=averagesModal();renderAverages();modal.classList.add('sc-open');modal.querySelector('.sc-close').focus();}
   function enhanceHistory(){
     const container=document.getElementById('expenses-history-list');if(!container)return;
-    extraHistoryChips();chartActions();
     const toolbar=addNode('div');toolbar.id='smarty-finance-toolbar';const button=addNode('button','',t('avg')+' ›');button.type='button';button.addEventListener('click',openAverages);toolbar.appendChild(button);
     const filter=container.querySelector('.filter-scroll-container');
     if(filter?.parentElement)filter.parentElement.insertAdjacentElement('beforebegin',toolbar);else container.prepend(toolbar);
@@ -894,32 +874,25 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     if(key && key!=='ALL')capCard(key);
   }
   function installFinances(){
-    const f=fin(),u=ui();if(!f||!u||f.__smartySafeCategories12)return;
-    // Restablecer EXACTAMENTE el listado de 9 categorías del ZIP. Iconos
-    // y etiquetas quedan definidos exclusivamente por ui.js sin sobrescribir.
-    u.categories.splice(0,u.categories.length,...IDS.map(id=>({id,icon:({cat_market:'cart',cat_leisure:'leisure',cat_transport:'transport',cat_clothes:'clothes',cat_health:'health',cat_bills:'home',cat_travel:'travel',cat_beauty:'beauty',cat_other:'other'})[id]})));
-    f.__smartySafeCategories12=true;
+    const f=fin(),u=ui();if(!f||!u||f.__smartySafeCategories13)return;
+    f.__smartySafeCategories13=true;
+    // PROHIBIDO cambiar UI.categories, UI.categoryIcon o Finance.renderFilterChips:
+    // el APK los configura y conserva los SVG de Microgastos, Almuerzo, Delivery.
     const originalHistory=f.renderExpensesHistory;
     f.renderExpensesHistory=function(...args){
-      const selected=this.selectedCategoryFilter;
-      const custom=selected&&selected!=='ALL'&&!IDS.includes(selected)&&selected!=='extra:subscriptions';
-      if(custom)this.selectedCategoryFilter=label(selected);
-      try{return projectForRender(()=>originalHistory.apply(this,args));}
-      finally{this.selectedCategoryFilter=selected;try{enhanceHistory();}catch(e){console.warn('[Smarty history]',e);}}
+      let result;
+      try{result=projectForRender(()=>originalHistory.apply(this,args));}
+      finally{try{enhanceHistory();}catch(e){console.warn('[Smarty history]',e);}}
+      return result;
     };
-    const originalChart=f.renderCategoryChart;
-    f.renderCategoryChart=function(...args){return projectForRender(()=>originalChart.apply(this,args));};
     const originalHome=f.renderHomeWidgets;
-    f.renderHomeWidgets=function(...args){return projectForRender(()=>originalHome.apply(this,args));};
-    const originalIcon=f.getCategoryIcon;
-    f.getCategoryIcon=function(raw){const k=keyOf(raw);return IDS.includes(k)?u.categoryIcon(k):k==='extra:subscriptions'?u.categoryIcon('cat_subs'):originalIcon.call(this,raw);};
-    const originalOpen=f.openHomeCategory;
-    f.openHomeCategory=function(categoryId){const k=categoryId?keyOf(categoryId):null;if(k&&!IDS.includes(k)&&k!=='extra:subscriptions'){
-      const now=new Date();this.selectedHistoryMonth=period(now);this.selectedCategoryFilter=k;
-      if(typeof Main!=='undefined')Main.router('finance');this.setTab('history');return;
-    }return originalOpen.call(this,k==='extra:subscriptions'?'cat_subs':k);};
+    if(typeof originalHome==='function')f.renderHomeWidgets=function(...args){return projectForRender(()=>originalHome.apply(this,args));};
     const originalBudget=u.renderBudgetChart;
-    u.renderBudgetChart=function(...args){const result=originalBudget.apply(this,args);try{refreshDaily();checkCaps();}catch(e){console.warn('[Smarty limits]',e);}return result;};
+    u.renderBudgetChart=function(...args){
+      const result=originalBudget.apply(this,args);
+      try{refreshDaily();checkCaps();}catch(e){console.warn('[Smarty limits]',e);}
+      return result;
+    };
     refreshDaily();checkCaps();
     document.getElementById('smarty-insights-modal')?.remove();
   }
