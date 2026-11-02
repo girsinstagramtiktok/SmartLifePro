@@ -591,18 +591,20 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
  */
 (function () {
   'use strict';
-  const VERSION = 'smarty-light-2026-11-02-09';
+  const VERSION = 'smarty-light-2026-11-02-10';
   window.SMARTY_PATCH_BUILD_ID = VERSION;
   const BASE_CATS = ['cat_market','cat_leisure','cat_transport','cat_clothes','cat_health','cat_bills','cat_travel','cat_beauty','cat_other'];
   const EXTRA_CATS = ['cat_food','cat_shop','cat_subs'];
-  const LEGACY_IDS = {cat_home:'cat_bills',cat_ent:'cat_leisure',tab_subs:'cat_subs'};
+  // Los identificadores heredados son categorías distintas. NO fusionarlos.
+  const LEGACY_IDS = {tab_subs:'cat_subs'};
   const ALIASES = {
     cat_market:['supermercado','mercado','groceries','grocery','market'],
-    cat_leisure:['ocio','lazer','leisure','entretenimiento','entretenimento','entertainment'],
+    cat_leisure:['ocio','lazer','leisure'],
+    cat_ent:['entretenimiento','entretenimento','entertainment'],
     cat_transport:['transporte','transport','transportation'],
     cat_clothes:['ropa','roupa','clothes','vestuario','vestuario y calzado'],
     cat_health:['salud','saude','health'],
-    cat_bills:['hogar','casa','home','bills','contas','gastos fijos','gastos fixos','gastos fixos mensais'],
+    cat_bills:['hogar','casa','home','bills','contas'],
     cat_travel:['viaje','viagem','travel'],
     cat_beauty:['belleza','beleza','beauty'],
     cat_other:['otro','otros','outro','outros','other','misc','miscellaneous'],
@@ -619,7 +621,10 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     cat_market:['Supermercado','Mercado','Groceries'],cat_leisure:['Ocio','Lazer','Leisure'],cat_transport:['Transporte','Transporte','Transport'],
     cat_clothes:['Ropa','Roupa','Clothes'],cat_health:['Salud','Saúde','Health'],cat_bills:['Hogar','Casa','Bills'],
     cat_travel:['Viaje','Viagem','Travel'],cat_beauty:['Belleza','Beleza','Beauty'],cat_other:['Otros','Outro','Other'],
-    cat_food:['Comida','Comida','Food'],cat_shop:['Compras','Compras','Shopping'],cat_subs:['Suscripciones','Assinaturas','Subscriptions']
+    cat_food:['Comida','Comida','Food'],cat_shop:['Compras','Compras','Shopping'],
+    cat_home:['Hogar (categoría anterior)','Casa (categoria antiga)','Home (legacy)'],
+    cat_ent:['Entretenimiento','Entretenimento','Entertainment'],
+    cat_subs:['Suscripciones','Assinaturas','Subscriptions']
   };
   const CSS = `
 #smarty-category-alert{display:none!important}
@@ -676,7 +681,10 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   const normal = x => String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('en').replace(/^[^\p{L}\p{N}_]+/u,'').replace(/[^\p{L}\p{N}_\s-]/gu,'').replace(/\s+/g,' ').trim();
   const ALIAS_MAP = new Map();
   for(const [key,alts] of Object.entries(ALIASES)) for(const a of [key,...alts]) ALIAS_MAP.set(normal(a),key);
-  for(const [key,items] of Object.entries(LABELS)) for(const a of items) ALIAS_MAP.set(normal(a),key);
+  // Nunca hacer que una etiqueta de presentación pise otra identidad.
+  for(const [key,items] of Object.entries(LABELS)) for(const a of items) {
+    const n=normal(a);if(!ALIAS_MAP.has(n)) ALIAS_MAP.set(n,key);
+  }
   const canonical = raw => {
     const x=String(raw??'').trim();
     if (!x) return 'cat_other';
@@ -788,25 +796,54 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     panel.style.setProperty('grid-template-rows','auto auto auto auto auto auto','important');
     strip.style.setProperty('grid-row','6','important');
   }
-  function withDisplayCategories(callback){
+  // La visualización utiliza claves estables. Nunca se guarda la proyección.
+  // Si se sustituyen por etiquetas traducidas, categorías distintas colisionan
+  // (cat_home / cat_bills; cat_ent / cat_leisure) y los filtros dejan de servir.
+  function withDisplayCategories(callback,mode='history'){
     const d=data();if(!d||!Array.isArray(d.store.expenses))return callback();
     const original=d.store.expenses;
-    d.store.expenses=original.map(e=>({...e,category: canonical(e.category).startsWith('legacy:')?canonical(e.category):label(canonical(e.category))}));
+    d.store.expenses=original.map(e=>{
+      const key=canonical(e.category);
+      return {...e,category:mode==='home'?label(key):key};
+    });
     try{return callback();}finally{d.store.expenses=original;}
   }
   // En los detalles del historial se reutiliza el render original. Solo se proyectan
   // temporalmente las categorías actuales; NO se reescriben ni se guardan movimientos.
   function patchFinance(){
-    const f=finance();if(!f||f.__smartyStableCategories)return;
+    const f=finance();if(!f)return;
+    if(f.__smartyStableCategories){
+      // El parche de la versión 09 ya envolvió los métodos con equivalencias
+      // defectuosas. No se pueden quitar esos closures sin reiniciar la WebView.
+      if(!f.__smartyStableCategoriesV2 && !window.__smartyCategoryRestartAlerted){
+        window.__smartyCategoryRestartAlerted=true;
+        setTimeout(()=>ui()?.showSnackbar?.('Categorías corregidas. Cierra Smarty completamente y vuelve a abrirla.'),200);
+      }
+      return;
+    }
     f.__smartyStableCategories=true;
+    f.__smartyStableCategoriesV2=true;
+    // Normalizar también las listas y suscripciones del gráfico: el código
+    // nativo agrega esos importes con etiquetas traducidas en vez de IDs.
+    const originalChart=f.renderCategoryChart;
+    if(typeof originalChart==='function')f.renderCategoryChart=function(...args){
+      const u=ui();if(!u)return originalChart.apply(this,args);
+      const oldT=u.t;
+      u.t=function(key){
+        if(key==='cat_market')return 'cat_market';
+        if(key==='tab_subs')return 'cat_subs';
+        return oldT.apply(this,arguments);
+      };
+      try{return originalChart.apply(this,args);}finally{u.t=oldT;}
+    };
     const originalHistory=f.renderExpensesHistory;
     f.renderExpensesHistory=function(...args){
-      const output=withDisplayCategories(()=>originalHistory.apply(this,args));
+      const output=withDisplayCategories(()=>originalHistory.apply(this,args),'history');
       try{enhanceFinanceHistory();}catch(e){console.warn('[Smarty categorías]',e);}
       return output;
     };
     const originalHome=f.renderHomeWidgets;
-    f.renderHomeWidgets=function(...args){return withDisplayCategories(()=>originalHome.apply(this,args));};
+    f.renderHomeWidgets=function(...args){return withDisplayCategories(()=>originalHome.apply(this,args),'home');};
     const originalIcon=f.getCategoryIcon;
     f.getCategoryIcon=function(raw){return originalIcon.call(this,canonical(raw).startsWith('legacy:')?raw:label(raw));};
     const originalFilter=f.openHomeCategory;
@@ -830,7 +867,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   }
   function extraChips(container){
     const strip=container.querySelector('.filter-scroll-container');if(!strip)return;
-    const extra=[...shownCategoryKeys()].filter(k=>!BASE_CATS.includes(k));
+    const extra=[...shownCategoryKeys()].filter(k=>!BASE_CATS.includes(k)).sort((a,b)=>label(a).localeCompare(label(b),lang()));
     for(const k of extra){
       const btn=make('button','filter-chip'+(finance().selectedCategoryFilter===k?' active':''),label(k));
       btn.type='button';btn.dataset.smartyCat=k;
@@ -841,13 +878,14 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   // El filtro nativo conoce solo las 9 categorías base. Para las anteriores y las
   // suscripciones se agregan filtros adicionales sin perder los chips existentes.
   function financeChartLegends(container){
-    const card=container.querySelector('.glass-card');if(!card)return;
-    const wrappers=[...card.querySelectorAll('div')].filter(x=>x.getAttribute('style')?.includes('margin-top:25px'));
-    const legend=wrappers[0];if(!legend)return;
+    // El primer .glass-card es el selector del mes, NO el gráfico.
+    // Localizar su leyenda explícitamente para traducir las claves visibles.
+    const legend=[...container.querySelectorAll('div')].find(x=>x.getAttribute('style')?.includes('margin-top:25px'));
+    if(!legend)return;
     for(const row of [...legend.children]){
       const spans=row.querySelectorAll('span');if(spans.length<3)continue;
       const el=spans[2];const key=canonical(el.textContent);
-      if(key.startsWith('legacy:'))el.textContent=label(key);
+      el.textContent=label(key);
       row.style.cursor='pointer';row.setAttribute('role','button');row.tabIndex=0;
       row.setAttribute('aria-label',label(key));
       const open=()=>{finance().selectedCategoryFilter=key;finance().renderExpensesHistory();};
@@ -922,7 +960,12 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     const place=filter?.parentElement||container;
     place.insertAdjacentElement('beforebegin',toolbar);
     const selected=finance()?.selectedCategoryFilter;
-    if(selected && selected!=='ALL')capCard(container,canonical(selected));
+    if(selected && selected!=='ALL'){
+      // La tarjeta de subtotal nativa imprime UI.t(ID), que no conoce claves legacy.
+      const subtotal=[...container.children].find(el=>el.classList?.contains('glass-card') && el.style?.textAlign==='center');
+      if(subtotal?.firstElementChild)subtotal.firstElementChild.textContent=label(selected).toUpperCase();
+      capCard(container,canonical(selected));
+    }
     // La pantalla Finanzas conserva el resumen y el historial; se quitan alertas del inicio.
     const selectedTitle=container.querySelector('#smarty-category-cap-detail');
     if(selectedTitle)selectedTitle.scrollMarginTop='15px';
