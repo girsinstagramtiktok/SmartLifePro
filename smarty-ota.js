@@ -585,3 +585,343 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   setTimeout(run,350);
   window.SmartyCardThemes = {apply:applyTheme,open:openPicker};
 })();
+
+/* SMARTY — planificación, topes y promedios vía OTA (solo datos locales).
+   No modifica registros de gastos ni necesita nuevos plugins de Android.
+*/
+(function () {
+  'use strict';
+  const VERSION = 'smarty-light-2026-11-02-08';
+  window.SMARTY_PATCH_BUILD_ID = VERSION;
+
+  const LANG = {
+    es: {daily:'Disponible para gastar al día',dailyZero:'Configura un presupuesto',dailyOver:'Presupuesto superado',days:'días, incluido hoy',open:'Topes y promedios',caps:'Topes por categoría',avgs:'Promedios de gastos',recent:'Últimos',months:'meses cerrados',monthly:'Promedio mensual',monthlyCaption:'Incluye gastos, cuotas y listas completadas',catAverage:'Promedio por categoría',none:'Aún no hay meses completos con movimientos.',save:'Guardar topes',close:'Cerrar',limit:'Tope mensual',spent:'Gastado este mes',remaining:'Disponible',near:'Cerca del límite',over:'Límite superado',okay:'En rango',unset:'Sin límite',noCaps:'Configura topes para controlar categorías específicas.',warn:'Cerca del tope',avgSuffix:'/mes',note:'Los meses sin gastos cuentan como 0 después del primer mes registrado. Suscripciones: solo desde su fecha de alta identificable.',help:'Vacío o 0 = sin tope. No modifica tus gastos existentes.',status:'Estado de categorías',today:'Hoy',all:'Todo correcto',historyN:'Meses con historial',unknown:'Categoría antigua',show:'Ver detalles',invalid:'Introduce importes válidos no negativos.',saved:'Topes guardados',noBudget:'Sin presupuesto',spentMore:'Excedido',next:'Topes y estadísticas',planned:'Los gastos de meses futuros no se cuentan en este mes.'},
+    pt: {daily:'Disponível para gastar por dia',dailyZero:'Defina um orçamento',dailyOver:'Orçamento ultrapassado',days:'dias, incluindo hoje',open:'Limites e médias',caps:'Limites por categoria',avgs:'Médias de gastos',recent:'Últimos',months:'meses completos',monthly:'Média mensal',monthlyCaption:'Inclui despesas, parcelas e listas concluídas',catAverage:'Média por categoria',none:'Ainda não há meses completos com movimentações.',save:'Salvar limites',close:'Fechar',limit:'Limite mensal',spent:'Gasto neste mês',remaining:'Disponível',near:'Perto do limite',over:'Limite ultrapassado',okay:'Dentro do limite',unset:'Sem limite',noCaps:'Defina limites para acompanhar suas categorias.',warn:'Perto do limite',avgSuffix:'/mês',note:'Meses sem gastos contam como 0 após o primeiro registro. Assinaturas: somente a partir da data de cadastro identificável.',help:'Vazio ou 0 = sem limite. Não altera as despesas existentes.',status:'Situação das categorias',today:'Hoje',all:'Tudo em dia',historyN:'Meses com histórico',unknown:'Categoria antiga',show:'Ver detalhes',invalid:'Informe valores válidos e não negativos.',saved:'Limites salvos',noBudget:'Sem orçamento',spentMore:'Excedido',next:'Limites e estatísticas',planned:'Despesas de meses futuros não contam neste mês.'},
+    en: {daily:'Available to spend per day',dailyZero:'Set a monthly budget',dailyOver:'Budget exceeded',days:'days including today',open:'Limits & averages',caps:'Category limits',avgs:'Spending averages',recent:'Last',months:'completed months',monthly:'Monthly average',monthlyCaption:'Includes expenses, installments and completed lists',catAverage:'Average by category',none:'No completed months with transactions yet.',save:'Save limits',close:'Close',limit:'Monthly cap',spent:'Spent this month',remaining:'Remaining',near:'Near cap',over:'Cap exceeded',okay:'On track',unset:'No cap',noCaps:'Set category caps to monitor spending.',warn:'Near cap',avgSuffix:'/month',note:'Zero-spend months count as 0 after your first record. Subscriptions are counted only from an identifiable creation date.',help:'Blank or 0 = no cap. Does not change existing expenses.',status:'Category status',today:'Today',all:'All on track',historyN:'Months with history',unknown:'Legacy category',show:'View details',invalid:'Enter valid nonnegative amounts.',saved:'Caps saved',noBudget:'No budget',spentMore:'Exceeded',next:'Limits & insights',planned:'Expenses belonging to future months are excluded.'}
+  };
+  const CATEGORY_ALIASES = {
+    cat_market:['mercado','supermercado','groceries','grocery'],
+    cat_leisure:['ocio','lazer','leisure','entretenimiento','entertainment'],
+    cat_transport:['transporte','transport','transportation'],
+    cat_clothes:['ropa','roupa','clothes','vestuario'],
+    cat_health:['salud','saude','health'],
+    cat_bills:['hogar','casa','home','bills','contas','gastos fijos','gastos fixos'],
+    cat_travel:['viaje','viagem','travel'],
+    cat_beauty:['belleza','beleza','beauty'],
+    cat_other:['otro','otros','other','outros','outro'],
+    cat_subs:['suscripciones','assinaturas','subscriptions','subscription','suscripcion','assinatura'],
+    // Categorías históricas que no deben mezclarse arbitrariamente con otras.
+    cat_food:['comida','food','alimentacion','alimentacao'],
+    cat_shop:['compras','shopping','purchases']
+  };
+  const DEFAULT_NAMES = {cat_subs:['Suscripciones','Assinaturas','Subscriptions'],cat_food:['Comida','Comida','Food'],cat_shop:['Compras','Compras','Shopping']};
+  const CSS = `
+#smarty-insights-strip{grid-column:1/-1!important;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;margin:5px 0 0;padding:8px 10px;border:1px solid rgba(237,249,255,.17);border-radius:12px;background:rgba(255,255,255,.105);color:#fff;}
+#smarty-insights-strip .smarty-daily-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+#smarty-insights-strip .smarty-daily-label{font:600 9px/1.2 system-ui,sans-serif;color:rgba(245,250,255,.84)}
+#smarty-insights-strip .smarty-daily-val{font:800 16px/1.2 system-ui,sans-serif;color:white;font-variant-numeric:tabular-nums;white-space:nowrap}
+#smarty-insights-strip .smarty-insights-open{display:flex;align-items:center;justify-content:center;min-width:90px;max-width:47%;gap:4px;padding:7px 8px;border:1px solid rgba(241,249,255,.27);border-radius:9px;background:rgba(255,255,255,.15);color:#fff;font:700 10px/1.3 system-ui,sans-serif;cursor:pointer;text-align:center}
+#smarty-category-alert{grid-column:1/-1!important;display:none;align-items:center;gap:7px;min-width:0;padding:5px 2px 0;font:600 10px/1.4 system-ui,sans-serif;color:#fbe9c7}
+#smarty-category-alert.is-visible{display:flex}
+#smarty-insights-modal{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;z-index:2147483645;background:rgba(4,16,28,.65);padding:env(safe-area-inset-top) 10px calc(10px + env(safe-area-inset-bottom));box-sizing:border-box}
+#smarty-insights-modal.is-open{display:flex}
+#smarty-insights-modal .si-panel{width:100%;max-width:560px;max-height:min(86dvh,800px);display:flex;flex-direction:column;overflow:hidden;border-radius:22px;background:var(--card-bg, #f7fbfa);color:var(--text-color,#233343);border:1px solid var(--glass-border,rgba(152,182,198,.22));box-shadow:0 25px 70px rgba(0,0,0,.30);font-family:system-ui,sans-serif}
+#smarty-insights-modal .si-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 17px;border-bottom:1px solid var(--glass-border,rgba(132,164,183,.17))}
+#smarty-insights-modal .si-title{font-size:16px;font-weight:800;margin:0}
+#smarty-insights-modal .si-close{border:0;background:var(--input-bg,rgba(130,155,176,.14));color:inherit;border-radius:10px;min-width:35px;min-height:35px;font-size:22px;cursor:pointer}
+#smarty-insights-modal .si-body{padding:12px 16px 18px;overflow:auto;overscroll-behavior:contain}
+#smarty-insights-modal .si-section{margin:0 0 20px;padding:0}
+#smarty-insights-modal .si-section h3{font-size:13px;font-weight:800;margin:8px 0 10px}
+#smarty-insights-modal .si-note{font:500 11px/1.5 system-ui,sans-serif;color:var(--text-sec,#6c7c87);margin:7px 0 12px}
+#smarty-insights-modal .si-card{border:1px solid var(--glass-border,rgba(144,172,189,.22));background:var(--glass-bg,rgba(243,250,250,.80));border-radius:15px;padding:12px 13px;margin-bottom:9px}
+#smarty-insights-modal .si-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+#smarty-insights-modal .si-amount{font-weight:850;font-size:19px;font-variant-numeric:tabular-nums}
+#smarty-insights-modal .si-caption{color:var(--text-sec,#6c7c87);font-size:11px}
+#smarty-insights-modal .si-cap-row{padding:9px 1px;border-bottom:1px solid var(--glass-border,rgba(144,172,189,.16))}
+#smarty-insights-modal .si-cap-main{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#smarty-insights-modal .si-cap-name{font-size:12px;font-weight:700;max-width:49%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#smarty-insights-modal .si-cap-input{width:110px;min-width:76px;max-width:38%;border:1px solid var(--glass-border,rgba(144,172,189,.30));border-radius:9px;padding:8px;background:var(--input-bg,rgba(235,244,248,.8));color:var(--text-color,#233343);font:600 13px system-ui,sans-serif;text-align:right}
+#smarty-insights-modal .si-track{height:5px;border-radius:99px;background:rgba(143,169,189,.22);overflow:hidden;margin-top:7px}
+#smarty-insights-modal .si-fill{height:100%;background:#3ebd99;border-radius:99px}
+#smarty-insights-modal .si-fill.is-near{background:#e5ac57}
+#smarty-insights-modal .si-fill.is-over{background:#e16d75}
+#smarty-insights-modal .si-tag{font:700 10px system-ui,sans-serif}
+#smarty-insights-modal .si-tag.is-near{color:#c08630}
+#smarty-insights-modal .si-tag.is-over{color:#d85866}
+#smarty-insights-modal .si-button{width:100%;padding:12px;border:0;border-radius:12px;background:var(--primary,#188c85);color:#fff;font-weight:800;font-size:13px;cursor:pointer}
+#smarty-insights-modal .si-segment{display:flex;gap:5px;margin-bottom:12px}
+#smarty-insights-modal .si-segment button{flex:1;padding:7px 9px;border-radius:10px;border:1px solid var(--glass-border,rgba(152,182,198,.3));background:var(--input-bg,rgba(130,155,176,.11));color:var(--text-color,#233343);font-weight:700;cursor:pointer}
+#smarty-insights-modal .si-segment button[aria-pressed=true]{background:var(--primary,#188c85);color:#fff}
+#smarty-insights-modal .si-average-row{padding:8px 0;border-bottom:1px solid var(--glass-border,rgba(152,182,198,.18));gap:12px;font-size:12px}
+#smarty-insights-modal .si-average-row:last-child{border:0}
+#smarty-insights-modal input:focus-visible,#smarty-insights-modal button:focus-visible,#smarty-insights-strip button:focus-visible{outline:2px solid #4eabcf;outline-offset:2px}
+@media(max-width:355px){#smarty-insights-strip .smarty-daily-val{font-size:14px}#smarty-insights-strip{padding:7px}#smarty-insights-strip .smarty-insights-open{min-width:78px;font-size:9px}}
+`;
+
+  function dataManager(){return typeof Data !== 'undefined' ? Data : window.Data;}
+  function uiManager(){return typeof UI !== 'undefined' ? UI : window.UI;}
+  function financeManager(){return typeof Finance !== 'undefined' ? Finance : window.Finance;}
+  function norm(value) {
+    return String(value ?? '').replace(/^[^\p{L}\p{N}_]+/u, '').normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
+  }
+  function lang() { const l = dataManager()?.store?.settings?.lang; return Object.hasOwn(LANG,l) ? l : 'es'; }
+  function t(k) {return LANG[lang()][k] || LANG.es[k] || k;}
+  function money(n) {return uiManager()?.formatMoney ? uiManager().formatMoney(Number(n)||0) : `R$ ${(Number(n)||0).toFixed(2)}`;}
+  function validDate(value) {
+    // Usar la misma interpretacion que Finance.calculateMonthlySpent.
+    // No recalcular fechas antiguas con una regla distinta a la contabilidad base.
+    const d = value instanceof Date ? value : new Date(value);
+    return !Number.isNaN(d.getTime()) ? d : null;
+  }
+  function startOfMonth(d) { return new Date(d.getFullYear(),d.getMonth(),1); }
+  function indexMonth(d) {return d.getFullYear()*12 + d.getMonth();}
+  function amount(x) {const n = Number(x);return Number.isFinite(n) && n>0 ? n : 0;}
+  function parseCapAmount(text) {
+    const raw = String(text ?? '').trim().replace(/\s/g,'');
+    if (!raw) return 0;
+    if (!/^[0-9.,]+$/.test(raw)) return NaN;
+    const lastComma=raw.lastIndexOf(','),lastDot=raw.lastIndexOf('.');
+    let normalized = raw;
+    if (lastComma > lastDot) normalized=raw.replace(/\./g,'').replace(',','.');
+    else if (lastDot > lastComma && lastComma>=0) normalized=raw.replace(/,/g,'');
+    else if (lastComma>=0) normalized=raw.replace(',','.');
+    else if (/^\d{1,3}(?:\.\d{3})+$/.test(raw)) normalized=raw.replace(/\./g,'');
+    const n=Number(normalized);
+    return Number.isFinite(n) && n>=0 ? n : NaN;
+  }
+  function isCatKey(raw) {return typeof raw === 'string' && /^cat_[a-z0-9_]+$/.test(raw);}
+  function categoryKey(raw) {
+    const value = String(raw ?? '').trim();
+    if (!value) return 'cat_other';
+    // IDs heredados que representan la misma categoria en el proyecto.
+    // No mezclar categorias desconocidas con Otros.
+    const legacyIds = {cat_home:'cat_bills',cat_ent:'cat_leisure'};
+    if (legacyIds[value]) return legacyIds[value];
+    if (isCatKey(value)) return value;
+    const normalized = norm(value).replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u,'').trim();
+    if (!normalized) return 'cat_other';
+    for (const [key,names] of Object.entries(CATEGORY_ALIASES)) if (names.includes(normalized)) return key;
+    // No atribuir una categoría desconocida a Otros: mantenerla separada.
+    return `legacy:${normalized}`;
+  }
+  function categoryLabel(key) {
+    if (key.startsWith('legacy:')) return key.slice(7);
+    if (DEFAULT_NAMES[key]) return DEFAULT_NAMES[key][{es:0,pt:1,en:2}[lang()]];
+    try {return uiManager()?.t(key) || key;}catch(_) {return key;}
+  }
+  function expenseRecords() {return Array.isArray(dataManager()?.store?.expenses)?dataManager().store.expenses:[];}
+  function listRecords() {return Array.isArray(dataManager()?.store?.lists)?dataManager().store.lists:[];}
+  function subscriptionRecords() {return Array.isArray(dataManager()?.store?.subscriptions)?dataManager().store.subscriptions:[];}
+  function earliestMonth() {
+    let earliest=Infinity;
+    expenseRecords().forEach(e=>{const d=validDate(e.date);if(d) earliest=Math.min(earliest,indexMonth(d));});
+    listRecords().filter(l=>l.status==='completed').forEach(l=>{const d=validDate(l.date);if(d)earliest=Math.min(earliest,indexMonth(d));});
+    subscriptionRecords().forEach(s=>{const d=subscriptionDate(s);if(d)earliest=Math.min(earliest,indexMonth(d));});
+    return earliest;
+  }
+  function subscriptionDate(sub) {
+    // El identificador generado por Finance.saveSubscription es Date.now().
+    const v = sub?.createdAt ?? sub?.date ?? sub?.id;
+    const n = Number(v);
+    if(Number.isFinite(n)&&n>=946684800000&&n<=Date.now()+86400000)return new Date(n);
+    return null;
+  }
+  function monthlyBreakdown(year,month,now=new Date()) {
+    const totals=new Map();
+    const period=year*12+month;
+    const currentPeriod=indexMonth(now);
+    const add=(key,value)=>{const n=amount(value);if(n)totals.set(key,(totals.get(key)||0)+n);};
+    for (const e of expenseRecords()) {
+      const d=validDate(e.date);if(!d)continue;
+      if(e.isInstallment) {
+        const n=Math.max(0,Math.trunc(Number(e.installments?.total)||0));
+        const offset=period-indexMonth(d);
+        if(n>0 && offset>=0 && offset<n) add(categoryKey(e.category),e.amount);
+      } else if(indexMonth(d)===period) {
+        // Finance.calculateMonthlySpent cuenta TODOS los gastos imputados
+        // al mes actual, incluso los programados para otro dia del mismo mes.
+        add(categoryKey(e.category),e.amount);
+      }
+    }
+    for(const l of listRecords()) {
+      if(l.status!=='completed')continue;
+      const d=validDate(l.date);
+      if(d && indexMonth(d)===period)add('cat_market',l.total);
+    }
+    for(const s of subscriptionRecords()) {
+      const charged=Math.trunc(Number(s.day));
+      const maxDay=new Date(year,month+1,0).getDate();
+      const date=subscriptionDate(s);
+      if(!date || indexMonth(date)>period || !Number.isInteger(charged)||charged<1||charged>maxDay)continue;
+      if(period===currentPeriod&&charged>now.getDate())continue;
+      add('cat_subs',s.cost);
+    }
+    return totals;
+  }
+  function total(map) {return [...map.values()].reduce((a,b)=>a+b,0);}
+  function getCaps() {
+    const v=dataManager()?.store?.settings?.categoryCaps;
+    if(!v||typeof v!=='object'||Array.isArray(v))return {};
+    const safe={};
+    for(const [k,x] of Object.entries(v)){
+      if(!(isCatKey(k)||k.startsWith('legacy:'))||amount(x)<=0)continue;
+      const canonical = categoryKey(k);
+      // Si conviven dos topes de la misma categoria, utilizar el mayor
+      // sin sobreescribir ni modificar los datos guardados.
+      safe[canonical] = Math.max(safe[canonical]||0,amount(x));
+    }
+    return safe;
+  }
+  function saveCaps(caps) {
+    if (!dataManager()?.store)throw new Error('Data no está inicializado');
+    dataManager().store.settings ||= {};
+    dataManager().store.settings.categoryCaps=caps;
+    dataManager().save();
+  }
+  function capStatus(key,spent,caps) {
+    const cap=amount(caps[key]);
+    const percent=cap>0?spent/cap*100:0;
+    return {cap,spent,percent,status:cap<=0?'unset':percent>=100?'over':percent>=80?'near':'okay'};
+  }
+  function monthlyAverage(count=3,now=new Date()) {
+    const n=[3,6,12].includes(Number(count))?Number(count):3;
+    const first=earliestMonth();
+    const byCategory=new Map();
+    let sum=0,months=0;
+    for(let i=1;i<=n;i++) {
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      if(indexMonth(d)<first)continue;
+      months++;
+      const breakdown=monthlyBreakdown(d.getFullYear(),d.getMonth(),now);
+      const monthTotal=total(breakdown);
+      sum+=monthTotal;
+      for(const [key,value] of breakdown)byCategory.set(key,(byCategory.get(key)||0)+value);
+    }
+    const byAvg=new Map();
+    for(const [key,value] of byCategory)byAvg.set(key,months?value/months:0);
+    return {average:months?sum/months:0,months,byCategory:byAvg,window:n};
+  }
+  function dailyAllowance(now=new Date()) {
+    const budget=Number(dataManager()?.store?.budget?.limit)||0;
+    const spent=typeof financeManager()?.calculateMonthlySpent==='function'?Number(financeManager().calculateMonthlySpent())||0:total(monthlyBreakdown(now.getFullYear(),now.getMonth(),now));
+    const remaining=budget-spent;
+    const days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate()-now.getDate()+1;
+    return {budget,spent,remaining,days,daily:budget>0?Math.max(0,remaining)/Math.max(1,days):0};
+  }
+  let selectedWindow=3;
+  function element(tag,className,textValue){const e=document.createElement(tag);if(className)e.className=className;if(textValue!==undefined)e.textContent=textValue;return e;}
+  function styleOnce(){let css=document.getElementById('smarty-insights-css');if(!css){css=element('style');css.id='smarty-insights-css';document.head.appendChild(css);}css.textContent=CSS;}
+  function modal() {
+    let m=document.getElementById('smarty-insights-modal');if(m)return m;
+    m=element('div');m.id='smarty-insights-modal';m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-label',t('open'));
+    m.innerHTML='<div class="si-panel"><div class="si-head"><h2 class="si-title"></h2><button type="button" class="si-close" aria-label="Cerrar">×</button></div><div class="si-body"><section class="si-section" id="si-caps"><h3></h3><p class="si-note"></p><div class="si-caps-list"></div><button class="si-button si-save" type="button"></button></section><section class="si-section" id="si-averages"><h3></h3><div class="si-segment"></div><div class="si-average-list"></div><p class="si-note si-history-note"></p></section></div></div>';
+    m.querySelector('.si-close').addEventListener('click',close);
+    m.addEventListener('click',ev=>{if(ev.target===m)close();});
+    m.querySelector('.si-save').addEventListener('click',saveFromModal);
+    document.body.appendChild(m);
+    return m;
+  }
+  function close() {document.getElementById('smarty-insights-modal')?.classList.remove('is-open');}
+  function show(){styleOnce();const m=modal();renderModal();m.classList.add('is-open');m.querySelector('.si-close')?.focus();}
+  function categoriesForCaps() {
+    const keys=new Set((uiManager()?.categories||[]).map(c=>c.id));
+    expenseRecords().forEach(e => keys.add(categoryKey(e.category)));
+    keys.add('cat_subs');
+    const now=new Date(),month=monthlyBreakdown(now.getFullYear(),now.getMonth(),now);
+    for (const k of [...month.keys(),...Object.keys(getCaps())])keys.add(k);
+    return [...keys].sort((a,b)=>categoryLabel(a).localeCompare(categoryLabel(b),lang()));
+  }
+  function renderModal() {
+    const m=modal();
+    m.querySelector('.si-title').textContent=t('open');
+    m.querySelector('#si-caps h3').textContent=t('caps');
+    m.querySelector('#si-caps .si-note').textContent=t('help');
+    m.querySelector('.si-save').textContent=t('save');
+    m.querySelector('#si-averages h3').textContent=t('avgs');
+    const now=new Date(),month=monthlyBreakdown(now.getFullYear(),now.getMonth(),now),caps=getCaps();
+    const list=m.querySelector('.si-caps-list');list.replaceChildren();
+    for (const key of categoriesForCaps()) {
+      const status=capStatus(key,month.get(key)||0,caps);
+      const row=element('div','si-cap-row');
+      const line=element('div','si-cap-main');
+      const name=element('span','si-cap-name',categoryLabel(key));
+      const input=element('input','si-cap-input');input.type='text';input.inputMode='decimal';input.placeholder='—';input.dataset.category=key;
+      input.value=status.cap>0?status.cap.toFixed(2):'';
+      input.setAttribute('aria-label',`${t('limit')}: ${categoryLabel(key)}`);
+      line.append(name,input);row.appendChild(line);
+      const description=element('div','si-row si-caption');
+      description.append(element('span','',`${t('spent')}: ${money(status.spent)}`));
+      const statusText=element('span',`si-tag ${status.status==='over'?'is-over':status.status==='near'?'is-near':''}`,
+        status.status==='unset'?t('unset'):`${Math.round(status.percent)}% · ${t(status.status)}`);
+      description.appendChild(statusText);row.appendChild(description);
+      if(status.cap>0){const track=element('div','si-track');const fill=element('div',`si-fill ${status.status==='over'?'is-over':status.status==='near'?'is-near':''}`);fill.style.width=`${Math.min(100,status.percent)}%`;track.appendChild(fill);row.appendChild(track);}
+      list.appendChild(row);
+    }
+    const segment=m.querySelector('.si-segment');segment.replaceChildren();
+    [3,6,12].forEach(n=>{const b=element('button','',`${n} ${t('months')}`);b.type='button';b.setAttribute('aria-pressed',String(selectedWindow===n));b.addEventListener('click',()=>{selectedWindow=n;renderAverages();});segment.appendChild(b);});
+    renderAverages();
+  }
+  function renderAverages() {
+    const m=document.getElementById('smarty-insights-modal');if(!m)return;
+    m.querySelectorAll('.si-segment button').forEach((b,i)=>b.setAttribute('aria-pressed',String([3,6,12][i]===selectedWindow)));
+    const place=m.querySelector('.si-average-list');place.replaceChildren();
+    const info=monthlyAverage(selectedWindow);
+    if(!info.months) {place.appendChild(element('p','si-note',t('none')));m.querySelector('.si-history-note').textContent='';return;}
+    const summary=element('div','si-card');summary.append(element('div','si-caption',`${t('monthly')} · ${info.months} ${t('months')}`),element('div','si-amount',money(info.average)));
+    place.appendChild(summary);
+    place.appendChild(element('h4','',t('catAverage')));
+    const sorted=[...info.byCategory].sort((a,b)=>b[1]-a[1]);
+    for(const [key,avg] of sorted){const row=element('div','si-row si-average-row');row.append(element('span','',categoryLabel(key)),element('strong','',money(avg)));place.appendChild(row);}
+    m.querySelector('.si-history-note').textContent=t('note');
+  }
+  function saveFromModal() {
+    const m=modal(),caps={};let valid=true;
+    for(const input of m.querySelectorAll('.si-cap-input')){
+      const val=input.value.trim();if(!val)continue;
+      const n=parseCapAmount(val);if(!Number.isFinite(n)||n<0){valid=false;break;}
+      if(n>0)caps[input.dataset.category]=Math.round(n*100)/100;
+    }
+    if(!valid){if(uiManager()?.showSnackbar)uiManager().showSnackbar(t('invalid'));return;}
+    saveCaps(caps);renderModal();refresh();
+    if(uiManager()?.showSnackbar)uiManager().showSnackbar(t('saved'));
+  }
+  function refresh(){
+    const panel=document.getElementById('home-finance-overview');if(!panel)return;
+    styleOnce();
+    let strip=document.getElementById('smarty-insights-strip');
+    if(!strip){strip=element('div');strip.id='smarty-insights-strip';
+      const info=element('div','smarty-daily-info');info.append(element('span','smarty-daily-label'),element('strong','smarty-daily-val'));strip.appendChild(info);
+      const btn=element('button','smarty-insights-open');btn.type='button';btn.addEventListener('click',show);strip.appendChild(btn);panel.appendChild(strip);
+    }
+    const d=dailyAllowance();
+    strip.querySelector('.smarty-daily-label').textContent=d.budget<=0?t('dailyZero'):d.remaining<0?t('dailyOver'):`${t('daily')} · ${d.days} ${t('days')}`;
+    strip.querySelector('.smarty-daily-val').textContent=d.budget<=0?'—':money(d.daily);
+    strip.querySelector('.smarty-insights-open').textContent=t('open')+' ›';
+    // La tarjeta usa CSS Grid con cinco filas: la nueva banda necesita su propia fila.
+    panel.style.setProperty('grid-template-rows','auto auto auto auto auto auto','important');
+    strip.style.setProperty('grid-row','6','important');
+    let alert=document.getElementById('smarty-category-alert');
+    if(!alert){alert=element('div');alert.id='smarty-category-alert';panel.appendChild(alert);}
+    const now=new Date(),totals=monthlyBreakdown(now.getFullYear(),now.getMonth(),now),caps=getCaps();
+    const warnings=Object.entries(caps).map(([key,cap])=>({key,...capStatus(key,totals.get(key)||0,caps)}))
+      .filter(x=>x.status==='near'||x.status==='over').sort((a,b)=>b.percent-a.percent);
+    if(warnings.length){const worst=warnings[0];alert.textContent=`${worst.status==='over'?'●':'●'} ${t(worst.status)}: ${categoryLabel(worst.key)} (${Math.round(worst.percent)}%)${warnings.length>1?` · +${warnings.length-1}`:''}`;alert.classList.add('is-visible');alert.style.setProperty('grid-row','7','important');}
+    else {alert.classList.remove('is-visible');alert.textContent='';}
+  }
+  function init(){
+    if(!dataManager() || !uiManager() || !financeManager())return;
+    styleOnce();
+    if(!uiManager().renderBudgetChart.__smartyInsightsWrapped){
+      const original=uiManager().renderBudgetChart;
+      const wrapped=function(...args){const result=original.apply(this,args);try{window.SmartySpendingInsights?.refresh();}catch(e){console.warn('[Smarty insights]',e);}return result;};
+      wrapped.__smartyInsightsWrapped=true;uiManager().renderBudgetChart=wrapped;
+    }
+    refresh();
+  }
+  window.SmartySpendingInsights={version:VERSION,refresh,open:show,close,categoryKey,monthlyBreakdown,monthlyAverage,dailyAllowance,capStatus,getCaps};
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')close();});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  window.addEventListener('load',init,{once:true});
+  setTimeout(init,400);
+})();
