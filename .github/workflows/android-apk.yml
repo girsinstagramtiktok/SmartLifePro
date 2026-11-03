@@ -1106,7 +1106,7 @@ jobs:
             "      try { OutputStream os = getContentResolver().openOutputStream(d.getData()); os.write(pendingBackupContent.getBytes(StandardCharsets.UTF_8)); os.close(); getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(\"if(window.UI) UI.showSnackbar('Copia guardada correctamente');\", null)); } catch (Exception ignored) {}",
             "    }",
             "  }",
-            "  @Override protected void onResume() { super.onResume(); new SmartyJSBridge().requestBankListenerRebind(); }",
+            "  @Override public void onResume() { super.onResume(); new SmartyJSBridge().requestBankListenerRebind(); }",
             "  @Override protected void onCreate(Bundle s) {",
             "    super.onCreate(s); hideSysNav();",
             "    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {",
