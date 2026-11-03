@@ -4,7 +4,7 @@
  */
 (function () {
   'use strict';
-  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-02-12';
+  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-03-14';
 
   const STORE_KEY = 'smarty.finance.card.theme.v1';
   const STORE_COLORS = 'smarty.finance.card.colors.v1';
@@ -594,7 +594,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
    ==================================================================== */
 (function () {
   'use strict';
-  const VERSION = 'smarty-light-2026-11-02-13';
+  const VERSION = 'smarty-insights-2026-11-03-14';
   const IDS = ['cat_market','cat_lunch','cat_dining','cat_leisure','cat_transport','cat_clothes','cat_health','cat_bills','cat_travel','cat_beauty','cat_other','cat_subs'];
   const LOCAL = {
     es:{daily:'Puedes gastar por día',days:'días restantes',limit:'Tope mensual',save:'Guardar tope',clear:'Quitar tope',spent:'Gastado',near:'Cerca del límite',over:'Límite superado',safe:'Dentro del límite',alert:'Alerta de categoría',avg:'Promedios de gastos',monthly:'Promedio mensual',perCategory:'Promedio por categoría',months:'meses completos',empty:'No hay datos históricos suficientes.',invalid:'Introduce un importe válido.',saved:'Tope actualizado',available:'Sin presupuesto'},
@@ -867,6 +867,10 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   function openAverages(){const modal=averagesModal();renderAverages();modal.classList.add('sc-open');modal.querySelector('.sc-close').focus();}
   function enhanceHistory(){
     const container=document.getElementById('expenses-history-list');if(!container)return;
+    // La actualización rápida puede ejecutarse encima del parche previo:
+    // nunca duplicar el botón de promedios ni el panel de topes.
+    container.querySelector('#smarty-finance-toolbar')?.remove();
+    container.querySelector('#smarty-category-cap-detail')?.remove();
     const toolbar=addNode('div');toolbar.id='smarty-finance-toolbar';const button=addNode('button','',t('avg')+' ›');button.type='button';button.addEventListener('click',openAverages);toolbar.appendChild(button);
     const filter=container.querySelector('.filter-scroll-container');
     if(filter?.parentElement)filter.parentElement.insertAdjacentElement('beforebegin',toolbar);else container.prepend(toolbar);
@@ -874,26 +878,43 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     if(key && key!=='ALL')capCard(key);
   }
   function installFinances(){
-    const f=fin(),u=ui();if(!f||!u||f.__smartySafeCategories13)return;
+    const f=fin(),u=ui();if(!f||!u)return;
+    // El APK redefine Finance.renderExpensesHistory() y UI.renderBudgetChart()
+    // al dispararse window.load. Nunca depender de un flag global: verificar
+    // cada metodo y reengancharlo si el APK lo ha sustituido.
+    // No modificar UI.categories, UI.categoryIcon ni Finance.renderFilterChips.
     f.__smartySafeCategories13=true;
-    // PROHIBIDO cambiar UI.categories, UI.categoryIcon o Finance.renderFilterChips:
-    // el APK los configura y conserva los SVG de Microgastos, Almuerzo, Delivery.
-    const originalHistory=f.renderExpensesHistory;
-    f.renderExpensesHistory=function(...args){
-      let result;
-      try{result=projectForRender(()=>originalHistory.apply(this,args));}
-      finally{try{enhanceHistory();}catch(e){console.warn('[Smarty history]',e);}}
-      return result;
-    };
-    const originalHome=f.renderHomeWidgets;
-    if(typeof originalHome==='function')f.renderHomeWidgets=function(...args){return projectForRender(()=>originalHome.apply(this,args));};
-    const originalBudget=u.renderBudgetChart;
-    u.renderBudgetChart=function(...args){
-      const result=originalBudget.apply(this,args);
-      try{refreshDaily();checkCaps();}catch(e){console.warn('[Smarty limits]',e);}
-      return result;
-    };
-    refreshDaily();checkCaps();
+    const mark='__smartySpendingInsights13';
+    if(typeof f.renderExpensesHistory==='function' && !f.renderExpensesHistory[mark]){
+      const originalHistory=f.renderExpensesHistory;
+      const wrappedHistory=function(...args){
+        let result;
+        try{result=projectForRender(()=>originalHistory.apply(this,args));}
+        finally{try{enhanceHistory();}catch(e){console.warn('[Smarty history]',e);}}
+        return result;
+      };
+      wrappedHistory[mark]=true;
+      f.renderExpensesHistory=wrappedHistory;
+    }
+    if(typeof f.renderHomeWidgets==='function' && !f.renderHomeWidgets[mark]){
+      const originalHome=f.renderHomeWidgets;
+      const wrappedHome=function(...args){return projectForRender(()=>originalHome.apply(this,args));};
+      wrappedHome[mark]=true;
+      f.renderHomeWidgets=wrappedHome;
+    }
+    if(typeof u.renderBudgetChart==='function' && !u.renderBudgetChart[mark]){
+      const originalBudget=u.renderBudgetChart;
+      const wrappedBudget=function(...args){
+        const result=originalBudget.apply(this,args);
+        try{refreshDaily();checkCaps();}catch(e){console.warn('[Smarty limits]',e);}
+        return result;
+      };
+      wrappedBudget[mark]=true;
+      u.renderBudgetChart=wrappedBudget;
+    }
+    try{refreshDaily();checkCaps();}catch(e){console.warn('[Smarty insights install]',e);}
+    // Mostrar los controles también si el usuario actualiza con el historial ya abierto.
+    try{enhanceHistory();}catch(e){console.warn('[Smarty insights view]',e);}
     document.getElementById('smarty-insights-modal')?.remove();
   }
   async function localNotice(key,p,level,message){
