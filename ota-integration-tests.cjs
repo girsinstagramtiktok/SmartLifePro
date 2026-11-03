@@ -32,7 +32,14 @@ assert.ok(!scripts.includes('ota-config.js'),
   'El APK todavía carga la configuración del cliente ZIP anterior');
 assert.equal(scripts[mainIndex + 2], 'smarty-ota.js',
   'El parche visual DEBE ejecutarse localmente, antes del primer render del inicio');
-assert.match(read('smarty-ota.js'), /smarty-light-2026-10-28-05/, 'Parche local equivocado');
+// Verificar el archivo exacto que incorpora el APK, sin fijar una versión histórica.
+const bundledOta = read('smarty-ota.js');
+const sourceOta = fs.readFileSync(path.join(__dirname, 'smarty-ota.js'), 'utf8');
+assert.equal(bundledOta, sourceOta,
+  'El parche OTA empaquetado no coincide con smarty-ota.js del repositorio');
+assert.match(bundledOta, /SMARTY_PATCH_BUILD_ID\s*=\s*['"]smarty-light-[^'"]+['"]/, 
+  'El parche OTA no tiene un identificador de versión válido');
+new vm.Script(bundledOta, {filename:'www/smarty-ota.js'});
 assert.match(html, /id=\"smarty-prepaint\"/, 'Falta ocultación anti-parpadeo');
 assert.match(html, /#view-home\{visibility:hidden!important\}/, 'La ocultación debe empezar antes del primer render');
 assert.ok(!html.includes("'serviceWorker' in navigator"),
