@@ -1,10 +1,10 @@
 /* Smart Life Pro — OTA visual: tarjeta financiera personalizable y Smarty completo.
- * Versión: smarty-light-2026-11-08-16
+ * Versión: smarty-light-2026-11-08-17
  * Solo modifica la interfaz ya instalada; no modifica gastos, datos ni actualizaciones.
  */
 (function () {
   'use strict';
-  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-08-16';
+  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-08-17';
 
   const STORE_KEY = 'smarty.finance.card.theme.v1';
   const STORE_COLORS = 'smarty.finance.card.colors.v1';
@@ -455,6 +455,8 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     const top = panel && panel.querySelector('.fin-overview-top');
     const donut = panel && panel.querySelector('.fin-hero-donut');
     if (!scroll || !panel || !dock || !top || !donut) return;
+    // Una vez montado Glass Home, no devolver mascota ni dona al diseño anterior.
+    if (document.getElementById('smarty-glass-hero')) { ensurePicker(); return; }
     if (dock.parentElement !== scroll || dock.nextElementSibling !== panel) scroll.insertBefore(dock, panel);
     if (donut.parentElement !== top) top.appendChild(donut);
     top.querySelectorAll('.fin-top-donut-slot').forEach(slot => {
@@ -575,8 +577,8 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     setupMascot();
     applyTheme(readSetting(STORE_KEY,'glass'));
     installTips();
-    // La vista se muestra solo cuando la estructura y los estilos ya están colocados.
-    document.getElementById('smarty-prepaint')?.remove();
+    // El protector de arranque se retira cuando Glass Home v17 está montado.
+    // Evita mostrar la plantilla antigua entre la capa base y el diseño final.
   }
   document.addEventListener('keydown',e=>{if(e.key==='Escape') closePicker();});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',run,{once:true});
@@ -1315,4 +1317,128 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   apply();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});
   window.SmartyHomeCompactDesign={version:'smarty-glass-compact-2026-11-08-16',refresh:apply};
+})();
+
+/* =====================================================================
+   SMARTY GLASS DENSE v17 — solo presentación del Inicio.
+   La sección de categorías existente se mueve al resumen: se mantienen
+   sus botones, iconos, IDs, etiquetas, filtros y la lectura de datos v16.
+   ===================================================================== */
+(function () {
+  'use strict';
+  const ID = 'smarty-glass-dense-v17';
+  const CSS = String.raw`
+/* Resumen más informativo sin los cuatro rectángulos anidados. */
+#view-home .fin-overview{gap:4px!important;padding:11px 13px 10px!important;margin-bottom:8px!important}
+#view-home .sg-overview-heading{font-size:9px!important;line-height:1.1!important;margin-bottom:1px!important}
+#view-home .fin-overview .fin-hero-main{gap:0!important;margin:0!important}
+#view-home .fin-balance-label{font-size:10px!important}
+#view-home .fin-balance-amount{font-size:clamp(23px,6.7vw,29px)!important;line-height:1.08!important;margin:2px 0 4px!important}
+#view-home .fin-overview .fin-summary-details{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0!important;border-top:1px solid rgba(234,219,255,.23)!important;border-bottom:1px solid rgba(234,219,255,.23)!important;margin:1px 0 0!important;padding:2px 0!important}
+#view-home .fin-overview .fin-summary-details>.fin-metric,
+#view-home .fin-overview .fin-summary-details>#smarty-glass-today,
+#view-home .fin-overview .fin-summary-details>#smarty-insights-strip{
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  justify-content:center!important;min-height:44px!important;height:auto!important;
+  padding:5px 7px!important;gap:2px!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;margin:0!important;min-width:0!important;position:relative!important;
+}
+#view-home .fin-overview .fin-summary-details>:nth-child(odd){border-right:1px solid rgba(234,219,255,.18)!important}
+#view-home .fin-overview .fin-summary-details>:nth-child(-n+2){border-bottom:1px solid rgba(234,219,255,.18)!important}
+#view-home .fin-overview .fin-summary-details .fin-metric-top,
+#view-home .fin-overview .fin-summary-details #smarty-glass-today .sg-metric-label,
+#view-home .fin-overview .fin-summary-details #smarty-insights-strip .smarty-daily-label{
+  display:block!important;font-size:9px!important;line-height:1.1!important;font-weight:700!important;color:rgba(235,222,255,.73)!important;
+}
+#view-home .fin-overview .fin-summary-details .fin-metric-icon{display:none!important}
+#view-home .fin-overview .fin-summary-details .fin-metric strong,
+#view-home .fin-overview .fin-summary-details #smarty-glass-today .sg-metric-amount,
+#view-home .fin-overview .fin-summary-details #smarty-insights-strip .smarty-daily-val{
+  font-size:clamp(13px,3.65vw,16px)!important;font-weight:850!important;line-height:1.13!important;
+  min-height:0!important;white-space:nowrap!important;letter-spacing:-.3px!important
+}
+#view-home .fin-overview .fin-summary-details #smarty-insights-strip .smarty-daily-info{gap:1px!important}
+#view-home .fin-overview .fin-summary-details #smarty-insights-strip .sg-days-remaining{font-size:8px!important;line-height:1.1!important}
+/* Categorías del APK, reutilizadas DENTRO de la tarjeta principal. */
+#view-home .fin-overview .fin-categories-section.smarty-categories-embedded-v17{
+  display:block!important;width:100%!important;min-width:0!important;
+  margin:0!important;padding:5px 0 0!important;min-height:0!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow:visible!important;
+}
+#view-home .fin-overview .fin-categories-section .fin-module-header{
+  padding:1px 1px 5px!important;min-height:23px!important;font-size:11px!important;margin:0!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+}
+#view-home .fin-overview .fin-categories-section .fin-module-heading-left{gap:6px!important;font-size:11px!important}
+#view-home .fin-overview .fin-categories-section .fin-module-icon{width:21px!important;height:21px!important;min-width:21px!important;border-radius:7px!important}
+#view-home .fin-overview .fin-categories-section .fin-module-icon svg{width:15px!important;height:15px!important}
+#view-home .fin-overview .fin-categories-section .fin-module-chevron{font-size:20px!important;line-height:1!important}
+#view-home .fin-overview #smarty-glass-top-grid{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;padding:0!important;margin:0!important;
+}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-card{
+  box-sizing:border-box;min-height:58px!important;display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:20px minmax(18px,auto) 3px!important;
+  align-content:center!important;align-items:center!important;gap:2px 2px!important;
+  padding:5px 5px 5px!important;border-radius:11px!important;text-align:left!important;
+  background:rgba(220,199,255,.075)!important;border:1px solid rgba(233,213,255,.14)!important;
+}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-icon{grid-column:1!important;grid-row:1!important;min-width:0!important}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-icon .category-icon-shell{width:20px!important;height:20px!important;border-radius:6px!important}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-icon .category-icon{width:14px!important;height:14px!important}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-percent{grid-column:2!important;grid-row:1!important;align-self:center!important;font-size:10px!important;margin:0!important}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-name{
+  grid-column:1/-1!important;grid-row:2!important;font-size:8px!important;font-weight:750!important;
+  line-height:1.09!important;min-height:17px!important;max-height:19px!important;overflow:hidden!important;
+  word-break:normal!important;overflow-wrap:anywhere!important;margin:0!important;
+}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-track{grid-column:1/-1!important;grid-row:3!important;height:3px!important;margin:0!important}
+#view-home .fin-overview #smarty-glass-top-grid .sg-cat-empty{padding:7px 1px!important}
+#view-home .fin-overview #home-top-categories{display:none!important}
+#view-home .fin-overview .fin-categories-section .fin-module-body:empty{display:none!important}
+@media(max-width:375px){
+ #view-home .fin-overview{padding:9px 9px 8px!important}
+ #view-home .fin-overview #smarty-glass-top-grid{gap:4px!important}
+ #view-home .fin-overview #smarty-glass-top-grid .sg-cat-card{padding:4px 3px!important}
+ #view-home .fin-overview #smarty-glass-top-grid .sg-cat-name{font-size:7.6px!important}
+}
+`;
+  let pending=false;
+  function style(){
+    let st=document.getElementById(ID);
+    if(!st){st=document.createElement('style');st.id=ID;document.head.appendChild(st);}
+    if(st.textContent!==CSS)st.textContent=CSS;
+  }
+  function update(){
+    style();
+    const home=document.getElementById('view-home');
+    const panel=home?.querySelector('#home-finance-overview');
+    const section=home?.querySelector('.fin-categories-section');
+    if(!panel||!section||!document.getElementById('smarty-glass-hero')||!document.getElementById('smarty-glass-top-grid'))return false;
+    section.classList.add('smarty-categories-embedded-v17');
+    if(section.parentElement!==panel)panel.appendChild(section);
+    // El parche base solo debe retirarse cuando el nuevo DOM y CSS están listos.
+    requestAnimationFrame(()=>document.getElementById('smarty-prepaint')?.remove());
+    return true;
+  }
+  function init(){
+    if(update())return;
+    if(pending)return;
+    pending=true;
+    let tries=0;
+    const retry=()=>{
+      if(update()||++tries>=45){pending=false;return;}
+      requestAnimationFrame(retry);
+    };
+    requestAnimationFrame(retry);
+  }
+  style();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+  window.addEventListener('load',init,{once:true});
+  window.addEventListener('smarty:updated',init);
+  window.SmartyHomeDenseDesign={version:'smarty-glass-dense-2026-11-08-17',refresh:init};
 })();
