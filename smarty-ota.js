@@ -1,10 +1,10 @@
 /* Smart Life Pro — OTA visual: tarjeta financiera personalizable y Smarty completo.
- * Versión: smarty-light-2026-11-02-12
+ * Versión: smarty-light-2026-11-07-15
  * Solo modifica la interfaz ya instalada; no modifica gastos, datos ni actualizaciones.
  */
 (function () {
   'use strict';
-  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-03-14';
+  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-07-15';
 
   const STORE_KEY = 'smarty.finance.card.theme.v1';
   const STORE_COLORS = 'smarty.finance.card.colors.v1';
@@ -944,4 +944,302 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   else{installCss();installFinances();}
   window.addEventListener('load',()=>{installCss();installFinances();},{once:true});
   setTimeout(()=>{installCss();installFinances();},500);
+})();
+/* =====================================================================
+   SMARTY GLASS HOME · visual dashboard only · 2026-11-07
+   Uses existing Data, UI, Finance and SmartySpendingInsights read-only.
+   It NEVER rewrites UI.categories, user data, notifications or finance APIs.
+   ===================================================================== */
+(function () {
+  'use strict';
+  const VERSION = 'smarty-glass-home-2026-11-07-15';
+  if(window.SmartyHomeGlassDesign?.version===VERSION){window.SmartyHomeGlassDesign.refresh?.();return;}
+  const ROOT = '#view-home';
+  const TEXT = {
+    es: {hello:'Hola', summary:'Tu resumen financiero', remaining:'Presupuesto restante', spentToday:'Gastado hoy', daily:'Disponible por día', pacing:'Evolución del gasto', month:'Mes', week:'Semana', actual:'Gasto real', ideal:'Ritmo ideal', leading:'Dentro del ritmo', exceeding:'Por encima del ritmo', noBudget:'Configura un presupuesto para ver el ritmo ideal', categories:'Principales gastos del mes', topHint:'Del gasto mensual', more:'Ver todas', noData:'Sin gastos este mes', todayInfo:'Movimientos de hoy', showHistory:'Ver historial', period:'Presupuesto mensual' },
+    pt: {hello:'Olá', summary:'Seu resumo financeiro', remaining:'Restante do orçamento', spentToday:'Gasto hoje', daily:'Disponível por dia', pacing:'Evolução dos gastos', month:'Mês', week:'Semana', actual:'Gasto real', ideal:'Ritmo ideal', leading:'Dentro do ritmo', exceeding:'Acima do ritmo', noBudget:'Defina um orçamento para ver o ritmo ideal', categories:'Principais gastos do mês', topHint:'Dos gastos mensais', more:'Ver todas', noData:'Nenhuma despesa neste mês', todayInfo:'Movimentos de hoje', showHistory:'Ver histórico', period:'Orçamento mensal' },
+    en: {hello:'Hello', summary:'Your financial overview', remaining:'Budget remaining', spentToday:'Spent today', daily:'Available per day', pacing:'Spending trend', month:'Month', week:'Week', actual:'Actual spending', ideal:'Ideal pace', leading:'Within pace', exceeding:'Above pace', noBudget:'Set a budget to see your ideal pace', categories:'Top spending categories', topHint:'Of monthly spending', more:'See all', noData:'No expenses this month', todayInfo:'Today’s transactions', showHistory:'View history', period:'Monthly budget' }
+  };
+  const icon = {
+    activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg>'
+  };
+  const STYLES = String.raw`
+/* ================================================================
+   Glass Home V15 — scoped ENTIRELY to #view-home and #smarty-glass-
+   ================================================================ */
+#view-home {--sg-start:#251955;--sg-end:#162251;--sg-glow:#a46cf3;--sg-mint:#63f4cc;--sg-ink:#ffffff;
+  background: radial-gradient(ellipse at 8% -12%,color-mix(in srgb,var(--sg-glow) 28%,transparent),transparent 49%),
+              radial-gradient(ellipse at 105% 50%,color-mix(in srgb,var(--sg-glow) 22%,transparent),transparent 49%),
+              linear-gradient(164deg,var(--sg-start),var(--sg-end))!important; color:#fff!important; }
+
+/* Home-only glass navigation; keep original buttons, routes and other screens intact. */
+#app-root:has(#view-home.active) .bottom-dock{background:linear-gradient(135deg,color-mix(in srgb,var(--sg-start,#2b1b62) 83%,white 17%),color-mix(in srgb,var(--sg-end,#1e2159) 80%,white 20%))!important;border:1px solid rgba(223,199,255,.44)!important;box-shadow:0 15px 34px rgba(10,7,42,.35),inset 0 1px 0 rgba(255,255,255,.16)!important;backdrop-filter:blur(20px)!important}
+#app-root:has(#view-home.active) .bottom-dock .dock-btn{color:#e7d9ff!important}
+#app-root:has(#view-home.active) .bottom-dock .dock-btn.active{color:#fff!important;background:rgba(184,131,251,.28)!important;border-radius:17px!important;transform:translateY(-2px)!important}
+#app-root:has(#view-home.active) #dock-plus-btn{background:linear-gradient(135deg,#b477fa,#6b46de)!important;box-shadow:0 4px 14px rgba(90,51,191,.5),inset 0 1px 0 rgba(255,255,255,.24)!important;border-radius:18px!important}
+#view-home .home-header{padding:10px 16px 8px!important;margin-top:max(3px,env(safe-area-inset-top))!important;min-height:61px!important}
+#view-home .home-brand-name{color:#fff!important;font-size:16px!important}
+#view-home .home-brand-copy .app-title-text{color:rgba(241,238,255,.75)!important;font-size:10px!important}
+#view-home .home-profile-btn,#view-home .glass-btn-small{background:rgba(244,236,255,.12)!important;color:#fff!important;border:1px solid rgba(255,255,255,.19)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important;backdrop-filter:blur(13px)}
+#view-home .fin-home-scroll{padding:5px 0 calc(114px + env(safe-area-inset-bottom))!important;scrollbar-width:none!important}
+#view-home .fin-home-scroll::-webkit-scrollbar{display:none}
+#smarty-glass-hero{display:grid;grid-template-columns:92px minmax(0,1fr) 108px;align-items:center;gap:9px;min-height:139px;margin:0 14px 11px;padding:5px 2px;color:#fff}
+#smarty-glass-hero .fin-smarty-dock{grid-column:1;align-self:center;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;margin:0!important;min-width:0!important;width:100%!important;gap:3px!important}
+#smarty-glass-hero .fin-smarty-portrait{width:84px!important;height:83px!important;max-width:84px!important;min-width:0!important;position:relative!important;overflow:hidden!important;display:block!important;margin:0 auto!important;flex:none!important}
+#smarty-glass-hero .fin-smarty-aura{display:none!important}
+#smarty-glass-hero .smarty-visible-figure{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain;pointer-events:none}
+#smarty-glass-hero #mascot-img{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;transform:none!important;margin:0!important;display:block!important}
+#smarty-glass-hero .fin-smarty-xp{position:absolute!important;left:3px!important;bottom:14px!important;width:3px!important;height:32px!important;margin:0!important}
+#smarty-glass-hero .fin-smarty-dialog{display:flex!important;align-items:center!important;justify-content:center!important;width:80px!important;max-width:80px!important;min-width:0!important;min-height:24px!important;padding:3px 8px!important;margin:0 auto!important;border-radius:999px!important;border:1px solid rgba(216,196,255,.40)!important;background:rgba(219,184,255,.15)!important;color:#fff!important;box-shadow:0 2px 9px rgba(9,5,37,.13)!important}
+#smarty-glass-hero .fin-smarty-dialog-label{color:#fff!important;font-size:10px!important;font-weight:800!important}
+#view-home #smarty-glass-hero .fin-smarty-dialog .mascot-bubble-side{display:none!important}
+#smarty-glass-hero .sg-hello{display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;align-items:flex-start}
+#smarty-glass-hero .sg-hello-title{color:#fff;font-size:clamp(18px,5.4vw,24px);letter-spacing:-.6px;font-weight:850;line-height:1.1;white-space:nowrap}
+#smarty-glass-hero .fin-heading-copy{display:flex!important;flex-direction:column!important;gap:4px;padding:0!important;min-width:0!important;margin:0!important}
+#smarty-glass-hero .fin-month-title{font-size:11px!important;font-weight:650!important;color:rgba(242,235,255,.82)!important;line-height:1.2!important;margin:0!important;letter-spacing:-.15px!important}
+#smarty-glass-hero .fin-heading-controls{display:none!important}
+#smarty-glass-hero .fin-health-pill{display:inline-flex!important;gap:5px!important;align-items:center;max-width:100%;font-size:9px!important;line-height:1.2!important;font-weight:740!important;white-space:normal!important;padding:6px 7px!important;border-radius:999px!important;border:1px solid rgba(110,234,199,.35)!important;background:rgba(87,208,179,.14)!important;color:#9cf8db!important;margin:0!important}
+#smarty-glass-hero .fin-health-pill:before{content:'';display:block;width:6px;height:6px;border-radius:100%;background:currentColor;flex:0 0 6px}
+#smarty-glass-hero .fin-hero-donut{display:block!important;grid-column:3!important;grid-row:1!important;width:108px!important;height:108px!important;min-width:108px!important;align-self:center!important;justify-self:end!important;border:0!important;background:transparent!important;position:relative!important;padding:0!important;margin:0!important;transform:none!important;box-shadow:none!important;color:#fff!important}
+#smarty-glass-hero .fin-hero-donut .circle{stroke:var(--sg-mint)!important;stroke-width:3.2!important;filter:drop-shadow(0 0 2px rgba(94,241,198,.28))!important}
+#smarty-glass-hero .fin-hero-donut .circle-bg{stroke:rgba(208,189,255,.23)!important;stroke-width:3.2!important}
+#smarty-glass-hero .fin-hero-donut .fin-ring-value{font-size:21px!important;color:#fff!important;font-weight:900!important}
+#smarty-glass-hero .fin-hero-donut .donut-label{font-size:8px!important;color:rgba(245,234,255,.86)!important}
+#view-home .fin-overview{display:flex!important;flex-direction:column!important;gap:10px!important;position:relative!important;margin:0 13px 13px!important;padding:16px!important;min-height:0!important;border-radius:24px!important;background:linear-gradient(137deg,color-mix(in srgb,var(--sg-start) 81%,white 19%),color-mix(in srgb,var(--sg-end) 87%,white 13%))!important;border:1px solid rgba(226,202,255,.39)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 14px 30px rgba(12,7,40,.24)!important;backdrop-filter:blur(24px) saturate(130%)!important;-webkit-backdrop-filter:blur(24px) saturate(130%)!important;color:#fff!important;overflow:hidden!important}
+#view-home .fin-overview:before{display:block!important;content:''!important;position:absolute;top:-110px;right:-90px;left:auto;bottom:auto;width:240px;height:225px;border-radius:50%;background:radial-gradient(circle,rgba(195,145,255,.20),transparent 71%);pointer-events:none;z-index:0}
+#view-home .fin-overview:after{display:none!important}
+#view-home .fin-overview>*{position:relative;z-index:1}
+#view-home .fin-overview-top{display:none!important}
+#view-home .sg-overview-heading{font-size:10px;font-weight:850;letter-spacing:1.05px;text-transform:uppercase;color:rgba(232,216,253,.84)}
+#view-home .fin-hero-main{display:flex!important;flex-direction:column!important;grid-column:auto!important;grid-row:auto!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;gap:0!important}
+#view-home .fin-hero-balance{width:100%!important;min-width:0!important}
+#view-home .fin-balance-label{font-size:11px!important;color:rgba(239,225,255,.83)!important}
+#view-home .fin-balance-amount{font-size:clamp(26px,7.6vw,34px)!important;margin:5px 0 1px!important;line-height:1.14!important;color:#9cf8da!important;letter-spacing:-1px!important;overflow:visible!important}
+#view-home .fin-overview .fin-budget-progress-labels,#view-home .fin-overview .fin-budget-track{display:none!important}
+#view-home .fin-summary-details{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;grid-column:auto!important;grid-row:auto!important;align-items:stretch!important;margin:0!important;padding:0!important;width:100%!important}
+#view-home .fin-summary-details .fin-metric,#view-home #smarty-insights-strip,#view-home #smarty-glass-today{box-sizing:border-box;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:4px!important;min-width:0!important;min-height:67px!important;height:auto!important;border:1px solid rgba(244,227,255,.20)!important;border-radius:16px!important;background:rgba(245,234,255,.095)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;padding:10px!important;margin:0!important;color:#fff!important;text-align:left!important;position:static!important;grid-row:auto!important}
+#view-home .fin-metric-top,#view-home #smarty-insights-strip .smarty-daily-label,#view-home #smarty-glass-today .sg-metric-label{font-size:10px!important;color:rgba(237,226,255,.78)!important;font-weight:700!important;line-height:1.2!important}
+#view-home .fin-summary-details .fin-metric strong,#view-home #smarty-insights-strip .smarty-daily-val,#view-home #smarty-glass-today .sg-metric-amount{font-size:clamp(14px,4.0vw,17px)!important;font-weight:850!important;letter-spacing:-.3px!important;color:#fff!important;white-space:nowrap!important;line-height:1.2!important}
+#view-home #smarty-glass-today .sg-metric-amount{color:#ffbbcf!important}
+#view-home #smarty-insights-strip .smarty-daily-val{color:#9cf8da!important}
+#view-home #smarty-insights-strip{grid-column:auto!important;justify-content:center!important;min-height:67px!important;width:100%!important}
+#view-home #smarty-insights-strip .smarty-daily-info{gap:5px!important;min-width:0}
+#view-home #smarty-insights-strip .smarty-daily-label{display:block!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#view-home #smarty-glass-today .sg-today-foot{display:none}
+#view-home #smarty-insights-strip .sg-days-remaining{font:600 9px/1.1 var(--font-main,system-ui);color:rgba(235,222,255,.70)}
+#view-home .smarty-theme-trigger{display:grid!important;position:absolute;right:12px;top:10px;width:28px;height:28px;border-radius:10px;border:1px solid rgba(243,233,255,.28);background:rgba(244,230,255,.12);color:#fff}
+#view-home .fin-overview .fin-budget-note{display:none!important}
+#smarty-glass-trend{margin:0 13px 13px;padding:14px 14px 10px;border-radius:23px;border:1px solid rgba(232,211,255,.33);background:linear-gradient(135deg,rgba(188,150,251,.17),rgba(150,192,245,.075));color:#fff;box-shadow:0 12px 28px rgba(11,9,45,.19),inset 0 1px 0 rgba(255,255,255,.15);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+#smarty-glass-trend .sg-trend-head{display:flex;align-items:center;justify-content:space-between;gap:9px;min-width:0}
+#smarty-glass-trend .sg-chart-label{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px;font-weight:800}
+#smarty-glass-trend .sg-chart-label svg{width:19px;height:19px;stroke:#c7a6ff;flex:0 0 19px}
+#smarty-glass-trend .sg-tabs{display:flex;gap:3px;padding:3px;border-radius:999px;background:rgba(226,203,255,.12);border:1px solid rgba(229,200,255,.20);flex:none}
+#smarty-glass-trend .sg-tabs button{border:0;padding:5px 11px;border-radius:999px;background:transparent;color:rgba(255,255,255,.76);font:750 10px/1.2 var(--font-main,system-ui);min-height:27px}
+#smarty-glass-trend .sg-tabs button[aria-pressed="true"]{color:#fff;background:linear-gradient(135deg,#ac6ef7,#7441ca);box-shadow:0 2px 8px rgba(38,19,88,.35)}
+#smarty-glass-trend .sg-chart-wrap{height:168px;margin:10px 0 2px;position:relative;overflow:hidden}
+#smarty-glass-trend svg.sg-chart{width:100%;height:100%;overflow:visible;display:block}
+#smarty-glass-trend .sg-legend{display:flex;gap:16px;align-items:center;justify-content:center;margin:2px auto 0;font-size:10px;font-weight:650;color:rgba(242,230,255,.85)}
+#smarty-glass-trend .sg-legend-item{display:flex;gap:5px;align-items:center}
+#smarty-glass-trend .sg-line{display:inline-block;width:18px;height:4px;background:#63f4cc;border-radius:99px}
+#smarty-glass-trend .sg-line.ideal{height:0;border-top:2px dashed #c992fd;background:none;border-radius:0}
+#smarty-glass-trend .sg-trend-footer{margin-top:8px;text-align:center;color:rgba(242,231,255,.76);font-size:10px;line-height:1.35}
+#view-home .fin-home-module{border-radius:22px!important;border:1px solid rgba(230,214,255,.29)!important;background:linear-gradient(135deg,rgba(229,209,255,.15),rgba(163,195,247,.09))!important;color:#fff!important;box-shadow:0 10px 28px rgba(12,9,43,.16),inset 0 1px 0 rgba(255,255,255,.09)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important}
+#view-home .fin-module-header{color:#fff!important}
+#view-home .fin-module-icon{background:rgba(219,177,255,.22)!important;color:#d4b2ff!important}
+#view-home .fin-module-chevron{color:#dcccf6!important}
+#view-home .home-expense-row{color:#fff!important}
+#view-home .home-expense-row>div:last-child{color:#ffbdd0!important}
+#view-home .home-expense-row>div:first-child>div>span:last-child{color:rgba(233,223,250,.73)!important;opacity:1!important}
+#view-home .home-expense-row>div:first-child>span:first-child{background:rgba(219,193,255,.15)!important}
+#view-home #home-top-categories{display:none!important}
+#smarty-glass-top-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:2px 12px 13px}
+#smarty-glass-top-grid .sg-cat-card{border:1px solid rgba(235,216,255,.19);border-radius:16px;background:rgba(213,191,254,.10);padding:9px 7px 8px;min-width:0;min-height:87px;color:#fff;text-align:left;font:inherit;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+#smarty-glass-top-grid .sg-cat-card .category-icon-shell{width:30px;height:30px;border-radius:11px;display:grid;place-items:center;flex:none}
+#smarty-glass-top-grid .sg-cat-card .category-icon{width:20px;height:20px}
+#smarty-glass-top-grid .sg-cat-name{font-size:9px;font-weight:700;line-height:1.15;max-width:100%;white-space:normal;overflow-wrap:anywhere;min-height:20px}
+#smarty-glass-top-grid .sg-cat-percent{font-size:11px;font-weight:850;align-self:flex-end}
+#smarty-glass-top-grid .sg-cat-track{width:100%;height:4px;overflow:hidden;border-radius:99px;background:rgba(224,209,248,.22);margin-top:auto}
+#smarty-glass-top-grid .sg-cat-fill{height:100%;border-radius:99px;background:var(--sg-mint)}
+#smarty-glass-top-grid .sg-cat-card:nth-child(2) .sg-cat-fill{background:#e3a1f6}
+#smarty-glass-top-grid .sg-cat-card:nth-child(3) .sg-cat-fill{background:#7bb8ff}
+#smarty-glass-top-grid .sg-cat-card:nth-child(4) .sg-cat-fill{background:#ffcc76}
+#smarty-glass-top-grid .sg-cat-empty{grid-column:1/-1;padding:8px;color:rgba(243,229,255,.75);text-align:center;font-size:11px}
+@media(max-width:380px){
+ #smarty-glass-hero{grid-template-columns:76px minmax(0,1fr) 92px;margin-left:10px;margin-right:10px;gap:6px;min-height:121px}
+ #smarty-glass-hero .fin-smarty-portrait{height:70px!important;width:73px!important}
+ #smarty-glass-hero .fin-smarty-dialog{width:72px!important}
+ #smarty-glass-hero .fin-hero-donut{width:91px!important;height:91px!important;min-width:91px!important}
+ #smarty-glass-hero .sg-hello-title{font-size:18px}
+ #view-home .fin-overview,#smarty-glass-trend{margin-left:9px!important;margin-right:9px!important;padding:12px!important}
+ #smarty-glass-top-grid{gap:5px;padding:2px 8px 10px}
+ #smarty-glass-top-grid .sg-cat-card{padding:7px 5px;min-height:84px}
+ #smarty-glass-top-grid .sg-cat-name{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){#view-home #smarty-glass-trend *,#view-home .fin-overview *{transition:none!important;animation:none!important}}
+`;
+  const doc = document;
+  const d=()=>typeof Data!=='undefined'?Data:null;
+  const u=()=>typeof UI!=='undefined'?UI:null;
+  const f=()=>typeof Finance!=='undefined'?Finance:null;
+  const el = (tag,cls,txt)=>{const x=doc.createElement(tag);if(cls)x.className=cls;if(txt!==undefined)x.textContent=txt;return x;};
+  const lang=()=>['es','pt','en'].includes(d()?.store?.settings?.lang)?d().store.settings.lang:'es';
+  const t=k=>TEXT[lang()][k]||TEXT.es[k]||k;
+  const n=v=>Number.isFinite(Number(v))?Number(v):0;
+  const money=v=>u()?.formatMoney?u().formatMoney(n(v)):n(v).toFixed(2);
+  const keyOf=v=>window.SmartySpendingInsights?.keyOf?.(v)||String(v||'cat_other');
+  const label=v=>window.SmartySpendingInsights?.label?.(v)||(String(v||''));
+  let view='month', frameQueued=false, lastPaint='', observationReady=false;
+
+  function css(){let style=doc.getElementById('smarty-glass-home-css');if(!style){style=el('style');style.id='smarty-glass-home-css';doc.head.appendChild(style);}if(style.textContent!==STYLES)style.textContent=STYLES;}
+  function theme(){
+    const root=doc.getElementById('view-home'),overview=doc.getElementById('home-finance-overview');if(!root||!overview)return;
+    const themeName=overview.dataset.smartyTheme||'glass';
+    const presets={glass:['#152947','#14234d','#744bdb','#62e9d0'],bb:['#0c296b','#081d51','#3773ce','#f8dc75'],nubank:['#2c175e','#1c184c','#b47aff','#63f4cc'],mp:['#083956','#073356','#2388ce','#6fe8da'],custom:['#263254','#1b264c','#9274d9','#82e9db']};
+    const item=presets[themeName]||presets.glass;
+    let a=item[0],b=item[1],accent=item[3];
+    if(themeName==='custom') {a=overview.style.getPropertyValue('--sc-a')?.trim()||a;b=overview.style.getPropertyValue('--sc-b')?.trim()||b;accent=overview.style.getPropertyValue('--sc-accent')?.trim()||accent;}
+    for(const target of [root,doc.getElementById('app-root')].filter(Boolean)){target.style.setProperty('--sg-start',a);target.style.setProperty('--sg-end',b);target.style.setProperty('--sg-glow',item[2]);target.style.setProperty('--sg-mint',accent);}
+  }
+  function layout(){
+    const home=doc.getElementById('view-home'),scroll=home?.querySelector('.fin-home-scroll'),panel=home?.querySelector('.fin-overview');
+    const dock=home?.querySelector('.fin-smarty-dock'),donut=home?.querySelector('.fin-hero-donut');
+    const heading=panel?.querySelector('.fin-heading-copy')||home?.querySelector('#smarty-glass-hero .fin-heading-copy');
+    const health=home?.querySelector('#home-budget-health');
+    if(!home||!scroll||!panel||!dock||!donut||!heading||!health)return false;
+    let hero=doc.getElementById('smarty-glass-hero');
+    if(!hero){hero=el('section');hero.id='smarty-glass-hero';hero.setAttribute('aria-label','Smarty y progreso del presupuesto');scroll.insertBefore(hero,panel);}
+    if(hero.nextElementSibling!==panel)scroll.insertBefore(hero,panel);
+    let greetings=hero.querySelector('.sg-hello');if(!greetings){greetings=el('div','sg-hello');hero.appendChild(greetings);}
+    let headline=greetings.querySelector('.sg-hello-title');if(!headline){headline=el('strong','sg-hello-title');greetings.appendChild(headline);}
+    if(dock.parentNode!==hero)hero.insertBefore(dock,greetings);
+    if(heading.parentNode!==greetings)greetings.appendChild(heading);
+    if(health.parentNode!==greetings)greetings.appendChild(health);
+    if(donut.parentNode!==hero)hero.appendChild(donut);
+    const controls=heading.querySelector('.fin-heading-controls');
+    let picker=controls?.querySelector('.smarty-theme-trigger');
+    if(picker && picker.parentNode!==panel)panel.appendChild(picker);
+    let header=panel.querySelector('.sg-overview-heading');if(!header){header=el('div','sg-overview-heading');panel.insertBefore(header,panel.firstChild);}
+    const grid=panel.querySelector('.fin-summary-details');
+    if(!grid)return false;
+    let today=doc.getElementById('smarty-glass-today');
+    if(!today){today=el('button');today.type='button';today.id='smarty-glass-today';today.addEventListener('click',()=>f()?.openHomeMovements?.('expense'));const lbl=el('span','sg-metric-label');const v=el('strong','sg-metric-amount');today.append(lbl,v);}
+    if(today.parentNode!==grid)grid.appendChild(today);
+    const strip=doc.getElementById('smarty-insights-strip');if(strip){if(strip.parentNode!==grid)grid.appendChild(strip);strip.style.setProperty('grid-row','auto','important');strip.style.setProperty('grid-column','auto','important');}
+    let trend=doc.getElementById('smarty-glass-trend');
+    if(!trend){trend=el('section');trend.id='smarty-glass-trend';trend.setAttribute('aria-label',t('pacing'));
+      const head=el('div','sg-trend-head'),title=el('div','sg-chart-label');title.innerHTML=icon.activity;title.appendChild(el('span','sg-chart-title'));
+      const tabs=el('div','sg-tabs');for(const k of ['month','week']){const b=el('button','',t(k));b.type='button';b.dataset.period=k;b.setAttribute('aria-pressed',String(view===k));b.addEventListener('click',()=>{view=k;render();});tabs.appendChild(b);}
+      head.append(title,tabs);trend.appendChild(head);trend.appendChild(el('div','sg-chart-wrap'));
+      const legends=el('div','sg-legend');for(const [k,cls] of [['actual',''],['ideal','ideal']]){const item=el('span','sg-legend-item');item.append(el('i','sg-line '+cls),el('span','sg-legend-'+k));legends.appendChild(item);}trend.appendChild(legends);trend.appendChild(el('div','sg-trend-footer'));
+      scroll.insertBefore(trend,panel.nextSibling);
+    }
+    let top=doc.getElementById('smarty-glass-top-grid');if(!top){top=el('div');top.id='smarty-glass-top-grid';const section=home.querySelector('.fin-categories-section');section?.appendChild(top);}
+    return true;
+  }
+
+  function monthDays(now=new Date()){
+    const y=now.getFullYear(),m=now.getMonth(),last=new Date(y,m+1,0).getDate(),td=now.getDate();
+    const daily=Array(last+1).fill(0);
+    const inMonth=d=>d.getFullYear()===y&&d.getMonth()===m;
+    const safeDate=v=>{const d=new Date(v);return Number.isFinite(d.getTime())?d:null;};
+    const validAmount=v=>Math.max(0,n(v));
+    const expenses=Array.isArray(d()?.store?.expenses)?d().store.expenses:[];
+    const cats=new Map();
+    function add(day,amount,cat){if(day<1||day>last||!Number.isFinite(amount)||amount<=0)return;
+      daily[day]+=amount;const key=keyOf(cat);cats.set(key,(cats.get(key)||0)+amount);
+    }
+    for(const e of expenses){const d=safeDate(e.date);if(!d)continue;
+      if(e.isInstallment){const count=Number(e.installments?.total)||0;const monthIndex=(y-d.getFullYear())*12+m-d.getMonth();if(monthIndex>=0&&monthIndex<count)add(Math.min(d.getDate(),last),validAmount(e.amount),e.category);}
+      else if(inMonth(d))add(d.getDate(),validAmount(e.amount),e.category);
+    }
+    for(const l of d()?.store?.lists||[]){const d=safeDate(l.date);if(l.status==='completed'&&d&&inMonth(d))add(d.getDate(),validAmount(l.total),'cat_market');}
+    for(const s of d()?.store?.subscriptions||[]){const day=Number(s.day);if(day>=1&&day<=Math.min(td,last))add(day,validAmount(s.cost),'cat_subs');}
+    const cumulative=Array(last+1).fill(0);for(let i=1;i<=last;i++)cumulative[i]=cumulative[i-1]+daily[i];
+    return {now,y,m,last,td,daily,cumulative,cats};
+  }
+
+  function plotGraph(){
+    const chart=doc.querySelector('#smarty-glass-trend .sg-chart-wrap');if(!chart)return;
+    const stats=monthDays(),budget=Math.max(0,n(d()?.store?.budget?.limit));
+    const {td,last,cumulative}=stats;
+    const left=view==='week'?Math.max(1,td-6):1,right=view==='week'?Math.min(last,left+6):last;
+    const maxReal=Math.max(...cumulative.slice(left,td+1),0);
+    const upper=Math.max(budget,maxReal,1)*1.13;
+    const width=345,height=160,x0=14,x1=330,y0=133,y1=12;
+    const xx=d=>x0+((d-left)/Math.max(1,right-left))*(x1-x0);
+    const yy=v=>y0-Math.min(1,Math.max(0,v/upper))*(y0-y1);
+    const series=(from,to,f)=>Array.from({length:to-from+1},(_,i)=>[xx(from+i),yy(f(from+i))]);
+    const points=series(left,td,d=>cumulative[d]);
+    if(view==='week' && right<td)points.push(...series(td+1,right,d=>cumulative[d]));
+    const line=points.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const area=`${line} L ${xx(td).toFixed(1)} ${y0} L ${xx(left).toFixed(1)} ${y0} Z`;
+    const ideal=series(left,right,d=>budget*d/last).map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const yyToday=yy(cumulative[td]),xToday=xx(td);
+    const scaleVals=[0,.33,.66,1].map(f=>Math.round(upper*f));
+    const s=doc.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox',`0 0 ${width} ${height}`);s.setAttribute('role','img');s.classList.add('sg-chart');s.setAttribute('aria-label',`${t('actual')}: ${money(cumulative[td])}. ${t('ideal')}: ${money(budget*td/last)}`);
+    const xmlns='http://www.w3.org/2000/svg';
+    const svg=(tag,props)=>{const item=doc.createElementNS(xmlns,tag);for(const [k,v] of Object.entries(props))item.setAttribute(k,String(v));return item;};
+    const defs=svg('defs',{}),g=svg('linearGradient',{id:'sg-chart-fill',x1:'0',y1:'0',x2:'0',y2:'1'});g.append(svg('stop',{offset:'0%', 'stop-color':'#65f8d1','stop-opacity':'.27'}),svg('stop',{offset:'100%','stop-color':'#65f8d1','stop-opacity':'.005'}));defs.appendChild(g);s.appendChild(defs);
+    for(let i=0;i<4;i++)s.appendChild(svg('line',{x1:x0,y1:y0-(y0-y1)*i/3,x2:x1,y2:y0-(y0-y1)*i/3,stroke:'rgba(233,217,255,.17)','stroke-width':1}));
+    if(budget>0)s.appendChild(svg('path',{d:ideal,fill:'none',stroke:'#c894fc','stroke-width':2.4,'stroke-dasharray':'6 5','stroke-linejoin':'round'}));
+    s.append(svg('path',{d:area,fill:'url(#sg-chart-fill)'}),svg('path',{d:line,fill:'none',stroke:'#64f5ce','stroke-width':3.8,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    s.appendChild(svg('circle',{cx:xToday,cy:yyToday,r:5.1,fill:'#65f6ce',stroke:'#fff','stroke-width':2}));
+    const txt=(x,y,str,anchor='middle')=>{const z=svg('text',{x,y,fill:'rgba(240,226,255,.81)','font-size':'10','font-family':'system-ui,Arial', 'text-anchor':anchor});z.textContent=str;s.appendChild(z);};
+    const dateLabel=d=>view==='week'?`${d}/${stats.m+1}`:String(d);
+    txt(x0,155,dateLabel(left),'start');txt(x1,155,dateLabel(right),'end');
+    if(view==='month'&&right>7){txt(xx(Math.round((left+right)/2)),155,dateLabel(Math.round((left+right)/2)));}
+    chart.replaceChildren(s);
+    const footer=doc.querySelector('#smarty-glass-trend .sg-trend-footer');
+    if(footer){
+      if(!budget)footer.textContent=t('noBudget');
+      else {const delta=cumulative[td]-budget*td/last;footer.textContent=`${delta>0?t('exceeding'):t('leading')} · ${money(Math.abs(delta))}`;}
+    }
+  }
+  function topCats(stats){
+    const grid=doc.getElementById('smarty-glass-top-grid');if(!grid)return;
+    grid.replaceChildren();const total=[...stats.cats.values()].reduce((a,b)=>a+b,0);
+    const entries=[...stats.cats.entries()].filter(([,amt])=>amt>0).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    if(!entries.length){grid.appendChild(el('div','sg-cat-empty',t('noData')));return;}
+    for(const [key,value] of entries){
+      const item=el('button','sg-cat-card');item.type='button';const id=key;
+      const known=(u()?.categories||[]).some(c=>c.id===id)||id==='cat_subs';
+      const categoryNames={cat_lunch:{es:'Almuerzo',pt:'Almoço',en:'Lunch'},cat_dining:{es:'Delivery y Salidas',pt:'Delivery e Saídas',en:'Delivery & Dining'},cat_leisure:{es:'Microgastos',pt:'Microgastos',en:'Micro-expenses'},cat_subs:{es:'Gastos Fijos',pt:'Gastos Fixos',en:'Fixed Expenses'}};const fromUI=known?(id==='cat_subs'?u()?.t?.('tab_subs'):u()?.t?.(id)):null;const legacyLeisure=id==='cat_leisure'&&['ocio','lazer','leisure'].includes(String(fromUI||'').toLocaleLowerCase('en'));const actualLabel=(fromUI&&fromUI!==id&&fromUI!=='tab_subs'&&!legacyLeisure)?fromUI:(categoryNames[id]?.[lang()]||label(id));
+      item.setAttribute('aria-label',`${actualLabel}: ${Math.round(100*value/total)}%`);
+      item.addEventListener('click',()=>f()?.openHomeCategory?.(known?id:null));
+      const graphic=el('span','sg-cat-icon');
+      if(typeof u()?.categoryIcon==='function')graphic.innerHTML=u().categoryIcon(known?id:'cat_other');
+      item.appendChild(graphic);
+      item.append(el('span','sg-cat-name',actualLabel),el('strong','sg-cat-percent',`${Math.round(100*value/total)}%`));
+      const track=el('div','sg-cat-track'),fill=el('div','sg-cat-fill');fill.style.width=`${Math.min(100,100*value/total)}%`;track.appendChild(fill);item.appendChild(track);grid.appendChild(item);
+    }
+  }
+  function render(){
+    if(!layout())return;
+    const stats=monthDays();
+    const root=doc.getElementById('view-home'),hero=doc.getElementById('smarty-glass-hero');
+    theme();
+    hero.querySelector('.sg-hello-title').textContent=t('hello');
+    const labelSummary=doc.querySelector('#view-home .sg-overview-heading');if(labelSummary)labelSummary.textContent=t('summary');
+    const rem=doc.querySelector('#view-home .fin-balance-label');if(rem)rem.textContent=t('remaining');
+    const today=doc.getElementById('smarty-glass-today');if(today){today.querySelector('.sg-metric-label').textContent=t('spentToday');today.querySelector('.sg-metric-amount').textContent=money(stats.daily[stats.td]);today.title=t('todayInfo');}
+    const daily=doc.getElementById('smarty-insights-strip'), dailyInfo=daily?.querySelector('.smarty-daily-info');if(dailyInfo){const dailyLabel=dailyInfo.querySelector('.smarty-daily-label');if(dailyLabel)dailyLabel.textContent=t('daily');let days=dailyInfo.querySelector('.sg-days-remaining');if(!days){days=el('span','sg-days-remaining');dailyInfo.appendChild(days);}const remains=stats.last-stats.td+1;days.textContent=remains+' '+({es:'días restantes',pt:'dias restantes',en:'days left'}[lang()]);}
+    const trend=doc.getElementById('smarty-glass-trend');if(trend){trend.querySelector('.sg-chart-title').textContent=t('pacing');trend.querySelectorAll('.sg-tabs button').forEach(btn=>{btn.textContent=t(btn.dataset.period);btn.setAttribute('aria-pressed',String(btn.dataset.period===view));});trend.querySelector('.sg-legend-actual').textContent=t('actual');trend.querySelector('.sg-legend-ideal').textContent=t('ideal');plotGraph();}
+    topCats(stats);
+  }
+  function enqueue(){if(frameQueued)return;frameQueued=true;requestAnimationFrame(()=>{frameQueued=false;try{render();}catch(e){console.warn('[Smarty Glass Home]',e);}});}
+  function observe(){if(observationReady)return;observationReady=true;
+    const ids=['budget-spent','budget-limit','budget-remaining','home-budget-percent','home-month-title','smarty-insights-strip'];
+    const observer=new MutationObserver(()=>enqueue());
+    for(const id of ids){const node=doc.getElementById(id);if(node)observer.observe(node,{characterData:true,childList:true,subtree:true});}
+    const overview=doc.getElementById('home-finance-overview');if(overview)observer.observe(overview,{attributes:true,attributeFilter:['data-smarty-theme']});
+    doc.addEventListener('visibilitychange',()=>{if(doc.visibilityState==='visible')enqueue();});
+    window.addEventListener('focus',enqueue);
+    window.addEventListener('smarty:updated',enqueue);
+  }
+  function start(){css();if(!layout())return;enqueue();observe();}
+  if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',start,{once:true});else start();
+  window.addEventListener('load',()=>{setTimeout(start,700);},{once:true});
+  setTimeout(start,950);
+  window.SmartyHomeGlassDesign={version:VERSION,refresh:enqueue};
 })();
