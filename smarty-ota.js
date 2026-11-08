@@ -1,10 +1,10 @@
 /* Smart Life Pro — OTA visual: tarjeta financiera personalizable y Smarty completo.
- * Versión: smarty-light-2026-11-08-17
+ * Versión: smarty-light-2026-11-08-18
  * Solo modifica la interfaz ya instalada; no modifica gastos, datos ni actualizaciones.
  */
 (function () {
   'use strict';
-  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-08-17';
+  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-08-18';
 
   const STORE_KEY = 'smarty.finance.card.theme.v1';
   const STORE_COLORS = 'smarty.finance.card.colors.v1';
@@ -13,6 +13,8 @@
     bb: { name: 'Inspirado en Banco do Brasil', a: '#123c96', b: '#071c55', accent: '#ffda54' },
     nubank: { name: 'Inspirado en Nubank', a: '#803fc0', b: '#421a73', accent: '#e0bcff' },
     mp: { name: 'Inspirado en Mercado Pago', a: '#118ac6', b: '#07528d', accent: '#9de9ff' },
+    light: { name: 'Claro', a: '#eaf2ff', b: '#cddff3', accent: '#087e73' },
+    dark: { name: 'Oscuro', a: '#172034', b: '#0b1222', accent: '#65e4c6' },
     custom: { name: 'Personalizado', a: '#30497b', b: '#17334c', accent: '#7ee2b2' }
   };
 
@@ -364,7 +366,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
 
   function makePicker() {
     let modal = document.getElementById('smarty-theme-sheet');
-    if (modal) return modal;
+    if (modal) { modal.remove(); } // El selector anterior no contenía Claro y Oscuro.
     modal = document.createElement('div');
     modal.id = 'smarty-theme-sheet';
     modal.setAttribute('role', 'dialog');
@@ -385,7 +387,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     sub.textContent = 'Elige un estilo. Solo cambia la apariencia; tus gastos y presupuestos no se modifican.';
     panel.appendChild(sub);
     const grid = document.createElement('div'); grid.className = 'smarty-theme-grid';
-    ['glass', 'bb', 'nubank', 'mp'].forEach(key => {
+    ['glass', 'bb', 'nubank', 'mp', 'light', 'dark'].forEach(key => {
       const theme = THEMES[key];
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'smarty-preset'; button.dataset.theme = key;
@@ -954,13 +956,13 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
    ===================================================================== */
 (function () {
   'use strict';
-  const VERSION = 'smarty-glass-home-2026-11-07-15';
+  const VERSION = 'smarty-glass-home-2026-11-08-18';
   if(window.SmartyHomeGlassDesign?.version===VERSION){window.SmartyHomeGlassDesign.refresh?.();return;}
   const ROOT = '#view-home';
   const TEXT = {
-    es: {hello:'Hola', summary:'Tu resumen financiero', remaining:'Presupuesto restante', spentToday:'Gastado hoy', daily:'Disponible por día', pacing:'Evolución del gasto', month:'Mes', week:'Semana', actual:'Gasto real', ideal:'Ritmo ideal', leading:'Dentro del ritmo', exceeding:'Por encima del ritmo', noBudget:'Configura un presupuesto para ver el ritmo ideal', categories:'Principales gastos del mes', topHint:'Del gasto mensual', more:'Ver todas', noData:'Sin gastos este mes', todayInfo:'Movimientos de hoy', showHistory:'Ver historial', period:'Presupuesto mensual' },
-    pt: {hello:'Olá', summary:'Seu resumo financeiro', remaining:'Restante do orçamento', spentToday:'Gasto hoje', daily:'Disponível por dia', pacing:'Evolução dos gastos', month:'Mês', week:'Semana', actual:'Gasto real', ideal:'Ritmo ideal', leading:'Dentro do ritmo', exceeding:'Acima do ritmo', noBudget:'Defina um orçamento para ver o ritmo ideal', categories:'Principais gastos do mês', topHint:'Dos gastos mensais', more:'Ver todas', noData:'Nenhuma despesa neste mês', todayInfo:'Movimentos de hoje', showHistory:'Ver histórico', period:'Orçamento mensal' },
-    en: {hello:'Hello', summary:'Your financial overview', remaining:'Budget remaining', spentToday:'Spent today', daily:'Available per day', pacing:'Spending trend', month:'Month', week:'Week', actual:'Actual spending', ideal:'Ideal pace', leading:'Within pace', exceeding:'Above pace', noBudget:'Set a budget to see your ideal pace', categories:'Top spending categories', topHint:'Of monthly spending', more:'See all', noData:'No expenses this month', todayInfo:'Today’s transactions', showHistory:'View history', period:'Monthly budget' }
+    es: {hello:'Hola', summary:'Tu resumen financiero', remaining:'Presupuesto restante', spentToday:'Gastado hoy', daily:'Disponible por día', pacing:'Evolución del gasto', month:'Mes', week:'Semana', actual:'Gasto + fijos', ideal:'Ritmo ideal', leading:'Dentro del ritmo', exceeding:'Por encima del ritmo', noBudget:'Configura un presupuesto para ver el ritmo ideal', categories:'Principales gastos del mes', topHint:'Del gasto mensual', more:'Ver todas', noData:'Sin gastos este mes', todayInfo:'Movimientos de hoy', showHistory:'Ver historial', period:'Presupuesto mensual' },
+    pt: {hello:'Olá', summary:'Seu resumo financeiro', remaining:'Restante do orçamento', spentToday:'Gasto hoje', daily:'Disponível por dia', pacing:'Evolução dos gastos', month:'Mês', week:'Semana', actual:'Gastos + fixos', ideal:'Ritmo ideal', leading:'Dentro do ritmo', exceeding:'Acima do ritmo', noBudget:'Defina um orçamento para ver o ritmo ideal', categories:'Principais gastos do mês', topHint:'Dos gastos mensais', more:'Ver todas', noData:'Nenhuma despesa neste mês', todayInfo:'Movimentos de hoje', showHistory:'Ver histórico', period:'Orçamento mensal' },
+    en: {hello:'Hello', summary:'Your financial overview', remaining:'Budget remaining', spentToday:'Spent today', daily:'Available per day', pacing:'Spending trend', month:'Month', week:'Week', actual:'Spent + fixed', ideal:'Ideal pace', leading:'Within pace', exceeding:'Above pace', noBudget:'Set a budget to see your ideal pace', categories:'Top spending categories', topHint:'Of monthly spending', more:'See all', noData:'No expenses this month', todayInfo:'Today’s transactions', showHistory:'View history', period:'Monthly budget' }
   };
   const icon = {
     activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>',
@@ -1097,7 +1099,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   function theme(){
     const root=doc.getElementById('view-home'),overview=doc.getElementById('home-finance-overview');if(!root||!overview)return;
     const themeName=overview.dataset.smartyTheme||'glass';
-    const presets={glass:['#152947','#14234d','#744bdb','#62e9d0'],bb:['#0c296b','#081d51','#3773ce','#f8dc75'],nubank:['#2c175e','#1c184c','#b47aff','#63f4cc'],mp:['#083956','#073356','#2388ce','#6fe8da'],custom:['#263254','#1b264c','#9274d9','#82e9db']};
+    const presets={glass:['#152947','#14234d','#744bdb','#62e9d0'],bb:['#0c296b','#081d51','#3773ce','#f8dc75'],nubank:['#2c175e','#1c184c','#b47aff','#63f4cc'],mp:['#083956','#073356','#2388ce','#6fe8da'],custom:['#263254','#1b264c','#9274d9','#82e9db'],light:['#eaf2ff','#d4e4f7','#acc5f4','#087e73'],dark:['#172034','#0b1222','#364878','#65e4c6']};
     const item=presets[themeName]||presets.glass;
     let a=item[0],b=item[1],accent=item[3];
     if(themeName==='custom') {a=overview.style.getPropertyValue('--sc-a')?.trim()||a;b=overview.style.getPropertyValue('--sc-b')?.trim()||b;accent=overview.style.getPropertyValue('--sc-accent')?.trim()||accent;}
@@ -1147,7 +1149,7 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     const safeDate=v=>{const d=new Date(v);return Number.isFinite(d.getTime())?d:null;};
     const validAmount=v=>Math.max(0,n(v));
     const expenses=Array.isArray(d()?.store?.expenses)?d().store.expenses:[];
-    const cats=new Map();
+    const cats=new Map();let reservedSubscriptions=0;
     function add(day,amount,cat){if(day<1||day>last||!Number.isFinite(amount)||amount<=0)return;
       daily[day]+=amount;const key=keyOf(cat);cats.set(key,(cats.get(key)||0)+amount);
     }
@@ -1156,14 +1158,21 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
       else if(inMonth(d))add(d.getDate(),validAmount(e.amount),e.category);
     }
     for(const l of d()?.store?.lists||[]){const d=safeDate(l.date);if(l.status==='completed'&&d&&inMonth(d))add(d.getDate(),validAmount(l.total),'cat_market');}
-    for(const s of d()?.store?.subscriptions||[]){const day=Number(s.day);if(day>=1&&day<=Math.min(td,last))add(day,validAmount(s.cost),'cat_subs');}
-    const cumulative=Array(last+1).fill(0);for(let i=1;i<=last;i++)cumulative[i]=cumulative[i-1]+daily[i];
-    return {now,y,m,last,td,daily,cumulative,cats};
+    for(const s of d()?.store?.subscriptions||[]){
+      const day=Number(s.day),cost=validAmount(s.cost);
+      if(day<1||day>last||!cost)continue;
+      if(day<=td){add(day,cost,'cat_subs');}
+      else {reservedSubscriptions+=cost;const key=keyOf('cat_subs');cats.set(key,(cats.get(key)||0)+cost);}
+    }
+    const cumulative=Array(last+1).fill(0);
+    for(let i=1;i<=last;i++)cumulative[i]=cumulative[i-1]+daily[i]+(i===1?reservedSubscriptions:0);
+    return {now,y,m,last,td,daily,cumulative,cats,reservedSubscriptions};
   }
 
   function plotGraph(){
     const chart=doc.querySelector('#smarty-glass-trend .sg-chart-wrap');if(!chart)return;
     const stats=monthDays(),budget=Math.max(0,n(d()?.store?.budget?.limit));
+    const lightMode=doc.getElementById('home-finance-overview')?.dataset.smartyTheme==='light';
     const {td,last,cumulative}=stats;
     const left=view==='week'?Math.max(1,td-6):1,right=view==='week'?Math.min(last,left+6):last;
     const maxReal=Math.max(...cumulative.slice(left,td+1),0);
@@ -1182,12 +1191,12 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
     const s=doc.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox',`0 0 ${width} ${height}`);s.setAttribute('role','img');s.classList.add('sg-chart');s.setAttribute('aria-label',`${t('actual')}: ${money(cumulative[td])}. ${t('ideal')}: ${money(budget*td/last)}`);
     const xmlns='http://www.w3.org/2000/svg';
     const svg=(tag,props)=>{const item=doc.createElementNS(xmlns,tag);for(const [k,v] of Object.entries(props))item.setAttribute(k,String(v));return item;};
-    const defs=svg('defs',{}),g=svg('linearGradient',{id:'sg-chart-fill',x1:'0',y1:'0',x2:'0',y2:'1'});g.append(svg('stop',{offset:'0%', 'stop-color':'#65f8d1','stop-opacity':'.27'}),svg('stop',{offset:'100%','stop-color':'#65f8d1','stop-opacity':'.005'}));defs.appendChild(g);s.appendChild(defs);
-    for(let i=0;i<4;i++)s.appendChild(svg('line',{x1:x0,y1:y0-(y0-y1)*i/3,x2:x1,y2:y0-(y0-y1)*i/3,stroke:'rgba(233,217,255,.17)','stroke-width':1}));
-    if(budget>0)s.appendChild(svg('path',{d:ideal,fill:'none',stroke:'#c894fc','stroke-width':2.4,'stroke-dasharray':'6 5','stroke-linejoin':'round'}));
-    s.append(svg('path',{d:area,fill:'url(#sg-chart-fill)'}),svg('path',{d:line,fill:'none',stroke:'#64f5ce','stroke-width':3.8,'stroke-linejoin':'round','stroke-linecap':'round'}));
-    s.appendChild(svg('circle',{cx:xToday,cy:yyToday,r:5.1,fill:'#65f6ce',stroke:'#fff','stroke-width':2}));
-    const txt=(x,y,str,anchor='middle')=>{const z=svg('text',{x,y,fill:'rgba(240,226,255,.81)','font-size':'10','font-family':'system-ui,Arial', 'text-anchor':anchor});z.textContent=str;s.appendChild(z);};
+    const defs=svg('defs',{}),g=svg('linearGradient',{id:'sg-chart-fill',x1:'0',y1:'0',x2:'0',y2:'1'});g.append(svg('stop',{offset:'0%', 'stop-color':lightMode?'#078f88':'#65f8d1','stop-opacity':'.27'}),svg('stop',{offset:'100%','stop-color':lightMode?'#078f88':'#65f8d1','stop-opacity':'.005'}));defs.appendChild(g);s.appendChild(defs);
+    for(let i=0;i<4;i++)s.appendChild(svg('line',{x1:x0,y1:y0-(y0-y1)*i/3,x2:x1,y2:y0-(y0-y1)*i/3,stroke:lightMode?'rgba(53,84,119,.24)':'rgba(233,217,255,.17)','stroke-width':1}));
+    if(budget>0)s.appendChild(svg('path',{d:ideal,fill:'none',stroke:lightMode?'#7753c7':'#c894fc','stroke-width':2.4,'stroke-dasharray':'6 5','stroke-linejoin':'round'}));
+    s.append(svg('path',{d:area,fill:'url(#sg-chart-fill)'}),svg('path',{d:line,fill:'none',stroke:lightMode?'#00897c':'#64f5ce','stroke-width':3.8,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    s.appendChild(svg('circle',{cx:xToday,cy:yyToday,r:5.1,fill:lightMode?'#00897c':'#65f6ce',stroke:'#fff','stroke-width':2}));
+    const txt=(x,y,str,anchor='middle')=>{const z=svg('text',{x,y,fill:lightMode?'#51617d':'rgba(240,226,255,.81)','font-size':'10','font-family':'system-ui,Arial', 'text-anchor':anchor});z.textContent=str;s.appendChild(z);};
     const dateLabel=d=>view==='week'?`${d}/${stats.m+1}`:String(d);
     txt(x0,155,dateLabel(left),'start');txt(x1,155,dateLabel(right),'end');
     if(view==='month'&&right>7){txt(xx(Math.round((left+right)/2)),155,dateLabel(Math.round((left+right)/2)));}
@@ -1441,4 +1450,147 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   window.addEventListener('load',init,{once:true});
   window.addEventListener('smarty:updated',init);
   window.SmartyHomeDenseDesign={version:'smarty-glass-dense-2026-11-08-17',refresh:init};
+})();
+
+
+/* =====================================================================
+   SMARTY FINANCE & SKINS · v18
+   - Monthly subscriptions reserved immediately (matches Finance's pie chart).
+   - Home dock plus button follows the app-wide Settings theme.
+   - Light/Dark visual variants of the existing card picker.
+   No edits to persistent data, Android notification listener, or category IDs.
+   ===================================================================== */
+(function(){
+  'use strict';
+  const VERSION='smarty-light-2026-11-08-18';
+  const MARK='__smartyMonthlySubscriptionProjection18';
+  function installAccounting(){
+    const f=typeof Finance!=='undefined'?Finance:null,u=typeof UI!=='undefined'?UI:null,d=typeof Data!=='undefined'?Data:null;
+    if(!f||!u||!d?.store||typeof f.calculateMonthlySpent!=='function')return false;
+    const current=f.calculateMonthlySpent;
+    if(current[MARK])return true;
+    const wrapped=function(...args){
+      const baseline=Number(current.apply(this,args));
+      const now=new Date();
+      const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+      let pending=0;
+      for(const sub of d.store.subscriptions||[]){
+        const day=Number(sub.day),cost=Number(sub.cost);
+        if(day>now.getDate()&&day<=last&&Number.isFinite(cost))pending+=cost;
+      }
+      return (Number.isFinite(baseline)?baseline:0)+pending;
+    };
+    wrapped[MARK]=true;
+    f.calculateMonthlySpent=wrapped;
+    return true;
+  }
+  const CSS=String.raw`
+/* El + y el estado activo siguen el tema escogido en Ajustes, no un morado fijo. */
+#app-root:has(#view-home.active) #dock-plus-btn{
+  background:var(--primary-grad)!important;
+  box-shadow:0 5px 16px color-mix(in srgb,var(--primary) 37%,transparent),inset 0 1px 0 rgba(255,255,255,.26)!important;
+}
+#app-root:has(#view-home.active) #dock-plus-btn.listening{
+  background:var(--primary-grad)!important;
+  box-shadow:0 0 25px color-mix(in srgb,var(--primary) 55%,transparent)!important;
+}
+#app-root:has(#view-home.active) .bottom-dock .dock-btn.active{
+  color:var(--primary)!important;
+  background:color-mix(in srgb,var(--primary) 21%,transparent)!important;
+}
+/* Claro: alto contraste y tarjetas translúcidas, sin alterar otras pantallas. */
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]){color:#192c47!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-brand-name,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .sg-hello-title,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .fin-ring-value,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .donut-label{
+  color:#20344e!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-brand-copy .app-title-text,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .fin-month-title{
+  color:#566b83!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-profile-btn,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .glass-btn-small{
+  color:#263c59!important;background:rgba(255,255,255,.48)!important;border-color:rgba(87,119,165,.27)!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .fin-smarty-dialog{
+  background:rgba(255,255,255,.61)!important;border-color:rgba(88,118,162,.27)!important;color:#24405d!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .fin-smarty-dialog-label{color:#24405d!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-hero .fin-hero-donut .circle-bg{stroke:rgba(73,99,146,.19)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview{
+  color:#20354e!important;border-color:rgba(104,138,181,.38)!important;
+  box-shadow:0 12px 30px rgba(52,85,125,.13),inset 0 1px 0 rgba(255,255,255,.7)!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview:before{background:radial-gradient(circle,rgba(151,182,235,.17),transparent 71%)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .sg-overview-heading,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-balance-label,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-metric-top,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-insights-strip .smarty-daily-label,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-today .sg-metric-label,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-insights-strip .sg-days-remaining{
+  color:#526783!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview .fin-balance-amount,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-summary-details .fin-metric strong,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-insights-strip .smarty-daily-val,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-today .sg-metric-amount{
+  color:#173c55!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview .fin-summary-details{
+  border-color:rgba(83,117,164,.21)!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview .fin-summary-details>:nth-child(odd),
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview .fin-summary-details>:nth-child(-n+2){border-color:rgba(83,117,164,.18)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .smarty-theme-trigger{color:#2c4d6f!important;background:rgba(255,255,255,.36)!important;border-color:rgba(82,119,166,.27)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend{
+  color:#20354e!important;background:linear-gradient(130deg,rgba(255,255,255,.61),rgba(202,219,250,.44))!important;
+  border-color:rgba(93,130,176,.29)!important;box-shadow:0 9px 25px rgba(52,85,125,.11)!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-chart-label svg{stroke:#6751b6!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-tabs{background:rgba(70,98,145,.09)!important;border-color:rgba(85,111,154,.22)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-tabs button:not([aria-pressed="true"]){color:#4b5b76!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-tabs button[aria-pressed="true"]{background:linear-gradient(135deg,#637cc3,#375989)!important;color:#fff!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-legend,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-trend-footer{color:#566b83!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-line{background:#00897c!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) #smarty-glass-trend .sg-line.ideal{background:none!important;border-top-color:#7753c7!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-module-header,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview #smarty-glass-top-grid .sg-cat-card,
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-expense-row{color:#263d59!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-overview #smarty-glass-top-grid .sg-cat-card{background:rgba(255,255,255,.28)!important;border-color:rgba(89,125,170,.17)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-expense-row{background:rgba(255,255,255,.46)!important;border-color:rgba(85,111,154,.19)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-expense-row>div:first-child>div>span:last-child{color:#667c96!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .home-expense-row>div:last-child{color:#aa4364!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-module-icon{color:#455a9a!important;background:rgba(68,94,152,.12)!important}
+#view-home:has(#home-finance-overview[data-smarty-theme="light"]) .fin-module-chevron{color:#5a6b89!important}
+#app-root:has(#view-home.active #home-finance-overview[data-smarty-theme="light"]) .bottom-dock{
+  background:linear-gradient(130deg,rgba(255,255,255,.87),rgba(210,223,246,.82))!important;
+  border-color:rgba(95,128,171,.29)!important;box-shadow:0 12px 27px rgba(43,76,123,.13)!important;
+}
+#app-root:has(#view-home.active #home-finance-overview[data-smarty-theme="light"]) .bottom-dock .dock-btn{color:#516581!important}
+/* Oscuro: negro azulado, preservando contraste del estilo Glass. */
+#view-home:has(#home-finance-overview[data-smarty-theme="dark"]) .fin-overview{
+  background:linear-gradient(135deg,rgba(33,44,64,.96),rgba(13,21,37,.96))!important;
+  border-color:rgba(122,150,184,.28)!important;
+}
+#view-home:has(#home-finance-overview[data-smarty-theme="dark"]) #smarty-glass-trend{background:linear-gradient(135deg,rgba(74,93,127,.18),rgba(15,24,42,.34))!important}
+`;
+  function installVisual(){
+    let style=document.getElementById('smarty-v18-settings-skins');
+    if(!style){style=document.createElement('style');style.id='smarty-v18-settings-skins';document.head.appendChild(style);}
+    if(style.textContent!==CSS)style.textContent=CSS;
+  }
+  function refresh(){
+    installVisual();
+    const first=installAccounting();
+    if(first){try{if(typeof UI!=='undefined')UI.renderBudgetChart?.();}catch(e){console.warn('[Smarty v18 budget]',e);}}
+    try{window.SmartyHomeGlassDesign?.refresh?.();}catch(e){console.warn('[Smarty v18 graph]',e);}
+  }
+  installVisual();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});else refresh();
+  window.addEventListener('load',refresh,{once:true});
+  window.addEventListener('smarty:updated',refresh);
+  window.SmartyFinanceV18={version:VERSION,refresh};
 })();
