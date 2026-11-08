@@ -1,10 +1,10 @@
 /* Smart Life Pro — OTA visual: tarjeta financiera personalizable y Smarty completo.
- * Versión: smarty-light-2026-11-07-15
+ * Versión: smarty-light-2026-11-08-16
  * Solo modifica la interfaz ya instalada; no modifica gastos, datos ni actualizaciones.
  */
 (function () {
   'use strict';
-  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-07-15';
+  window.SMARTY_PATCH_BUILD_ID = 'smarty-light-2026-11-08-16';
 
   const STORE_KEY = 'smarty.finance.card.theme.v1';
   const STORE_COLORS = 'smarty.finance.card.colors.v1';
@@ -1242,4 +1242,77 @@ body.dark-mode #smarty-theme-sheet .smarty-theme-panel{
   window.addEventListener('load',()=>{setTimeout(start,700);},{once:true});
   setTimeout(start,950);
   window.SmartyHomeGlassDesign={version:VERSION,refresh:enqueue};
+})();
+
+/* =====================================================================
+   SMARTY GLASS COMPACT · v16 · layout-only overlay on approved v15.
+   Does not replace functions, data, category config, budget calculations,
+   notification service, themes or chart interactivity.
+   ===================================================================== */
+(function () {
+  'use strict';
+  const ID='smarty-glass-compact-v16';
+  const CSS=String.raw`
+/* Move content up while preserving phone safe areas and the fixed dock. */
+#view-home .home-header{min-height:53px!important;padding:7px 14px 5px!important}
+#view-home .fin-home-scroll{padding-top:0!important}
+/* Smarty + greeting + single donut: same approved composition, less vertical space. */
+#smarty-glass-hero{grid-template-columns:77px minmax(0,1fr) 88px!important;min-height:111px!important;gap:7px!important;margin:0 12px 6px!important;padding:2px 0!important}
+#smarty-glass-hero .fin-smarty-portrait{width:69px!important;height:69px!important;max-width:69px!important}
+#smarty-glass-hero .fin-smarty-dialog{width:73px!important;max-width:73px!important;min-height:21px!important;padding:2px 6px!important}
+#smarty-glass-hero .fin-smarty-dialog-label{font-size:9px!important}
+#smarty-glass-hero .fin-smarty-xp{height:27px!important;bottom:11px!important}
+#smarty-glass-hero .sg-hello{gap:4px!important}
+#smarty-glass-hero .sg-hello-title{font-size:clamp(17px,4.6vw,21px)!important}
+#smarty-glass-hero .fin-heading-copy{gap:2px!important}
+#smarty-glass-hero .fin-month-title{font-size:10px!important}
+#smarty-glass-hero .fin-health-pill{padding:4px 6px!important;font-size:9px!important}
+#smarty-glass-hero .fin-hero-donut{width:88px!important;height:88px!important;min-width:88px!important}
+#smarty-glass-hero .fin-hero-donut .fin-ring-value{font-size:20px!important}
+/* Four metrics + remaining balance: tighter spacing, unchanged information. */
+#view-home .fin-overview{padding:11px 13px!important;gap:6px!important;margin:0 11px 9px!important;border-radius:21px!important}
+#view-home .sg-overview-heading{font-size:9px!important}
+#view-home .fin-balance-label{font-size:10px!important}
+#view-home .fin-balance-amount{font-size:clamp(24px,6.9vw,29px)!important;margin:2px 0 0!important;line-height:1.1!important}
+#view-home .fin-summary-details{gap:6px!important}
+#view-home .fin-summary-details .fin-metric,#view-home #smarty-insights-strip,#view-home #smarty-glass-today{min-height:55px!important;padding:7px 9px!important;gap:2px!important;border-radius:13px!important}
+#view-home #smarty-insights-strip{min-height:55px!important;margin:0!important}
+#view-home #smarty-insights-strip .smarty-daily-info{gap:2px!important}
+#view-home .fin-metric-top,#view-home #smarty-insights-strip .smarty-daily-label,#view-home #smarty-glass-today .sg-metric-label{font-size:9px!important}
+#view-home .fin-summary-details .fin-metric strong,#view-home #smarty-insights-strip .smarty-daily-val,#view-home #smarty-glass-today .sg-metric-amount{font-size:clamp(13px,3.7vw,16px)!important}
+#view-home #smarty-insights-strip .sg-days-remaining{font-size:8px!important}
+#view-home .smarty-theme-trigger{width:25px!important;height:25px!important;right:10px!important;top:8px!important}
+/* Spending graph: preserve Month/Week switching, axes and both series. */
+#smarty-glass-trend{padding:10px 12px 8px!important;margin:0 11px 9px!important;border-radius:21px!important}
+#smarty-glass-trend .sg-chart-label{font-size:12px!important;gap:6px!important}
+#smarty-glass-trend .sg-chart-label svg{width:17px!important;height:17px!important;flex-basis:17px!important}
+#smarty-glass-trend .sg-tabs button{min-height:24px!important;padding:4px 10px!important}
+#smarty-glass-trend .sg-chart-wrap{height:clamp(106px,15vh,126px)!important;margin:5px 0 0!important}
+#smarty-glass-trend .sg-legend{margin:0 auto!important;font-size:9px!important;gap:12px!important}
+#smarty-glass-trend .sg-trend-footer{margin-top:4px!important;font-size:9px!important}
+/* Secondary blocks closer together; no hiding existing details. */
+#view-home .fin-home-module{border-radius:19px!important}
+#smarty-glass-top-grid{padding:2px 11px 9px!important;gap:6px!important}
+#smarty-glass-top-grid .sg-cat-card{min-height:78px!important;padding:7px 6px!important;gap:3px!important;border-radius:13px!important}
+/* Narrow devices: maintain legible values and avoid donut/greeting collisions. */
+@media(max-width:380px){
+ #smarty-glass-hero{grid-template-columns:67px minmax(0,1fr) 77px!important;gap:5px!important;min-height:98px!important;margin:0 9px 5px!important}
+ #smarty-glass-hero .fin-smarty-portrait{width:61px!important;height:61px!important;max-width:61px!important}
+ #smarty-glass-hero .fin-smarty-dialog{width:64px!important;max-width:64px!important;min-height:19px!important}
+ #smarty-glass-hero .fin-hero-donut{width:77px!important;height:77px!important;min-width:77px!important}
+ #smarty-glass-hero .sg-hello-title{font-size:17px!important}
+ #view-home .fin-overview{padding:9px 10px!important;margin:0 9px 8px!important}
+ #smarty-glass-trend{padding:9px 10px 7px!important;margin:0 9px 8px!important}
+ #smarty-glass-trend .sg-chart-wrap{height:clamp(98px,14.5vh,115px)!important}
+ #view-home .fin-summary-details .fin-metric,#view-home #smarty-insights-strip,#view-home #smarty-glass-today{min-height:53px!important;padding:6px 7px!important}
+}
+`;
+  function apply(){
+    let style=document.getElementById(ID);
+    if(!style){style=document.createElement('style');style.id=ID;document.head.appendChild(style);}
+    if(style.textContent!==CSS)style.textContent=CSS;
+  }
+  apply();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});
+  window.SmartyHomeCompactDesign={version:'smarty-glass-compact-2026-11-08-16',refresh:apply};
 })();
