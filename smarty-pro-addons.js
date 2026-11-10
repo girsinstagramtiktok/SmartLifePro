@@ -272,24 +272,8 @@
     };
 
     // 5. HUELLA DIGITAL Y RECONOCIMIENTO FACIAL NATIVO EN PANTALLA DE PIN
-    function setupBiometrics() {
-        const emptyPinBtn = document.querySelector(".pin-pad .pin-btn:nth-child(10)");
-        if (emptyPinBtn && !emptyPinBtn.classList.contains("bio-btn-active")) {
-            emptyPinBtn.classList.add("bio-btn-active");
-            emptyPinBtn.innerHTML = "🫆";
-            emptyPinBtn.onclick = () => {
-                if (window.SmartyAndroid && window.SmartyAndroid.authenticateBiometric) {
-                    window.SmartyAndroid.authenticateBiometric();
-                } else {
-                    UI.showSnackbar("Toca para desbloquear con Huella / Rostro");
-                }
-            };
-        }
-
-        if (Data?.store?.settings?.pin && window.SmartyAndroid?.authenticateBiometric) {
-            setTimeout(() => window.SmartyAndroid.authenticateBiometric(), 400);
-        }
-    }
+    // Biometria: unicamente SmartyBiometrics la administra.
+    function setupBiometrics() { window.SmartyBiometrics?.install?.(); }
 
     // 6. PANEL DE BANCOS Y ALERTAS EN AJUSTES + CARRITO EN TIEMPO REAL
     function upgradeUIAndShopping() {

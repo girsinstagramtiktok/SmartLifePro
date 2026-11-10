@@ -26,3 +26,16 @@ Edición del 10/11/2026. Incluye el diseño de Inicio aprobado anteriormente (si
 - Pruebas visuales en navegador móvil de las secciones Inicio, Finanzas, Actividad, historial, listas y Ajustes.
 
 **Limitación importante:** no se compiló un APK Android real ni se probó un sensor de huellas físico en este entorno. Las pruebas del flujo nativo no sustituyen la verificación en tu Samsung.
+
+
+## Corrección adicional: huella que reaparecía activada y no permitía reactivarla
+
+El usuario observó que el interruptor podía quedar bloqueado después de apagarlo o fallar, y reaparecía activo al abrir la app. Se detectó que el cliente dejaba el switch deshabilitado **sin límite de tiempo** si Android no enviaba el callback de la operación; además, había una función biométrica antigua en los addons heredados.
+
+- `smarty-biometrics.js` V2: controla la preferencia en un solo lugar; apagarla guarda `false` de inmediato; reintentos tras cancelación y error; tiempo máximo de espera 35 s; identificador exclusivo para evitar que respuestas antiguas reactiven el ajuste.
+- `tools/patch-biometric-native.cjs` V2: interfaz `authenticateBiometric(requestId)`, respuestas con ese mismo ID, función de diagnóstico nativo, registro de excepciones en Logcat.
+- `main.js`: al quitar el PIN también desactiva el ajuste de huella.
+- `data.js`: corrige valores no booleanos y huella activada sin PIN.
+- **Ajustes → Diagnóstico huella**: muestra si está conectado el puente Android, el código de estado del sensor, si la preferencia quedó guardada y el último resultado. No muestra PIN ni datos financieros.
+
+**El cambio del puente de Android requiere compilar e instalar un APK nuevo**. Una actualización únicamente HTML/OTA no puede arreglar el código Java que ya esté instalado. Las pruebas automatizadas confirman el comportamiento del código, pero el funcionamiento físico se debe verificar en el teléfono Samsung. Si falla, compartir el texto de “Diagnóstico huella” permitirá aislar el error sin adivinar.

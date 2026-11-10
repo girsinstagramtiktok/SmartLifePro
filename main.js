@@ -339,6 +339,8 @@ const Main = {
             const confirmed = await UI.confirm("confirm_title", "confirm_text");
             if (confirmed) {
                 Data.store.settings.pin = null;
+                Data.store.settings.biometricEnabled = false;
+                window.SmartyBiometrics?.sync?.();
                 Data.save();
                 if (typeof UI !== 'undefined') {
                     UI.renderSettingsView();

@@ -97,6 +97,15 @@ const Data = {
             }
         }
 
+        if (typeof this.store.settings.biometricEnabled !== 'boolean') {
+            this.store.settings.biometricEnabled = false;
+            dirty = true;
+        }
+        if (!this.store.settings.pin && this.store.settings.biometricEnabled) {
+            this.store.settings.biometricEnabled = false;
+            dirty = true;
+        }
+
         // 4. Presupuesto
         if (!this.store.budget) { 
             this.store.budget = { limit: 0, currency: '$' }; 
