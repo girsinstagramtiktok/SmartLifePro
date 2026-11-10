@@ -14,9 +14,9 @@ const out = path.join(root, 'www');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 for (const name of [
-  'index.html','style.css','manifest.json','logo.png',
-  'data.js','ui.js','assistant.js','finance.js','shopping.js','main.js',
-  'bank-bridge.js','camera-bridge.js','ota-client.js',
+  'index.html','style.css','bento-home.css','manifest.json','logo.png',
+  'data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','bento-home.js',
+  'bank-bridge.js','camera-bridge.js','smarty-ota.js','ota-client.js',
   'idle.png','happy.png','worried.png','alert.png','thinking.png','listening.png','broke.png'
 ]) {
   if (fs.existsSync(path.join(root,name))) fs.copyFileSync(path.join(root,name), path.join(out,name));
@@ -36,7 +36,7 @@ try {
   else fs.rmSync(configPath, { force: true });
 }
 const html = fs.readFileSync(path.join(out, 'index.html'),'utf8');
-for (const required of ['smarty-pro-addons.js','ota-client.js','ota-config.js','camera-bridge.js']) {
+for (const required of ['smarty-pro-addons.js','smarty-ota.js','bento-home.js','camera-bridge.js']) {
   if (!html.includes(`src="${required}"`)) throw new Error('El index.html no incluye ' + required);
   if (!fs.existsSync(path.join(out,required))) throw new Error('www no contiene ' + required);
 }
