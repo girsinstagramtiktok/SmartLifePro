@@ -102,7 +102,7 @@ const Main = {
         const target = document.getElementById(`view-${viewName}`);
         if (target) {
             target.style.display = 'flex';
-            setTimeout(() => target.classList.add('active'), 10);
+            target.classList.add('active');
         }
         document.querySelectorAll('.dock-btn').forEach(btn => btn.classList.remove('active'));
         const navBtn = document.getElementById(`nav-${viewName}`);

@@ -179,9 +179,10 @@ const Finance = {
         // 3. Sumar Suscripciones
         if (Data.store.subscriptions) {
             Data.store.subscriptions.forEach(sub => {
-                if (currentDay >= sub.day) {
-                    total += parseFloat(sub.cost);
-                }
+                // Las suscripciones del mes se reservan desde el inicio,
+                // aunque el cobro esté programado para un día posterior.
+                const value = Number(sub.cost);
+                if (Number.isFinite(value)) total += value;
             });
         }
 

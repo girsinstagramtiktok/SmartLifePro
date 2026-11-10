@@ -1,6 +1,6 @@
 'use strict';
 /* Comprueba exactamente el directorio www/ que se empaquetará en el APK.
-   Arquitectura activa: actualización ligera de smarty-ota.js desde Vercel.
+   Arquitectura activa: Bento local. Actualización Vercel antigua bloqueada sobre Bento.
    Prohíbe reintroducir el cliente ZIP de GitHub en el HTML del APK. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -15,13 +15,16 @@ function read(name) {
 }
 const html = read('index.html');
 const addons = read('smarty-pro-addons.js');
-for (const name of ['style.css', 'data.js', 'ui.js', 'assistant.js',
+for (const name of ['style.css', 'bento-home.css', 'bento-home.js', 'data.js', 'ui.js', 'assistant.js',
   'finance.js', 'shopping.js', 'main.js', 'bank-bridge.js', 'camera-bridge.js']) {
   assert.ok(read(name).length > 100, `${name} está vacío`);
 }
 
 const scripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/script>/gi)]
   .map(match => match[1]);
+assert.ok(html.includes('class="view active bento-home"') || html.includes('bento-home'), 'Falta la estructura Bento');
+assert.ok(scripts.includes('bento-home.js'), 'El diseño Bento debe cargarse desde los assets del APK');
+assert.ok(html.includes('bento-home.css'), 'Falta el CSS Bento');
 const mainIndex = scripts.indexOf('main.js');
 assert.ok(mainIndex !== -1, 'Falta main.js en index.html');
 assert.equal(scripts[mainIndex + 1], 'smarty-pro-addons.js',
@@ -31,7 +34,7 @@ assert.ok(!scripts.includes('ota-client.js'),
 assert.ok(!scripts.includes('ota-config.js'),
   'El APK todavía carga la configuración del cliente ZIP anterior');
 assert.equal(scripts[mainIndex + 2], 'smarty-ota.js',
-  'El parche visual DEBE ejecutarse localmente, antes del primer render del inicio');
+  'Las mejoras financieras deben ejecutarse localmente, sin descargar el diseño anterior');
 // Verificar el archivo exacto que incorpora el APK, sin fijar una versión histórica.
 const bundledOta = read('smarty-ota.js');
 const sourceOta = fs.readFileSync(path.join(__dirname, 'smarty-ota.js'), 'utf8');
@@ -81,4 +84,16 @@ window.SMARTY_PATCH_BUILD_ID='smarty-light-test';
 remoteScript.onload();
 assert.match(status.textContent,/Actualización ligera aplicada: smarty-light-test/);
 
-console.log('OK: APK usa estilo inicial local, sin parpadeo; Vercel permanece como actualizador manual y remoto.');
+const blockedStatus = {style:{},textContent:'',id:'smarty-quick-status'};
+const blockedButton={insertAdjacentElement(_position,el){assert.equal(el,blockedStatus)}};
+const blockedWindow={SMARTY_BENTO_NATIVE_BASE:true,SMARTY_PATCH_BUILD_ID:'smarty-light-bento'};
+let blockedRemote=false;
+const blockedDocument={
+  querySelector(){return blockedButton}, getElementById(){return blockedStatus},
+  createElement(){blockedRemote=true;return {}},head:{appendChild(){blockedRemote=true}}
+};
+vm.runInNewContext(snippet,{document:blockedDocument,window:blockedWindow,Date,Math,setTimeout:()=>1,clearTimeout(){}});
+blockedWindow.checkForOtaUpdateNow();
+assert.match(blockedStatus.textContent,/parche Vercel anterior no es compatible/);
+assert.equal(blockedRemote,false,'Bento no debe descargar el diseño antiguo de Vercel');
+console.log('OK: Bento y sus estilos están en el APK; el parche Vercel antiguo no puede sobrescribirlos.');
