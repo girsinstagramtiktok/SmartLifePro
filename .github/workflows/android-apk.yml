@@ -1,14 +1,31 @@
 name: Build Smarty Android APK
 on:
-  # Compila automáticamente al modificar este workflow en main.
-  # OTA ligera: solo smarty-ota.js desde Vercel (oct. 2026).
-  # Los parches en smarty-ota.js se publican en Vercel sin generar APK.
+  # Bento está integrado en el APK. Una modificación de código base requiere recompilar.
+  # La OTA visual antigua de Vercel queda desactivada por incompatibilidad.
   push:
     branches:
       - main
     paths:
       - '.github/workflows/android-apk.yml'
       - 'ota-integration-tests.cjs'
+      - 'quick-ota-tests.cjs'
+      - 'index.html'
+      - 'style.css'
+      - 'bento-home.css'
+      - 'bento-home.js'
+      - 'main.js'
+      - 'finance.js'
+      - 'data.js'
+      - 'ui.js'
+      - 'assistant.js'
+      - 'smarty-ota.js'
+      - 'smarty-pro-addons.js'
+      - 'shopping.js'
+      - 'bank-bridge.js'
+      - 'camera-bridge.js'
+      - 'skins/**'
+      - '*.png'
+      - 'tools/**'
   workflow_dispatch:
 
 permissions:
@@ -43,11 +60,11 @@ jobs:
           TZ=America/Sao_Paulo node notification-tests.cjs
           node quick-ota-tests.cjs
 
-          cp index.html style.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bank-bridge.js camera-bridge.js www/
+          cp index.html style.css bento-home.css manifest.json logo.png www/ 2>/dev/null || true
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
-          # Incluir la ultima interfaz OTA como diseño BASE local, sin depender de la red al iniciar.
+          # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
           test -s smarty-ota.js || { echo "::error::Falta smarty-ota.js en la raiz del proyecto"; exit 1; }
           cp smarty-ota.js www/smarty-ota.js
 
@@ -641,6 +658,7 @@ jobs:
             "    if (!btn) return;",
             "    let status = document.getElementById(\"smarty-quick-status\");",
             "    if (!status) { status = document.createElement(\"div\"); status.id = \"smarty-quick-status\"; status.style.cssText = \"font-size:12px;padding:8px 10px;margin-bottom:10px;white-space:normal;overflow-wrap:anywhere\"; btn.insertAdjacentElement(\"afterend\",status); }",
+            "    if (window.SMARTY_BENTO_NATIVE_BASE) { status.textContent = \"Bento ya está integrado en este APK. El parche Vercel anterior no es compatible; para actualizar la interfaz, instala una versión Bento compatible.\"; return; }",
             "    if (window._smartyQuickLoading) { status.textContent = \"Actualización en curso.\"; return; }",
             "    window._smartyQuickLoading = true;",
             "    status.textContent = \"Consultando Smarty en Vercel...\";",
@@ -743,11 +761,7 @@ jobs:
             "    hookSettingsAndExtras();",
             "    setTimeout(() => {",
             "      if (typeof UI !== 'undefined') UI.refreshDOM();",
-            "      // Al arrancar, recuperar solo el archivo de mejoras de Vercel.",
-            "      const s = document.createElement(\"script\");",
-            "      s.src = \"https://smart-life-pro.vercel.app/smarty-ota.js?v=\" + Date.now();",
-            "      s.onerror = () => console.warn(\"[Smarty] OTA ligero no disponible; base local sigue funcional.\");",
-            "      document.head.appendChild(s);",
+            "      // Bento integrado: no descargar automáticamente el antiguo parche visual de Vercel.",
             "    }, 450);",
             "  });",
             "})();"
@@ -758,13 +772,13 @@ jobs:
           if (fs.existsSync("www/index.html")) {
             let html = fs.readFileSync("www/index.html", "utf8");
             html = html.replace(/serviceWorker/g, "serviceWorkerDisabledInAPK");
-            // Eliminar clientes de ZIP y cualquier referencia duplicada al parche local.
+            // Eliminar clientes de ZIP históricos y evitar ejecuciones duplicadas.
             html = html.replace(/<script\s+src=["']ota-(?:client|config)\.js["']><\/script>\s*/gi, "");
             html = html.replace(/<script\s+src=["']smarty-ota\.js["']><\/script>\s*/gi, "");
             // Ocultar SOLO el inicio durante la preparación local para evitar mostrar la versión vieja.
             html = html.replace(/<\/head>/i,
               '<style id="smarty-prepaint">#view-home{visibility:hidden!important}</style></head>');
-            // Cargar sincrónicamente, desde los assets del APK. No espera a Vercel.
+            // Cargar mejoras funcionales sincrónicamente desde el APK; Bento sigue en el HTML base.
             html = html.replace('main.js"></script>',
               'main.js"></script><script src="smarty-pro-addons.js"></script><script src="smarty-ota.js"></script>');
             // Failsafe: si el parche tuviera un error, la pantalla nunca quedará oculta permanentemente.
