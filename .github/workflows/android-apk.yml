@@ -12,6 +12,8 @@ on:
       - 'index.html'
       - 'style.css'
       - 'bento-home.css'
+      - 'bento-global.css'
+      - 'smarty-biometrics.js'
       - 'bento-home.js'
       - 'main.js'
       - 'finance.js'
@@ -58,10 +60,11 @@ jobs:
 
           TZ=America/Sao_Paulo node smarty-tests.cjs
           TZ=America/Sao_Paulo node notification-tests.cjs
+          node biometric-tests.cjs
           node quick-ota-tests.cjs
 
-          cp index.html style.css bento-home.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js bank-bridge.js camera-bridge.js www/
+          cp index.html style.css bento-home.css bento-global.css manifest.json logo.png www/ 2>/dev/null || true
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
           # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
@@ -713,7 +716,7 @@ jobs:
             "        p.innerHTML = '<div class=\"section-label\">ANDROID PRO, IA & ACTUALIZACIONES</div><div class=\"glass-card\" style=\"padding:15px; margin:0;\">' +",
             "          '<button class=\"btn-full\" style=\"margin:0 0 10px; padding:12px; font-size:13.5px;\" onclick=\"window.checkForOtaUpdateNow()\">🔄 Buscar Actualización Ahora (V' + window.SMARTY_APK_VERSION + ')</button>' +",
             "          '<div class=\"setting-item\"><span>🔑 API Key de Groq (Smarty AI)</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.askGroqKeyModal()\">' + (hasK ? 'Configurada ✅' : 'Poner Clave +') + '</button></div>' +",
-            "          '<div class=\"setting-item\"><span>🫆 Desbloqueo con Huella / Rostro</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.biometricEnabled ? 'checked' : '') + ' onchange=\"Data.store.settings.biometricEnabled=this.checked; Data.save(); if(this.checked && window.SmartyAndroid?.authenticateBiometric) window.SmartyAndroid.authenticateBiometric();\"><span class=\"slider\"></span></label></div>' +",
+            "          '<div class=\"setting-item\"><span>🫆 Desbloqueo con Huella / Rostro</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.biometricEnabled ? 'checked' : '') + ' onchange=\"window.SmartyBiometrics?.toggle(this);\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>💾 Auto-Backup Diario (Archivo Único)</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.autoDailyBackup !== false ? 'checked' : '') + ' onchange=\"Data.store.settings.autoDailyBackup=this.checked; Data.save();\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>🏦 Leer Notificaciones de Bancos</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.bankAutoDetect ? 'checked' : '') + ' onchange=\"Data.store.settings.bankAutoDetect=this.checked; Data.save(); if(this.checked) { if(!window.SmartyAndroid?.isNotificationListenerEnabled()) window.SmartyAndroid?.openNotificationSettings(); else if(!window.SmartyAndroid?.getAllowedNotificationPackages()) window.openInstalledAppsPickerModal(); }\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>📲 Apps Autorizadas (' + cnt + ')</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.openInstalledAppsPickerModal()\">Elegir de mi móvil ➔</button></div>' +",
@@ -1165,6 +1168,7 @@ jobs:
 
           node setup_java.js
           rm -f setup_java.js
+          node tools/patch-biometric-native.cjs
 
       - name: Compile Debug APK
         run: |
