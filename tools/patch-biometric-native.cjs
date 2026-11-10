@@ -15,41 +15,45 @@ const locate=(base)=>{
 const activity=locate(dir);
 if(!activity)throw new Error('No se encontró MainActivity.java para corregir huella');
 let java=fs.readFileSync(activity,'utf8');
-if(java.includes('public int getBiometricStatus()')){ console.log('AndroidX BiometricPrompt ya incorporado'); process.exit(0); }
+if(java.includes('SMARTY_BIOMETRIC_BRIDGE_V2')){ console.log('AndroidX BiometricPrompt V2 ya incorporado'); process.exit(0); }
 const start=java.indexOf('    @JavascriptInterface public void authenticateBiometric() {');
 const end=java.indexOf('  @Override protected void onActivityResult',start);
 if(start<0||end<0)throw new Error('Cambió el código original de huella: revisar antes de compilar');
 const replacement=String.raw`
+    // SMARTY_BIOMETRIC_BRIDGE_V2
     @JavascriptInterface public int getBiometricStatus() {
       try {
         return androidx.biometric.BiometricManager.from(MainActivity.this)
           .canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK);
       } catch(Exception error) { return -9; }
     }
-    private void reportBiometric(String state) {
+    @JavascriptInterface public String getBiometricDebugInfo() {
+      return "Android API="+android.os.Build.VERSION.SDK_INT+", biometricStatus="+getBiometricStatus();
+    }
+    private void reportBiometric(String state, String requestId) {
       try {
         getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(
-          "window.SmartyBiometrics && window.SmartyBiometrics.nativeResult(" + org.json.JSONObject.quote(state) + ");", null));
+          "window.SmartyBiometrics && window.SmartyBiometrics.nativeResult(" + org.json.JSONObject.quote(state) + "," + org.json.JSONObject.quote(requestId) + ");", null));
       } catch(Exception ignored) {}
     }
-    @JavascriptInterface public void authenticateBiometric() {
+    @JavascriptInterface public void authenticateBiometric(String requestId) {
       runOnUiThread(() -> {
         int ability=getBiometricStatus();
         if(ability!=androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS) {
-          reportBiometric("unavailable:"+ability);return;
+          reportBiometric("unavailable:"+ability,requestId);return;
         }
         try {
           androidx.biometric.BiometricPrompt prompt=new androidx.biometric.BiometricPrompt(
             MainActivity.this, androidx.core.content.ContextCompat.getMainExecutor(MainActivity.this),
             new androidx.biometric.BiometricPrompt.AuthenticationCallback() {
               @Override public void onAuthenticationSucceeded(androidx.biometric.BiometricPrompt.AuthenticationResult result) {
-                reportBiometric("success");
+                reportBiometric("success",requestId);
               }
               @Override public void onAuthenticationError(int code, CharSequence message) {
                 if(code==androidx.biometric.BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
                    code==androidx.biometric.BiometricPrompt.ERROR_USER_CANCELED ||
-                   code==androidx.biometric.BiometricPrompt.ERROR_CANCELED) reportBiometric("cancel");
-                else reportBiometric("error:"+code);
+                   code==androidx.biometric.BiometricPrompt.ERROR_CANCELED) reportBiometric("cancel",requestId);
+                else reportBiometric("error:"+code,requestId);
               }
               @Override public void onAuthenticationFailed() { /* Permanecer bloqueado hasta autenticar. */ }
             });
@@ -60,7 +64,7 @@ const replacement=String.raw`
             .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK)
             .build();
           prompt.authenticate(info);
-        } catch(Exception error) { reportBiometric("error:-9"); }
+        } catch(Exception error) { android.util.Log.e("SmartyBio","BiometricPrompt",error); reportBiometric("error:-9",requestId); }
       });
     }
   }
