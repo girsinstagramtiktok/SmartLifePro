@@ -1,3 +1,5 @@
+> **ACTUALIZACIÓN 10/11/2026:** Esta guía describe el sistema OTA anterior. Con la edición Bento, el diseño se integra en el código del APK y la OTA visual antigua de Vercel no debe ejecutarse. Consulta [README_BENTO.md](README_BENTO.md) para compilar e instalar la versión actual.
+
 # Smart Life Pro — Fecha exacta de pago y actualizaciones OTA
 
 ## 1. Fecha exacta de pago

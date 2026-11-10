@@ -41,7 +41,7 @@
   function applyColors(){
     const root=$('view-home'),app=$('app-root');if(!root||!app)return;
     const palette=theme();
-    for(const target of [app,root]){
+    for(const target of [document.documentElement,document.body,app,root]){
       for(const [k,css] of Object.entries(keys))target.style.setProperty(css,palette[k]);
     }
     root.style.setProperty('--b-balance-ink',contrast(palette.balance));
@@ -49,6 +49,14 @@
     root.style.setProperty('--b-spent-ink',contrast(palette.spent));
     root.style.setProperty('--b-daily-ink',contrast(palette.daily));
     app.style.setProperty('--b-nav-ink',contrast(palette.nav));
+    document.documentElement.style.setProperty('--b-nav-ink',contrast(palette.nav));
+    document.documentElement.style.setProperty('--b-spent-ink',contrast(palette.spent));
+    // Los diálogos nativos HTML quedan fuera de app-root: paleta consistente.
+    for(const [css,value] of Object.entries({
+      '--primary':palette.accent,'--text-color':palette.ink,'--text-sec':palette.muted,
+      '--glass-bg':palette.chart,'--item-bg':palette.balance,'--input-bg':palette.budget,
+      '--bg-body':palette.bg,'--sheet-bg':palette.chart
+    })) document.body.style.setProperty(css,value);
   }
   function setTheme(preset,colors){
     if(!data()?.store)return;
@@ -175,9 +183,12 @@
   }
   function applyPreview(c){
     const root=$('view-home'),app=$('app-root');if(!root||!app)return;
-    for(const target of [root,app])for(const [k,css] of Object.entries(keys))target.style.setProperty(css,c[k]);
+    for(const target of [document.documentElement,document.body,root,app])for(const [k,css] of Object.entries(keys))target.style.setProperty(css,c[k]);
     for(const [key,value] of [['--b-balance-ink',c.balance],['--b-percent-ink',c.percent],['--b-spent-ink',c.spent],['--b-daily-ink',c.daily]])root.style.setProperty(key,contrast(value));
     app.style.setProperty('--b-nav-ink',contrast(c.nav));
+    document.documentElement.style.setProperty('--b-nav-ink',contrast(c.nav));
+    document.documentElement.style.setProperty('--b-spent-ink',contrast(c.spent));
+    for(const [css,value] of Object.entries({'--primary':c.accent,'--text-color':c.ink,'--text-sec':c.muted,'--glass-bg':c.chart,'--item-bg':c.balance,'--input-bg':c.budget,'--bg-body':c.bg,'--sheet-bg':c.chart})) document.body.style.setProperty(css,value);
   }
   function start(){
     if(state.installed)return;

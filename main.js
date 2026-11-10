@@ -110,7 +110,7 @@ const Main = {
 
         if (viewName === 'lists' && typeof Shopping !== 'undefined') Shopping.renderLists();
         if (viewName === 'finance' && typeof Finance !== 'undefined') {
-            const activeTab = document.querySelector('.segment-btn.active');
+            const activeTab = document.querySelector('#view-finance .segment-btn.active');
             if (activeTab) {
                 const tabId = activeTab.id.replace('fin-tab-', '');
                 Finance.setTab(tabId);

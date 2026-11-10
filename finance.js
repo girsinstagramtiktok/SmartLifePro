@@ -21,7 +21,7 @@ const Finance = {
         });
 
         // 2. Desactivar botones de navegación
-        document.querySelectorAll('.segment-btn').forEach(btn => {
+        document.querySelectorAll('#view-finance .segment-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 

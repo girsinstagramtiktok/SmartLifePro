@@ -15,7 +15,7 @@ function read(name) {
 }
 const html = read('index.html');
 const addons = read('smarty-pro-addons.js');
-for (const name of ['style.css', 'bento-home.css', 'bento-home.js', 'data.js', 'ui.js', 'assistant.js',
+for (const name of ['style.css', 'bento-home.css', 'bento-global.css', 'bento-home.js', 'smarty-biometrics.js', 'data.js', 'ui.js', 'assistant.js',
   'finance.js', 'shopping.js', 'main.js', 'bank-bridge.js', 'camera-bridge.js']) {
   assert.ok(read(name).length > 100, `${name} está vacío`);
 }
@@ -25,6 +25,8 @@ const scripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/
 assert.ok(html.includes('class="view active bento-home"') || html.includes('bento-home'), 'Falta la estructura Bento');
 assert.ok(scripts.includes('bento-home.js'), 'El diseño Bento debe cargarse desde los assets del APK');
 assert.ok(html.includes('bento-home.css'), 'Falta el CSS Bento');
+assert.ok(html.includes('bento-global.css'), 'Falta Bento en las pantallas restantes');
+assert.ok(scripts.includes('smarty-biometrics.js'), 'Falta cliente biométrico');
 const mainIndex = scripts.indexOf('main.js');
 assert.ok(mainIndex !== -1, 'Falta main.js en index.html');
 assert.equal(scripts[mainIndex + 1], 'smarty-pro-addons.js',
