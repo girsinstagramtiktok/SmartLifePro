@@ -14,6 +14,8 @@ on:
       - 'bento-home.css'
       - 'bento-global.css'
       - 'smarty-biometrics.js'
+      - 'smarty-app-updater.js'
+      - 'updater-tests.cjs'
       - 'bento-home.js'
       - 'main.js'
       - 'finance.js'
@@ -41,6 +43,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Incrementar versionCode de manera monotónica
+        run: echo "SMARTY_VERSION_CODE=$((100000 + GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))" >> "$GITHUB_ENV"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -61,15 +66,17 @@ jobs:
           TZ=America/Sao_Paulo node smarty-tests.cjs
           TZ=America/Sao_Paulo node notification-tests.cjs
           node biometric-tests.cjs
+          node updater-tests.cjs
           node quick-ota-tests.cjs
 
           cp index.html style.css bento-home.css bento-global.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js bank-bridge.js camera-bridge.js www/
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
           # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
           test -s smarty-ota.js || { echo "::error::Falta smarty-ota.js en la raiz del proyecto"; exit 1; }
           cp smarty-ota.js www/smarty-ota.js
+          node -e "require('fs').writeFileSync('www/smarty-release-config.js','window.SMARTY_RELEASE_CONFIG='+JSON.stringify({repository:process.env.GITHUB_REPOSITORY,versionCode:Number(process.env.SMARTY_VERSION_CODE)})+';')"
 
           find www -type f -name "*.png" -exec mogrify -strip -resize "360x360>" -quality 82 {} +
 
@@ -84,7 +91,7 @@ jobs:
 
           const addons = [
             "(function() {",
-            "  window.SMARTY_APK_VERSION = '21.0';",
+            "  window.SMARTY_APK_VERSION = '2.0-actualizable';",
             "  document.getElementById('fin-bank-summary-banner')?.remove();",
             "  document.getElementById('pace-day-marker')?.remove();",
             "  document.getElementById('smarty-master-styles')?.remove();",
@@ -655,28 +662,8 @@ jobs:
             "  };",
             "  if (typeof GroqAI !== 'undefined') GroqAI.getApiKey = function() { const s = (Data?.store?.settings?.groqApiKey || '').trim(); if (s) return s; window.askGroqKeyModal(); return null; };",
             "",
-            "  // OTA LIGERO: carga 1 archivo desde Vercel, sin GitHub ZIP.",
-            "  window.checkForOtaUpdateNow = function() {",
-            "    const btn = document.querySelector('button[onclick*=\"checkForOtaUpdateNow\"]');",
-            "    if (!btn) return;",
-            "    let status = document.getElementById(\"smarty-quick-status\");",
-            "    if (!status) { status = document.createElement(\"div\"); status.id = \"smarty-quick-status\"; status.style.cssText = \"font-size:12px;padding:8px 10px;margin-bottom:10px;white-space:normal;overflow-wrap:anywhere\"; btn.insertAdjacentElement(\"afterend\",status); }",
-            "    if (window.SMARTY_BENTO_NATIVE_BASE) { status.textContent = \"Bento ya está integrado en este APK. El parche Vercel anterior no es compatible; para actualizar la interfaz, instala una versión Bento compatible.\"; return; }",
-            "    if (window._smartyQuickLoading) { status.textContent = \"Actualización en curso.\"; return; }",
-            "    window._smartyQuickLoading = true;",
-            "    status.textContent = \"Consultando Smarty en Vercel...\";",
-            "    const prior = window.SMARTY_PATCH_BUILD_ID || \"no instalada\";",
-            "    window.SMARTY_PATCH_BUILD_ID = null; // confirmar ejecución REAL del archivo descargado",
-            "    const s = document.createElement(\"script\");",
-            "    const nonce = String(Date.now()) + Math.random().toString(36).slice(2);",
-            "    s.src = \"https://smart-life-pro.vercel.app/smarty-ota.js?v=\" + nonce;",
-            "    let finished = false;",
-            "    const done = (ok,text) => { if (finished) return; finished = true; clearTimeout(timeout); window._smartyQuickLoading = false; status.textContent = text; status.style.color = ok ? \"#167f65\" : \"#b91c1c\"; s.remove(); };",
-            "    const timeout = setTimeout(() => done(false,\"No respondió Vercel. Comprueba la conexión y la publicación.\"),12000);",
-            "    s.onload = () => { const ver = window.SMARTY_PATCH_BUILD_ID; if (!ver) return done(false,\"Vercel respondió, pero el archivo no ejecutó la actualización.\"); done(true, ver===prior ? \"Smarty ya tiene el parche \" + ver : \"Actualización ligera aplicada: \" + ver); };",
-            "    s.onerror = () => { window.SMARTY_PATCH_BUILD_ID = prior === \"no instalada\" ? null : prior; done(false,\"No se pudo cargar smarty-ota.js desde Vercel.\"); };",
-            "    document.head.appendChild(s);",
-            "  };",
+            "  // Compatibilidad con botones antiguos: redirigir al actualizador APK seguro.",
+            "  window.checkForOtaUpdateNow = function() { window.SmartyAppUpdater?.checkNow(); };",
             "",
             "  function hookSettingsAndExtras() {",
             "    window.showSmartyBankDiagnostics = function() {",
@@ -714,9 +701,11 @@ jobs:
             "        const connected = !!window.SmartyBankBridge?.diagnostics?.().native?.connected;",
             "        const p = document.createElement('div'); p.id = 'android-pro-settings'; p.style.marginBottom = '20px';",
             "        p.innerHTML = '<div class=\"section-label\">ANDROID PRO, IA & ACTUALIZACIONES</div><div class=\"glass-card\" style=\"padding:15px; margin:0;\">' +",
-            "          '<button class=\"btn-full\" style=\"margin:0 0 10px; padding:12px; font-size:13.5px;\" onclick=\"window.checkForOtaUpdateNow()\">🔄 Buscar Actualización Ahora (V' + window.SMARTY_APK_VERSION + ')</button>' +",
+            "          '<button class=\"btn-full\" style=\"margin:0 0 10px; padding:12px; font-size:13.5px;\" onclick=\"window.SmartyAppUpdater?.checkNow()\">⬇️ Buscar actualizaciones del APK</button>' +",
+            "          '<div id=\"smarty-native-update-state\" style=\"font-size:12px;line-height:1.45;margin:4px 0 10px;opacity:.8;\" role=\"status\"></div>' +",
             "          '<div class=\"setting-item\"><span>🔑 API Key de Groq (Smarty AI)</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.askGroqKeyModal()\">' + (hasK ? 'Configurada ✅' : 'Poner Clave +') + '</button></div>' +",
-            "          '<div class=\"setting-item\"><span>🫆 Desbloqueo con Huella / Rostro</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.biometricEnabled ? 'checked' : '') + ' onchange=\"window.SmartyBiometrics?.toggle(this);\"><span class=\"slider\"></span></label></div>' +",
+            "          '<div class=\"setting-item\"><span>🫆 Desbloqueo con Huella / Rostro</span><label class=\"switch-wrap\"><input type=\"checkbox\" data-smarty-biometric-toggle ' + (s.biometricEnabled ? 'checked' : '') + ' onchange=\"window.SmartyBiometrics?.toggle(this);\"><span class=\"slider\"></span></label></div>' +",
+            "          '<div class=\"setting-item\" style=\"gap:12px;\"><span style=\"font-size:12px;opacity:.8;\">¿No funciona la huella?</span><button class=\"text-btn-small\" onclick=\"window.SmartyBiometrics?.showDiagnostics()\">Diagnóstico huella</button></div>' +",
             "          '<div class=\"setting-item\"><span>💾 Auto-Backup Diario (Archivo Único)</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.autoDailyBackup !== false ? 'checked' : '') + ' onchange=\"Data.store.settings.autoDailyBackup=this.checked; Data.save();\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>🏦 Leer Notificaciones de Bancos</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.bankAutoDetect ? 'checked' : '') + ' onchange=\"Data.store.settings.bankAutoDetect=this.checked; Data.save(); if(this.checked) { if(!window.SmartyAndroid?.isNotificationListenerEnabled()) window.SmartyAndroid?.openNotificationSettings(); else if(!window.SmartyAndroid?.getAllowedNotificationPackages()) window.openInstalledAppsPickerModal(); }\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>📲 Apps Autorizadas (' + cnt + ')</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.openInstalledAppsPickerModal()\">Elegir de mi móvil ➔</button></div>' +",
@@ -783,7 +772,7 @@ jobs:
               '<style id="smarty-prepaint">#view-home{visibility:hidden!important}</style></head>');
             // Cargar mejoras funcionales sincrónicamente desde el APK; Bento sigue en el HTML base.
             html = html.replace('main.js"></script>',
-              'main.js"></script><script src="smarty-pro-addons.js"></script><script src="smarty-ota.js"></script>');
+              'main.js"></script><script src="smarty-release-config.js"></script><script src="smarty-app-updater.js"></script><script src="smarty-pro-addons.js"></script><script src="smarty-ota.js"></script>');
             // Failsafe: si el parche tuviera un error, la pantalla nunca quedará oculta permanentemente.
             html = html.replace(/<\/body>/i,
               '<script>window.addEventListener("load",function(){setTimeout(function(){document.getElementById("smarty-prepaint")?.remove()},1800)},{once:true});</script></body>');
@@ -1169,15 +1158,62 @@ jobs:
           node setup_java.js
           rm -f setup_java.js
           node tools/patch-biometric-native.cjs
+          node tools/patch-native-updater.cjs
 
-      - name: Compile Debug APK
+      # No se genera un APK debug: un nuevo runner usaría otra firma y Android exigiría desinstalar.
+      - name: Preparar clave de firma permanente
+        env:
+          SMARTY_KEYSTORE_BASE64: ${{ secrets.SMARTY_KEYSTORE_BASE64 }}
         run: |
+          if [ -z "$SMARTY_KEYSTORE_BASE64" ]; then
+            echo "::error::Configura SMARTY_KEYSTORE_BASE64 y las tres credenciales de firma en GitHub Secrets."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$SMARTY_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/smarty-release.jks"
+          test -s "$RUNNER_TEMP/smarty-release.jks"
+
+      - name: Compilar APK release con firma estable
+        env:
+          SMARTY_KEYSTORE_FILE: ${{ runner.temp }}/smarty-release.jks
+          SMARTY_KEYSTORE_ALIAS: ${{ secrets.SMARTY_KEY_ALIAS }}
+          SMARTY_KEY_ALIAS: ${{ secrets.SMARTY_KEY_ALIAS }}
+          SMARTY_KEYSTORE_PASSWORD: ${{ secrets.SMARTY_KEYSTORE_PASSWORD }}
+          SMARTY_KEY_PASSWORD: ${{ secrets.SMARTY_KEY_PASSWORD }}
+        run: |
+          for k in SMARTY_KEY_ALIAS SMARTY_KEYSTORE_PASSWORD SMARTY_KEY_PASSWORD; do
+            if [ -z "${!k}" ]; then echo "::error::Falta secreto $k"; exit 1; fi
+          done
+          node tools/patch-release-signing.cjs
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
+          cd ..
+          cp android/app/build/outputs/apk/release/app-release.apk SmartLifePro.apk
+          test -s SmartLifePro.apk
+          sha256sum SmartLifePro.apk > SmartLifePro.sha256
+          APK_SIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -name apksigner -type f | sort -V | tail -1)"
+          if [ -z "$APK_SIGNER" ]; then echo "::error::Falta apksigner"; exit 1; fi
+          "$APK_SIGNER" verify SmartLifePro.apk
 
-      - name: Upload APK Artifact
+      - name: Subir APK firmado como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: SmartLifePro-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: SmartLifePro-Android-APK-firmado
+          path: |
+            SmartLifePro.apk
+            SmartLifePro.sha256
+
+      - name: Publicar APK firmado en GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.SMARTY_VERSION_CODE }}
+          name: SmartLifePro v${{ env.SMARTY_VERSION_CODE }}
+          body: |
+            Actualización de SmartLifePro Bento: mejoras biométricas V2 y actualizador nativo.
+            Para instalar encima de la versión anterior es indispensable conservar la misma clave de firma.
+          files: |
+            SmartLifePro.apk
+            SmartLifePro.sha256
+          draft: false
+          prerelease: false
