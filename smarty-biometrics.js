@@ -11,14 +11,19 @@
     pt:{pin:'Configure primeiro um PIN.',native:'O APK nao possui a ponte de biometria. Instale a nova versao.',enroll:'Cadastre sua digital nas configuracoes do Android.',busy:'Sensor indisponivel. Use seu PIN.',unavailable:'Biometria indisponivel.',cancel:'Autenticacao cancelada. Use seu PIN.',enabled:'Biometria ativada.',disabled:'Biometria desativada.',timeout:'Android nao respondeu. Tente novamente sem fechar o app.',failed:'Nao foi possivel autenticar. Use seu PIN.'},
     en:{pin:'Set a PIN first.',native:'This APK has no biometric bridge. Install the new build.',enroll:'Enroll a fingerprint in Android settings.',busy:'The biometric sensor is unavailable. Use your PIN.',unavailable:'Biometrics are unavailable.',cancel:'Authentication cancelled. Use your PIN.',enabled:'Biometric unlock enabled.',disabled:'Biometric unlock disabled.',timeout:'Android did not respond. You can retry without restarting.',failed:'Authentication was not completed. Use your PIN.'}
   };
-  function words(){return messages[window.Data?.store?.settings?.lang]||messages.es;}
+  // Los modulos de la app se declaran como const globales, no como propiedades de window.
+  // En el APK real, window.Data y window.Main pueden ser undefined aunque Data/Main existan.
+  function appData(){return typeof Data !== 'undefined' ? Data : window.Data;}
+  function appMain(){return typeof Main !== 'undefined' ? Main : window.Main;}
+  function appUI(){return typeof UI !== 'undefined' ? UI : window.UI;}
+  function words(){return messages[appData()?.store?.settings?.lang]||messages.es;}
   function notice(text){
     const lock=document.getElementById('lock-screen');
     const error=document.getElementById('smarty-bio-error');
     if(error&&lock&&!lock.classList.contains('hidden'))error.textContent=text;
-    else window.UI?.showSnackbar?.(text);
+    else appUI()?.showSnackbar?.(text);
   }
-  function setting(){return window.Data?.store?.settings;}
+  function setting(){return appData()?.store?.settings;}
   function hasBridge(){return typeof window.SmartyAndroid?.authenticateBiometric==='function' && typeof window.SmartyAndroid?.getBiometricStatus==='function';}
   function status(){try{return hasBridge()?Number(window.SmartyAndroid.getBiometricStatus()):-9;}catch(_){return -9;}}
   function errorText(code){return code===11?words().enroll:(code===1||code===12)?words().busy:code===-9?words().native:words().unavailable;}
@@ -67,12 +72,12 @@
     if(outcome==='success'){
       if(request.mode==='enable'){
         setting().biometricEnabled=true;
-        window.Data.save();
+        appData()?.save?.();
         recordError('success');
         notice(words().enabled);
       }else if(request.mode==='unlock'&&setting()?.biometricEnabled&&setting()?.pin){
         const lock=document.getElementById('lock-screen');
-        if(lock&&!lock.classList.contains('hidden'))window.Main?.unlockApp?.();
+        if(lock&&!lock.classList.contains('hidden'))appMain()?.unlockApp?.();
       }
     }else{
       recordError(outcome);
@@ -86,7 +91,7 @@
     clearPending();
     if(!setting())return;
     setting().biometricEnabled=false;
-    window.Data.save();
+    appData()?.save?.();
     autoAttempted=false;
     sync();
     notice(words().disabled);
@@ -130,9 +135,9 @@
     if(document.visibilityState==='hidden'){hiddenAt=Date.now();return;}
     if(!hiddenAt)return;
     const elapsed=Date.now()-hiddenAt;hiddenAt=0;
-    if(elapsed<30000||!setting()?.pin||!window.Main?.sessionAuthenticated)return;
-    window.Main.sessionAuthenticated=false;
-    window.Main.tempPin='';window.Main.updatePinUI?.();
+    if(elapsed<30000||!setting()?.pin||!appMain()?.sessionAuthenticated)return;
+    appMain().sessionAuthenticated=false;
+    appMain().tempPin='';appMain().updatePinUI?.();
     document.getElementById('lock-screen')?.classList.remove('hidden');
     autoAttempted=false;install();setTimeout(tryAuto,250);
   }
