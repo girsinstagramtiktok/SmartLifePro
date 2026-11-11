@@ -1,0 +1,68 @@
+package com.smartlife.pro;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.net.Uri;
+import androidx.annotation.NonNull;
+import androidx.documentfile.provider.DocumentFile;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+/** Copia de seguridad diaria independiente; usa la última instantánea confirmada. */
+public final class SmartyBackupWorker extends Worker {
+    private static final Object LOCK=new Object();
+    private static final String SNAPSHOT="smarty_backup_snapshot.json";
+    public SmartyBackupWorker(@NonNull Context c,@NonNull WorkerParameters params){super(c,params);}
+    public @NonNull Result doWork(){return saveOne(getApplicationContext())?Result.success():Result.retry();}
+    public static void storeSnapshot(Context ctx,String json) throws Exception {
+        synchronized(LOCK){
+            File main=new File(ctx.getFilesDir(),SNAPSHOT);
+            File temp=new File(ctx.getFilesDir(),SNAPSHOT+".tmp");
+            try(FileOutputStream out=new FileOutputStream(temp)){out.write(json.getBytes(StandardCharsets.UTF_8));out.getFD().sync();}
+            if(!temp.renameTo(main)){
+                try(FileInputStream in=new FileInputStream(temp);FileOutputStream out=new FileOutputStream(main)){
+                    byte[] buf=new byte[16384];int n;while((n=in.read(buf))!=-1)out.write(buf,0,n);
+                    out.getFD().sync();
+                }
+                temp.delete();
+            }
+        }
+    }
+    public static boolean saveOne(Context ctx){return saveOne(ctx,false);}
+    public static boolean saveOne(Context ctx,boolean force){
+        synchronized(LOCK){
+            SharedPreferences p=ctx.getSharedPreferences(SmartyBackupBridge.PREFS,Context.MODE_PRIVATE);
+            if(!force&&!p.getBoolean("enabled",false))return true;
+            String folder=p.getString("folder","");
+            if(folder.isEmpty())return false;
+            File source=new File(ctx.getFilesDir(),SNAPSHOT);
+            if(!source.isFile()||source.length()<10){p.edit().putString("error","Todavía no hay datos preparados para copiar").apply();return false;}
+            String date=new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());
+            String name="SmartLifePro_"+date+".json";
+            try{
+                Uri tree=Uri.parse(folder);
+                DocumentFile dir=DocumentFile.fromTreeUri(ctx,tree);
+                if(dir==null||!dir.canWrite())throw new SecurityException("Sin permiso de escritura sobre la carpeta");
+                DocumentFile existing=dir.findFile(name);
+                DocumentFile target=(existing!=null)?existing:dir.createFile("application/json",name);
+                if(target==null)throw new Exception("No se pudo crear el archivo de respaldo");
+                try(InputStream in=new FileInputStream(source);OutputStream out=ctx.getContentResolver().openOutputStream(target.getUri(),"rwt")){
+                    if(out==null)throw new Exception("No se pudo abrir el archivo destino");
+                    byte[] buf=new byte[16384];int n;while((n=in.read(buf))!=-1)out.write(buf,0,n);
+                    out.flush();
+                }
+                p.edit().putString("lastDate",date).putString("lastFile",name).putString("error","").apply();
+                return true;
+            }catch(Exception e){p.edit().putString("error",e.getClass().getSimpleName()+": "+e.getMessage()).apply();return false;}
+        }
+    }
+}

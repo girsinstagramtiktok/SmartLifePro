@@ -1,0 +1,87 @@
+package com.smartlife.pro;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.net.Uri;
+import android.webkit.JavascriptInterface;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import java.util.concurrent.TimeUnit;
+import org.json.JSONObject;
+
+/** Acceso a una carpeta elegida por el usuario, sin permisos generales de almacenamiento. */
+public final class SmartyBackupBridge {
+    public static final int CHOOSE_FOLDER=9918;
+    static final String PREFS="smarty_daily_backup_prefs";
+    private final MainActivity host;
+    public SmartyBackupBridge(MainActivity activity){this.host=activity;}
+    private SharedPreferences prefs(){return host.getSharedPreferences(PREFS,Context.MODE_PRIVATE);}
+    static void schedule(Context ctx, boolean enabled) {
+        WorkManager wm=WorkManager.getInstance(ctx.getApplicationContext());
+        if(!enabled){wm.cancelUniqueWork("smarty_daily_backup");return;}
+        PeriodicWorkRequest req=new PeriodicWorkRequest.Builder(SmartyBackupWorker.class,24,TimeUnit.HOURS)
+          .setInitialDelay(24,TimeUnit.HOURS).build();
+        wm.enqueueUniquePeriodicWork("smarty_daily_backup",ExistingPeriodicWorkPolicy.KEEP,req);
+    }
+    @JavascriptInterface public void chooseFolder(){
+        host.runOnUiThread(()->{
+            Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            host.startActivityForResult(i,CHOOSE_FOLDER);
+        });
+    }
+    public void onFolderResult(int result,Intent data){
+        if(result!=Activity.RESULT_OK||data==null||data.getData()==null){notifyUi();return;}
+        Uri uri=data.getData();
+        try{
+            int flags=data.getFlags()&(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            if((flags&Intent.FLAG_GRANT_WRITE_URI_PERMISSION)==0)throw new SecurityException("La carpeta no concede escritura");
+            host.getContentResolver().takePersistableUriPermission(uri,flags);
+            prefs().edit().putString("folder",uri.toString()).putBoolean("enabled",true).putString("error","").apply();
+            schedule(host,true);new Thread(()->{SmartyBackupWorker.saveOne(host);notifyUi();},"SmartyBackupFirst").start();
+        }catch(Exception ex){prefs().edit().putString("error",ex.getMessage()).apply();}
+        notifyUi();
+    }
+    @JavascriptInterface public String getStatus(){
+        JSONObject j=new JSONObject();SharedPreferences p=prefs();
+        try{
+            String folder=p.getString("folder","");
+            j.put("selected",!folder.isEmpty());
+            j.put("enabled",p.getBoolean("enabled",false));
+            j.put("folderName",folder.isEmpty()?"":Uri.decode(Uri.parse(folder).getLastPathSegment()));
+            j.put("lastDate",p.getString("lastDate",""));
+            j.put("lastFile",p.getString("lastFile",""));
+            j.put("error",p.getString("error",""));
+        }catch(Exception ignored){}
+        return j.toString();
+    }
+    @JavascriptInterface public void setEnabled(boolean enabled){
+        boolean hasFolder=!prefs().getString("folder","").isEmpty();
+        prefs().edit().putBoolean("enabled",enabled&&hasFolder).apply();
+        schedule(host,enabled&&hasFolder);notifyUi();
+    }
+    /** Snapshot local, disponible incluso cuando la WebView está cerrada. */
+    @JavascriptInterface public void updateSnapshot(String json){
+        if(json==null||json.length()<10||json.length()>12*1024*1024)return;
+        try{JSONObject parsed=new JSONObject(json);if(!parsed.has("data"))return;SmartyBackupWorker.storeSnapshot(host,json);}
+        catch(Exception ex){prefs().edit().putString("error","Snapshot: "+ex.getMessage()).apply();}
+    }
+    @JavascriptInterface public void ensureToday(){
+        if(!prefs().getBoolean("enabled",false))return;
+        String today=new java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.US).format(new java.util.Date());
+        if(today.equals(prefs().getString("lastDate","")))return;
+        new Thread(()->{SmartyBackupWorker.saveOne(host);notifyUi();},"SmartyBackupDailyCheck").start();
+    }
+    @JavascriptInterface public void saveNow(String json){
+        updateSnapshot(json);
+        new Thread(()->{SmartyBackupWorker.saveOne(host,true);notifyUi();},"SmartySaveBackup").start();
+    }
+    private void notifyUi(){
+        host.runOnUiThread(()->{
+            try{host.getBridge().getWebView().evaluateJavascript("window.SmartyDailyBackup?.refresh?.()",null);}catch(Exception ignored){}
+        });
+    }
+}
