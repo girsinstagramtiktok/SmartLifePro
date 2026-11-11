@@ -27,6 +27,10 @@ on:
       - 'smarty-pro-addons.js'
       - 'shopping.js'
       - 'bank-bridge.js'
+      - 'smarty-daily-spending.js'
+      - 'smarty-daily-spending.css'
+      - 'daily-spending-tests.cjs'
+      - 'bank-recovery-tests.cjs'
       - 'camera-bridge.js'
       - 'skins/**'
       - '*.png'
@@ -66,13 +70,15 @@ jobs:
 
           TZ=America/Sao_Paulo node smarty-tests.cjs
           TZ=America/Sao_Paulo node notification-tests.cjs
+          TZ=America/Sao_Paulo node bank-recovery-tests.cjs
+          TZ=America/Sao_Paulo node daily-spending-tests.cjs
           node biometric-tests.cjs
           node updater-tests.cjs
           node backup-tests.cjs
           node quick-ota-tests.cjs
 
-          cp index.html style.css bento-home.css bento-global.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js www/
+          cp index.html style.css bento-home.css bento-global.css smarty-daily-spending.css manifest.json logo.png www/ 2>/dev/null || true
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js smarty-daily-spending.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
           # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
@@ -713,6 +719,7 @@ jobs:
             
             "          '<div class=\"setting-item\"><span>🏦 Leer Notificaciones de Bancos</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.bankAutoDetect ? 'checked' : '') + ' onchange=\"Data.store.settings.bankAutoDetect=this.checked; Data.save(); if(this.checked) { if(!window.SmartyAndroid?.isNotificationListenerEnabled()) window.SmartyAndroid?.openNotificationSettings(); else if(!window.SmartyAndroid?.getAllowedNotificationPackages()) window.openInstalledAppsPickerModal(); }\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>📲 Apps Autorizadas (' + cnt + ')</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.openInstalledAppsPickerModal()\">Elegir de mi móvil ➔</button></div>' +",
+            "          '<div class=\"setting-item\" style=\"gap:10px;\"><span id=\"smarty-bank-health-state\" style=\"font-size:12px;\">' + (!perm ? 'Acceso desactivado' : (connected ? 'Lector conectado' : 'Lector desconectado')) + '</span><button class=\"text-btn-small\" onclick=\"window.SmartyBankBridge?.reconnect()\">Reconectar lector</button></div>' +",
             "          (s.bankAutoDetect && !perm ? '<div style=\"font-size:12px;color:var(--danger);margin:8px 0;\">Sin acceso a notificaciones de Android: activa el permiso.</div>' : '') +",
             "          (s.bankAutoDetect && cnt === 0 ? '<div style=\"font-size:12px;color:var(--danger);margin:8px 0;\">No hay aplicaciones bancarias autorizadas. Pulsa Elegir de mi móvil.</div>' : '') +",
             "          '<div class=\"setting-item\"><span>Modo Registro Bancario</span><select class=\"setting-select\" style=\"width:auto; margin:0; padding:6px 10px; font-size:12px;\" onchange=\"Data.store.settings.bankAutoSaveMode=this.value; Data.save();\"><option value=\"confirm\" ' + (s.bankAutoSaveMode !== 'auto' ? 'selected' : '') + '>Confirmar antes</option><option value=\"auto\" ' + (s.bankAutoSaveMode === 'auto' ? 'selected' : '') + '>Guardar 100% solo</option></select></div>' +",
@@ -1164,6 +1171,7 @@ jobs:
           node tools/patch-biometric-native.cjs
           node tools/patch-native-updater.cjs
           node tools/patch-daily-backup-native.cjs
+          node tools/patch-bank-listener-native.cjs
 
       # No se genera un APK debug: un nuevo runner usaría otra firma y Android exigiría desinstalar.
       - name: Preparar clave de firma permanente
