@@ -108,20 +108,52 @@
     const note=document.createElement('p');note.className='smarty-day-note';note.textContent=t.plannedNote;root.appendChild(note);
     root.querySelector('.smarty-day-col.active')?.scrollIntoView({inline:'center',block:'nearest',behavior:'instant'});
   }
+  // El APK sustituye Finance.renderExpensesHistory() cuando termina de cargar.
+  // Marcar el MÉTODO envoltorio y no el objeto Finance permite volver a conectar
+  // el panel después de esa sustitución, sin crear envoltorios duplicados.
+  const wrappedMark='__smartyDailySpendingWrappedV2';
   function install(){
-    if(typeof Finance==='undefined'||Finance.__smartyDailyWrapped)return;
+    if(typeof Finance==='undefined'||typeof Finance.renderExpensesHistory!=='function')return false;
     const original=Finance.renderExpensesHistory;
-    Finance.renderExpensesHistory=function(...args){
+    if(original[wrappedMark])return false;
+    const wrapped=function(...args){
       const result=original.apply(this,args);
       const container=document.getElementById('expenses-history-list');
-      if(!container)return result;
-      const panel=document.createElement('section');panel.id='smarty-daily-spending';panel.className='glass-card';
+      if(!container||!Finance.selectedHistoryMonth)return result;
+      // El historial se genera de nuevo por completo en cada cambio de mes/filtro.
+      // La sección debe añadirse después de que haya terminado el render base.
+      container.querySelector('#smarty-daily-spending')?.remove();
+      const panel=document.createElement('section');
+      panel.id='smarty-daily-spending';panel.className='glass-card';
       const selector=container.firstElementChild;
-      if(selector&&selector.nextSibling)container.insertBefore(panel,selector.nextSibling);else container.appendChild(panel);
-      render();return result;
+      if(selector?.nextSibling)container.insertBefore(panel,selector.nextSibling);
+      else container.appendChild(panel);
+      try{render();}catch(error){console.warn('[Smarty gasto diario] No se pudo dibujar:',error);}
+      return result;
     };
-    Finance.__smartyDailyWrapped=true;
+    wrapped[wrappedMark]=true;
+    Finance.renderExpensesHistory=wrapped;
+    return true;
+  }
+  function reinstall(){
+    const changed=install();
+    if(!changed)return;
+    const history=document.getElementById('finance-content-history');
+    // Si el usuario está ya en Historial, refrescar ahora y no esperar al cambio de pestaña.
+    if(history&&!history.classList?.contains('hidden')&&history.style.display!=='none'){
+      try{Finance.renderExpensesHistory();}catch(e){console.warn('[Smarty gasto diario] Actualización de historial:',e);}
+    }
   }
   window.SmartyDailySpending={compute,render,install};
   install();
+  // Los complementos del APK reemplazan la función durante window.load;
+  // el parche de promedios puede volver a envolverla después de 500 ms.
+  if(typeof window.addEventListener==='function'){
+    window.addEventListener('load',reinstall,{once:true});
+    window.addEventListener('pageshow',reinstall);
+    document.addEventListener?.('visibilitychange',()=>{
+      if(document.visibilityState==='visible')reinstall();
+    });
+  }
+  if(typeof setTimeout==='function')setTimeout(reinstall,700);
 })();

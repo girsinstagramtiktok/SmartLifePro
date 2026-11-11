@@ -31,3 +31,34 @@ assert.equal(next.records.length,28);
 assert.equal(window.SmartyDailySpending.compute('foo','ALL',data,today),null);
 assert.equal(typeof Finance.renderExpensesHistory,'function');
 console.log('OK: historial diario, filtros, pagos programados, fechas futuras, meses, promedio.');
+
+// Regresión: el código que GitHub empaqueta reemplaza renderExpensesHistory
+// durante window.load. El módulo diario debe volver a engancharse DESPUÉS.
+{
+  const events=new Map();
+  const timers=[];
+  const w={addEventListener(name,fn){events.set(name,fn);}};
+  let renderCount=0;
+  const f={renderExpensesHistory(){renderCount++;},selectedHistoryMonth:'2026-11',selectedCategoryFilter:'ALL'};
+  const d={getElementById(){return null;},addEventListener(){}};
+  const sandbox2={window:w,Finance:f,document:d,Date,Number,Array,Math,console,setTimeout(fn){timers.push(fn);}};
+  vm.createContext(sandbox2);vm.runInContext(source,sandbox2);
+  const originalWrapped=f.renderExpensesHistory;
+  assert.equal(typeof originalWrapped,'function');
+  // Emular el upgradeFinanceFeatures() que se ejecuta en window.load.
+  function nativeAddonHistory(){renderCount++;}
+  f.renderExpensesHistory=nativeAddonHistory;
+  events.get('load')();
+  assert.notEqual(f.renderExpensesHistory,nativeAddonHistory,'El panel debe reengancharse tras la sustitución en load');
+  const patchedAfterLoad=f.renderExpensesHistory;
+  events.get('pageshow')();
+  assert.equal(f.renderExpensesHistory,patchedAfterLoad,'Evitar dobles envoltorios al navegar');
+  // Emular el segundo envoltorio tardío del módulo de promedios.
+  f.renderExpensesHistory=function lateMonthlyHistory(){renderCount++;};
+  timers.forEach(fn=>fn());
+  assert.notEqual(f.renderExpensesHistory,nativeAddonHistory);
+  assert.notEqual(f.renderExpensesHistory.name,'lateMonthlyHistory','Recuperar el panel tras el parche tardío');
+  f.renderExpensesHistory();
+  assert.equal(renderCount,1);
+}
+console.log('OK: la vista diaria se recupera después de las sustituciones del workflow Android.');
