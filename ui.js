@@ -832,18 +832,6 @@ msg_bio_inactive: "Lock Disabled 🔓"
                 <div class="section-label">${this.t('sec_app')}</div>
                 
                 <div class="setting-item">
-                    <span>${this.t('theme_label')}</span>
-                </div>
-                <div class="theme-selector-grid">
-                    <div class="theme-btn t-blue ${s.theme === 'blue' ? 'active' : ''}" onclick="UI.changeTheme('blue')"></div>
-                    <div class="theme-btn t-pink ${s.theme === 'pink' ? 'active' : ''}" onclick="UI.changeTheme('pink')"></div>
-                    <div class="theme-btn t-green ${s.theme === 'green' ? 'active' : ''}" onclick="UI.changeTheme('green')"></div>
-                    <div class="theme-btn t-orange ${s.theme === 'orange' ? 'active' : ''}" onclick="UI.changeTheme('orange')"></div>
-                    <div class="theme-btn t-red ${s.theme === 'red' ? 'active' : ''}" onclick="UI.changeTheme('red')"></div>
-                    <div class="theme-btn t-purple ${s.theme === 'purple' ? 'active' : ''}" onclick="UI.changeTheme('purple')"></div>
-                </div>
-
-                <div class="setting-item" style="margin-top:15px; border-top:1px solid rgba(120,120,120,0.1); padding-top:15px;">
                     <span>Tipografía</span>
                 </div>
                 <div class="font-selector-grid">
