@@ -15,6 +15,7 @@ on:
       - 'bento-global.css'
       - 'smarty-biometrics.js'
       - 'smarty-app-updater.js'
+      - 'smarty-daily-backup.js'
       - 'updater-tests.cjs'
       - 'bento-home.js'
       - 'main.js'
@@ -67,10 +68,11 @@ jobs:
           TZ=America/Sao_Paulo node notification-tests.cjs
           node biometric-tests.cjs
           node updater-tests.cjs
+          node backup-tests.cjs
           node quick-ota-tests.cjs
 
           cp index.html style.css bento-home.css bento-global.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js bank-bridge.js camera-bridge.js www/
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
           # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
@@ -113,9 +115,11 @@ jobs:
             "  if (typeof Main !== 'undefined') {",
             "    Main.downloadBackup = function() {",
             "      const json = Data.exportJSON();",
-            "      if (window.SmartyAndroid?.saveSingleOverwriteBackup) window.SmartyAndroid.saveSingleOverwriteBackup(json);",
-            "      if (window.SmartyAndroid?.saveBackupFile) { window.SmartyAndroid.saveBackupFile(json, 'SmartLifePro_Backup.json'); return; }",
-            "      UI.showSnackbar('✅ Copia guardada en Descargas');",
+            "      if (window.SmartyDailyBackupNative?.getStatus) {",
+            "        try { const p = JSON.parse(window.SmartyDailyBackupNative.getStatus()); if (p.selected) { window.SmartyDailyBackupNative.saveNow(json); UI.showSnackbar('Guardando copia con fecha en tu carpeta…'); return; } } catch(_) {}",
+            "      }",
+            "      if (window.SmartyAndroid?.saveBackupFile) { window.SmartyAndroid.saveBackupFile(json, 'SmartLifePro_' + new Date().toLocaleDateString('sv-SE') + '.json'); return; }",
+            "      UI.showSnackbar('Elige una carpeta de backup en Ajustes');",
             "    };",
             "    Main.handleImport = function(input) {",
             "      const file = input?.files?.[0]; if (!file) return;",
@@ -706,7 +710,7 @@ jobs:
             "          '<div class=\"setting-item\"><span>🔑 API Key de Groq (Smarty AI)</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.askGroqKeyModal()\">' + (hasK ? 'Configurada ✅' : 'Poner Clave +') + '</button></div>' +",
             "          '<div class=\"setting-item\"><span>🫆 Desbloqueo con Huella / Rostro</span><label class=\"switch-wrap\"><input type=\"checkbox\" data-smarty-biometric-toggle ' + (s.biometricEnabled ? 'checked' : '') + ' onchange=\"window.SmartyBiometrics?.toggle(this);\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\" style=\"gap:12px;\"><span style=\"font-size:12px;opacity:.8;\">¿No funciona la huella?</span><button class=\"text-btn-small\" onclick=\"window.SmartyBiometrics?.showDiagnostics()\">Diagnóstico huella</button></div>' +",
-            "          '<div class=\"setting-item\"><span>💾 Auto-Backup Diario (Archivo Único)</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.autoDailyBackup !== false ? 'checked' : '') + ' onchange=\"Data.store.settings.autoDailyBackup=this.checked; Data.save();\"><span class=\"slider\"></span></label></div>' +",
+            
             "          '<div class=\"setting-item\"><span>🏦 Leer Notificaciones de Bancos</span><label class=\"switch-wrap\"><input type=\"checkbox\" ' + (s.bankAutoDetect ? 'checked' : '') + ' onchange=\"Data.store.settings.bankAutoDetect=this.checked; Data.save(); if(this.checked) { if(!window.SmartyAndroid?.isNotificationListenerEnabled()) window.SmartyAndroid?.openNotificationSettings(); else if(!window.SmartyAndroid?.getAllowedNotificationPackages()) window.openInstalledAppsPickerModal(); }\"><span class=\"slider\"></span></label></div>' +",
             "          '<div class=\"setting-item\"><span>📲 Apps Autorizadas (' + cnt + ')</span><button class=\"text-btn-small\" style=\"background:var(--input-bg);\" onclick=\"window.openInstalledAppsPickerModal()\">Elegir de mi móvil ➔</button></div>' +",
             "          (s.bankAutoDetect && !perm ? '<div style=\"font-size:12px;color:var(--danger);margin:8px 0;\">Sin acceso a notificaciones de Android: activa el permiso.</div>' : '') +",
@@ -772,7 +776,7 @@ jobs:
               '<style id="smarty-prepaint">#view-home{visibility:hidden!important}</style></head>');
             // Cargar mejoras funcionales sincrónicamente desde el APK; Bento sigue en el HTML base.
             html = html.replace('main.js"></script>',
-              'main.js"></script><script src="smarty-release-config.js"></script><script src="smarty-app-updater.js"></script><script src="smarty-pro-addons.js"></script><script src="smarty-ota.js"></script>');
+              'main.js"></script><script src="smarty-release-config.js"></script><script src="smarty-app-updater.js"></script><script src="smarty-pro-addons.js"></script><script src="smarty-ota.js"></script><script src="smarty-daily-backup.js"></script>');
             // Failsafe: si el parche tuviera un error, la pantalla nunca quedará oculta permanentemente.
             html = html.replace(/<\/body>/i,
               '<script>window.addEventListener("load",function(){setTimeout(function(){document.getElementById("smarty-prepaint")?.remove()},1800)},{once:true});</script></body>');
@@ -1159,6 +1163,7 @@ jobs:
           rm -f setup_java.js
           node tools/patch-biometric-native.cjs
           node tools/patch-native-updater.cjs
+          node tools/patch-daily-backup-native.cjs
 
       # No se genera un APK debug: un nuevo runner usaría otra firma y Android exigiría desinstalar.
       - name: Preparar clave de firma permanente
