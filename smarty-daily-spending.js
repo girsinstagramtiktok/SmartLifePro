@@ -5,9 +5,9 @@
 (function () {
   'use strict';
   const labels = {
-    es: { title:'Gasto por día',registered:'Gastado',planned:'Programado',total:'Registrado en el mes',average:'Promedio por día con gastos',day:'Día',detail:'Movimientos del día',none:'Sin gastos registrados',plannedNote:'Las suscripciones, cuotas y gastos futuros aparecen como programados, no como gastados.' },
-    pt: { title:'Gastos por dia',registered:'Gasto',planned:'Programado',total:'Registrado no mês',average:'Média por dia com gastos',day:'Dia',detail:'Lançamentos do dia',none:'Sem gastos registrados',plannedNote:'Assinaturas, parcelas e gastos futuros aparecem como programados, não como pagos.' },
-    en: { title:'Daily spending',registered:'Spent',planned:'Scheduled',total:'Recorded this month',average:'Average on spending days',day:'Day',detail:'Daily transactions',none:'No recorded expenses',plannedNote:'Subscriptions, installments and future expenses are scheduled, not recorded as spent.' }
+    es: { title:'Gasto por día',registered:'Gastado',planned:'Programado',total:'Registrado en el mes',average:'Promedio por día con gastos',day:'Día',detail:'Movimientos del día',none:'Sin gastos registrados',plannedNote:'Las suscripciones, cuotas y gastos futuros aparecen como programados, no como gastados.',all:'Ver todos' },
+    pt: { title:'Gastos por dia',registered:'Gasto',planned:'Programado',total:'Registrado no mês',average:'Média por dia com gastos',day:'Dia',detail:'Lançamentos do dia',none:'Sem gastos registrados',plannedNote:'Assinaturas, parcelas e gastos futuros aparecem como programados, não como pagos.',all:'Ver todos' },
+    en: { title:'Daily spending',registered:'Spent',planned:'Scheduled',total:'Recorded this month',average:'Average on spending days',day:'Day',detail:'Daily transactions',none:'No recorded expenses',plannedNote:'Subscriptions, installments and future expenses are scheduled, not recorded as spent.',all:'Show all' }
   };
   const validNum = v => { const n=Number(v); return Number.isFinite(n) && n>0 ? n : 0; };
   const when = v => { const d=new Date(v); return Number.isFinite(d.getTime()) ? d : null; };
@@ -57,56 +57,78 @@
     const active=records.filter(d=>d.registered>0).length;
     return {records,totalRegistered,totalPlanned,active,average:active?totalRegistered/active:0};
   }
+  // Ninguna fecha seleccionada: el historial muestra todos sus movimientos.
   let selectedDay=0;
   let lastMonth='';
   function lang(){ const code=typeof Data!=='undefined'?Data.store?.settings?.lang:'es';return labels[code]||labels.es; }
   function money(x){try{return UI.formatMoney(x)}catch(_){return 'R$ '+x.toFixed(2)}}
+  function dateInRow(row){
+    // Ambos renderizadores de Historial (base y compilación Android)
+    // colocan la fecha como segundo texto del segundo bloque de item-content-wrap.
+    const content=row.querySelector('.item-content-wrap');
+    return content?.children?.[1]?.children?.[1]?.textContent?.trim()||null;
+  }
+  function filterHistory(month){
+    const container=document.getElementById('expenses-history-list');
+    if(!container)return;
+    const [y,m]=month.split('-').map(Number);
+    const dayLabel=selectedDay?new Date(y,m-1,selectedDay).toLocaleDateString():null;
+    container.querySelectorAll('.item-row').forEach(row=>{
+      row.hidden=!!(dayLabel && dateInRow(row)!==dayLabel);
+      // El historial asigna style.display inline; hidden por sí solo no lo oculta.
+      row.style.display=row.hidden?'none':'flex';
+    });
+  }
   function render(){
     const root=document.getElementById('smarty-daily-spending');
     if(!root||typeof Finance==='undefined'||!Finance.selectedHistoryMonth)return;
     const month=Finance.selectedHistoryMonth;
     const results=compute(month,Finance.selectedCategoryFilter);
     if(!results)return;
-    if(lastMonth!==month){
-      const now=new Date();
-      selectedDay=now.getFullYear()===Number(month.slice(0,4)) && now.getMonth()+1===Number(month.slice(5)) ? now.getDate() : results.records.length;
-      lastMonth=month;
-    }
-    selectedDay=Math.max(1,Math.min(selectedDay||1,results.records.length));
+    const changedMonth=lastMonth!==month;
+    if(changedMonth){selectedDay=0;lastMonth=month;}
+    const previousScroll=changedMonth?null:root.querySelector('.smarty-day-scroll')?.scrollLeft;
     const t=lang();
     root.textContent='';
     const head=document.createElement('div');head.className='smarty-day-head';
     const heading=document.createElement('h3');heading.textContent=t.title;head.appendChild(heading);
-    const legend=document.createElement('div');legend.className='smarty-day-legend';legend.textContent=t.registered+' · '+t.planned;head.appendChild(legend);root.appendChild(head);
-    const sums=document.createElement('div');sums.className='smarty-day-totals';
-    for (const [text,value] of [[t.total,results.totalRegistered],[t.average,results.average]]){
-      const col=document.createElement('div');const name=document.createElement('small');name.textContent=text;const n=document.createElement('strong');n.textContent=money(value);col.append(name,n);sums.appendChild(col);
-    }root.appendChild(sums);
-    const graph=document.createElement('div');graph.className='smarty-day-scroll';graph.setAttribute('aria-label',t.title);
-    const max=Math.max(1,...results.records.map(d=>d.registered+d.planned));
-    for (const day of results.records){
-      const btn=document.createElement('button');btn.type='button';btn.className='smarty-day-col'+(day.day===selectedDay?' active':'');
-      btn.setAttribute('aria-label',`${t.day} ${day.day}: ${t.registered} ${money(day.registered)}, ${t.planned} ${money(day.planned)}`);
-      btn.setAttribute('aria-pressed',String(day.day===selectedDay));
-      const stack=document.createElement('span');stack.className='smarty-day-stack';
-      const reg=document.createElement('span');reg.className='smarty-day-spent';reg.style.height=(day.registered/max*100)+'%';
-      const plan=document.createElement('span');plan.className='smarty-day-plan';plan.style.height=(day.planned/max*100)+'%';
-      stack.append(plan,reg);
-      const number=document.createElement('span');number.className='smarty-day-number';number.textContent=String(day.day);
-      btn.append(stack,number);btn.onclick=()=>{selectedDay=day.day;render();};graph.appendChild(btn);
+    if(selectedDay){
+      const clear=document.createElement('button');clear.type='button';
+      clear.className='smarty-day-clear';clear.textContent=t.all||'Todos';
+      clear.onclick=()=>{selectedDay=0;render();};
+      head.appendChild(clear);
     }
-    root.appendChild(graph);
-    const chosen=results.records[selectedDay-1];
-    const detail=document.createElement('div');detail.className='smarty-day-detail';
-    const title=document.createElement('strong');title.textContent=`${t.day} ${selectedDay} · ${t.registered}: ${money(chosen.registered)}`;detail.appendChild(title);
-    if(chosen.planned){const program=document.createElement('small');program.textContent=`${t.planned}: ${money(chosen.planned)}`;detail.appendChild(program);}
-    if(chosen.items.length){const list=document.createElement('ul');
-      for(const item of chosen.items){const li=document.createElement('li');const n=document.createElement('span');n.textContent=item.name+(item.status==='planned'?` (${t.planned.toLowerCase()})`:'');const val=document.createElement('b');val.textContent=money(item.amount);li.append(n,val);list.appendChild(li);}
-      detail.appendChild(list);
-    }else{const blank=document.createElement('small');blank.textContent=t.none;detail.appendChild(blank);}
-    root.appendChild(detail);
-    const note=document.createElement('p');note.className='smarty-day-note';note.textContent=t.plannedNote;root.appendChild(note);
-    root.querySelector('.smarty-day-col.active')?.scrollIntoView({inline:'center',block:'nearest',behavior:'instant'});
+    root.appendChild(head);
+    const strip=document.createElement('div');strip.className='smarty-day-scroll';
+    strip.setAttribute('role','group');strip.setAttribute('aria-label',t.title);
+    const [y,m]=month.split('-').map(Number);
+    for(const day of results.records){
+      const btn=document.createElement('button');btn.type='button';
+      btn.className='smarty-day-chip'+(day.day===selectedDay?' active':'');
+      btn.dataset.day=String(day.day);
+      const active=day.day===selectedDay;
+      btn.setAttribute('aria-pressed',String(active));
+      btn.setAttribute('aria-label',`${t.day} ${day.day}: ${t.registered} ${money(day.registered)}`);
+      const number=document.createElement('span');number.className='smarty-day-chip-date';
+      number.textContent=`${String(day.day).padStart(2,'0')}/${String(m).padStart(2,'0')}`;
+      const amount=document.createElement('strong');amount.className='smarty-day-chip-amount';
+      amount.textContent=money(day.registered);
+      if(!day.registered)btn.classList.add('is-zero');
+      btn.append(number,amount);
+      btn.onclick=()=>{selectedDay=active?0:day.day;render();};
+      strip.appendChild(btn);
+    }
+    root.appendChild(strip);
+    if(previousScroll!==null&&previousScroll!==undefined){
+      strip.scrollLeft=previousScroll;
+    }else if(changedMonth){
+      const now=new Date();
+      const target=now.getFullYear()===y&&now.getMonth()+1===m ? now.getDate() : results.records.length;
+      // Desplazar una sola vez al día relevante, sin animaciones de carga.
+      const selected=strip.querySelector(`[data-day="${target}"]`);
+      if(selected)strip.scrollLeft=Math.max(0,selected.offsetLeft-strip.offsetLeft-strip.clientWidth/2+selected.offsetWidth/2);
+    }
+    filterHistory(month);
   }
   // El APK sustituye Finance.renderExpensesHistory() cuando termina de cargar.
   // Marcar el MÉTODO envoltorio y no el objeto Finance permite volver a conectar

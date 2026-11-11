@@ -62,3 +62,72 @@ console.log('OK: historial diario, filtros, pagos programados, fechas futuras, m
   assert.equal(renderCount,1);
 }
 console.log('OK: la vista diaria se recupera después de las sustituciones del workflow Android.');
+
+// Regresión del nuevo diseño compacto: sin gráfico ni tarjetas de resumen,
+// con importe por fecha y filtrado reversible del historial.
+{
+  class Element {
+    constructor(tag='div'){
+      this.tag=tag;this.children=[];this.style={};this.dataset={};
+      this.attributes={};this.className='';this.id='';this._text='';
+      this.classList={add:name=>{this.className+=(this.className?' ':'')+name;}};
+      this.scrollLeft=0;this.offsetLeft=0;this.offsetWidth=80;this.clientWidth=350;
+    }
+    set textContent(v){this._text=String(v);this.children=[];}
+    get textContent(){return this._text+this.children.map(x=>x.textContent||'').join('');}
+    append(...nodes){for(const n of nodes)this.appendChild(n);}
+    appendChild(n){this.children.push(n);return n;}
+    setAttribute(name,value){this.attributes[name]=value;}
+    querySelector(selector){
+      if(selector.startsWith('[data-day=')){
+        const match=selector.match(/\d+/);return this.children.find(c=>c.dataset.day===match?.[0])||null;
+      }
+      const cls=selector.slice(1);
+      const q=[...this.children];
+      while(q.length){const e=q.shift();if(e.className?.split(' ').includes(cls))return e;q.push(...(e.children||[]));}
+      return null;
+    }
+  }
+  const root=new Element('section');root.id='smarty-daily-spending';
+  const rows=[2,3].map(day=>{
+    const row=new Element();row.className='item-row';
+    const info=new Element();
+    info.children=[new Element(),{children:[new Element(),{textContent:new Date(2026,10,day).toLocaleDateString()}]}];
+    row.querySelector=s=>s==='.item-content-wrap'?info:null;
+    return row;
+  });
+  const container=new Element();container.children=rows;
+  container.querySelectorAll=s=>s==='.item-row'?rows:[];
+  const document={
+    getElementById:id=>id==='smarty-daily-spending'?root:id==='expenses-history-list'?container:null,
+    createElement:tag=>new Element(tag)
+  };
+  const f={selectedHistoryMonth:'2026-11',selectedCategoryFilter:'ALL',renderExpensesHistory(){}};
+  const Data={store:{settings:{lang:'es'},expenses:[
+    {date:new Date(2026,10,2).getTime(),amount:50},
+    {date:new Date(2026,10,3).getTime(),amount:30}
+  ]}};
+  const UI={formatMoney:n=>'R$ '+Number(n).toFixed(2)};
+  const win={addEventListener(){}};
+  const context={window:win,Finance:f,Data,UI,document,Date,Number,Array,Math,console};
+  vm.createContext(context);vm.runInContext(source,context);
+  win.SmartyDailySpending.render();
+  assert.equal(root.querySelector('.smarty-day-chip')?.textContent.includes('R$ 0.00'),true);
+  const strip=root.querySelector('.smarty-day-scroll');
+  assert.equal(strip.children.length,30,'Debe mostrar todos los días del mes');
+  assert.equal(strip.children[1].textContent,'02/11R$ 50.00');
+  assert.equal(strip.children[2].textContent,'03/11R$ 30.00');
+  assert.equal(root.querySelector('.smarty-day-stack'),null,'No mostrar barras antiguas');
+  assert.equal(root.querySelector('.smarty-day-totals'),null,'No duplicar tarjetas de totales');
+  strip.children[1].onclick();
+  assert.equal(rows[0].style.display,'flex');
+  assert.equal(rows[1].style.display,'none');
+  root.querySelector('.smarty-day-clear').onclick();
+  assert.equal(rows[0].style.display,'flex');
+  assert.equal(rows[1].style.display,'flex');
+  f.selectedHistoryMonth='2026-12';win.SmartyDailySpending.render();
+  assert.equal(root.querySelector('.smarty-day-scroll').children.length,31);
+  assert.equal(rows[0].style.display,'flex');
+  assert.equal(rows[1].style.display,'flex');
+}
+console.log('OK: chips compactos por día, fecha e importe, filtro reversible y cambio de mes.');
