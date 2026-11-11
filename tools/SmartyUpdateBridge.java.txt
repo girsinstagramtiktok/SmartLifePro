@@ -3,6 +3,7 @@ package com.smartlife.pro;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.ClipData;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
@@ -125,34 +126,69 @@ public final class SmartyUpdateBridge {
             finally{busy=false;}
         });
     }
+    /** Estado legible para diagnosticar por qué no se abre el instalador. */
+    @JavascriptInterface public String getInstallDiagnostics(){
+        JSONObject result=new JSONObject();
+        try{
+            File file=apk();
+            result.put("androidSdk",Build.VERSION.SDK_INT);
+            result.put("apkPresent",file.isFile());
+            result.put("apkSizeBytes",file.isFile()?file.length():0);
+            result.put("packageName",host.getPackageName());
+            result.put("canInstallUnknownApps",Build.VERSION.SDK_INT<26||host.getPackageManager().canRequestPackageInstalls());
+            result.put("installIntentAvailable",new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(Uri.parse("content://example.invalid/apk")).resolveActivity(host.getPackageManager())!=null);
+        }catch(Exception e){try{result.put("diagnosticError",String.valueOf(e.getMessage()));}catch(Exception ignored){}}
+        return result.toString();
+    }
+
+    /** Corre en el hilo UI y muestra mensajes explícitos si Android rechaza el Intent. */
     private void install(File file,long expected){
         host.runOnUiThread(() -> {
-            try{
+            try {
                 verify(file,expected);
                 if(Build.VERSION.SDK_INT>=26&&!host.getPackageManager().canRequestPackageInstalls()){
-                    emit("permission","unknown_sources");
+                    emit("permission","SmartLifePro necesita permiso para instalar APK desde esta fuente.");
                     Intent settings=new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+host.getPackageName()));
-                    host.startActivity(settings);return;
+                    host.startActivity(settings);
+                    return;
                 }
                 Uri uri=FileProvider.getUriForFile(host,host.getPackageName()+".smartyupdates",file);
-                Intent i=new Intent(Intent.ACTION_VIEW);
-                i.setDataAndType(uri,"application/vnd.android.package-archive");
+                Intent i=new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                i.setData(uri);
                 i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                host.startActivity(i);
-                emit("installing","confirm_in_android");
-            }catch(ActivityNotFoundException e){emit("error","Instalador Android no disponible");}
-            catch(Exception e){emit("error",String.valueOf(e.getMessage()));}
+                i.setClipData(ClipData.newRawUri("SmartLifePro.apk",uri));
+                // Intent.ACTION_INSTALL_PACKAGE puede no estar registrado en algunas ROMs.
+                // No usar resolveActivity como filtro: Android 11+ limita visibilidad de paquetes.
+                try{
+                    host.startActivity(i);
+                }catch(ActivityNotFoundException missing){
+                    Intent fallback=new Intent(Intent.ACTION_VIEW);
+                    fallback.setDataAndType(uri,"application/vnd.android.package-archive");
+                    fallback.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    fallback.setClipData(ClipData.newRawUri("SmartLifePro.apk",uri));
+                    host.startActivity(fallback);
+                }
+                emit("installing","Solicitud de instalación enviada a Android.");
+            }catch(ActivityNotFoundException e){emit("error","No se encuentra el instalador de Android: "+e.getMessage());}
+            catch(SecurityException e){emit("error","Android bloqueó la instalación: "+e.getMessage());}
+            catch(Exception e){emit("error","No se abrió el instalador: "+e.getClass().getSimpleName()+": "+String.valueOf(e.getMessage()));}
         });
     }
-    @JavascriptInterface public void installDownloadedApk(){
+    /** Responde inmediatamente a JavaScript sin depender de eventos asíncronos. */
+    @JavascriptInterface public String installDownloadedApk(){
         File file=apk();
-        if(!file.exists()){emit("error","No hay APK descargado");return;}
+        if(!file.isFile()){
+            emit("error","El APK ya no está en el almacenamiento temporal. Descárgalo nuevamente.");
+            return "APK no encontrado. Descarga la actualización de nuevo.";
+        }
+        if(busy)return "Finalizando descarga, vuelve a intentarlo.";
         queue.execute(() -> {
             try{
                 PackageInfo p=host.getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),0);
-                    if(p==null)throw new Exception("Archivo APK inválido");
-                    install(file,version(p));
-                }catch(Exception e){emit("error",String.valueOf(e.getMessage()));}
+                if(p==null)throw new Exception("Archivo APK inválido");
+                install(file,version(p));
+            }catch(Exception e){emit("error","Error al preparar instalador: "+String.valueOf(e.getMessage()));}
         });
+        return "Solicitando la instalación a Android…";
     }
 }
