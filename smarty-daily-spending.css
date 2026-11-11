@@ -1,0 +1,25 @@
+/* SmartLifePro - Historial diario Bento: adapta automáticamente la paleta activa. */
+#smarty-daily-spending{padding:14px 13px;margin:0 0 12px;border-radius:19px;min-width:0;overflow:hidden}
+.smarty-day-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.smarty-day-head h3{font-size:15px;line-height:1.3;margin:0;font-weight:800;color:var(--text-color)}
+.smarty-day-legend{font-size:10px;color:var(--text-sec);white-space:nowrap}
+.smarty-day-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.smarty-day-totals>div{background:var(--input-bg);border-radius:13px;padding:10px;min-width:0;display:flex;flex-direction:column;gap:4px}
+.smarty-day-totals small{font-size:10px;color:var(--text-sec);line-height:1.35}
+.smarty-day-totals strong{font-size:clamp(13px,4vw,17px);font-weight:800;color:var(--text-color);overflow-wrap:anywhere}
+.smarty-day-scroll{display:flex;align-items:flex-end;gap:3px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 1px 8px;min-height:155px;scrollbar-width:thin}
+.smarty-day-col{appearance:none;border:0;background:none;color:var(--text-sec);padding:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;flex:0 0 24px;min-width:24px;cursor:pointer;border-radius:7px;transition:background .15s ease}
+.smarty-day-col.active{background:var(--input-bg);color:var(--text-color)}
+.smarty-day-stack{height:118px;width:14px;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:2px}
+.smarty-day-spent{display:block;min-height:0;background:var(--primary,#23786a);border-radius:6px 6px 2px 2px;flex:none}
+.smarty-day-plan{display:block;min-height:0;background:var(--text-sec,#aab4ad);opacity:.4;border-radius:4px;flex:none}
+.smarty-day-number{font-size:10px;font-weight:700;line-height:14px}
+.smarty-day-detail{background:var(--input-bg);padding:12px;border-radius:13px;display:flex;flex-direction:column;gap:5px}
+.smarty-day-detail>strong{font-size:12px;color:var(--text-color)}
+.smarty-day-detail>small{font-size:11px;color:var(--text-sec)}
+.smarty-day-detail ul{padding:7px 0 0;margin:0;list-style:none;border-top:1px solid color-mix(in srgb,var(--text-sec) 22%,transparent)}
+.smarty-day-detail li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:11px;color:var(--text-color)}
+.smarty-day-detail li span{min-width:0;overflow-wrap:anywhere}
+.smarty-day-detail li b{white-space:nowrap}
+.smarty-day-note{font-size:10px;color:var(--text-sec);line-height:1.35;margin:8px 2px 0}
+@media(prefers-reduced-motion:reduce){.smarty-day-col{transition:none!important}}

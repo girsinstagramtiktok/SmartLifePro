@@ -8,7 +8,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const base=__dirname;
 const read=(name)=>fs.readFileSync(path.join(base,'www',name),'utf8');
-for(const f of ['index.html','style.css','bento-home.css','bento-global.css','bento-home.js','smarty-biometrics.js','smarty-app-updater.js','smarty-daily-backup.js','smarty-release-config.js','data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','bank-bridge.js','camera-bridge.js','smarty-pro-addons.js','smarty-ota.js']){
+for(const f of ['index.html','style.css','bento-home.css','bento-global.css','smarty-daily-spending.css','bento-home.js','smarty-biometrics.js','smarty-daily-spending.js','smarty-app-updater.js','smarty-daily-backup.js','smarty-release-config.js','data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','bank-bridge.js','camera-bridge.js','smarty-pro-addons.js','smarty-ota.js']){
  assert.ok(fs.existsSync(path.join(base,'www',f)),'Falta '+f+' en el APK');
 }
 const html=read('index.html');
@@ -17,7 +17,7 @@ const scripts=[...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/sc
 const main=scripts.indexOf('main.js');
 assert.ok(main>=0);
 assert.deepEqual(scripts.slice(main,main+6),['main.js','smarty-release-config.js','smarty-app-updater.js','smarty-pro-addons.js','smarty-ota.js','smarty-daily-backup.js']);
-assert.match(html,/bento-home.css/);assert.match(html,/bento-global.css/);
+assert.match(html,/bento-home.css/);assert.match(html,/bento-global.css/);assert.match(html,/smarty-daily-spending.css/);assert.match(html,/smarty-daily-spending.js/);
 assert.match(html,/smarty-prepaint/);
 assert.doesNotMatch(html,/src=["'](?:ota-client|ota-config)\.js/);
 assert.match(addons,/window\.SmartyAppUpdater\?\.checkNow\(\)/);

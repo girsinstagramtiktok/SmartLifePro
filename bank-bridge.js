@@ -13,6 +13,7 @@
     let nativeAckSupported = false;
     let lastError = '';
     let lastDrainAt = 0;
+    let lastReconnectTry = 0;
 
     function readJSON(key, fallback) {
         try {
@@ -218,7 +219,39 @@
             lastDrainAt, lastError, native };
     }
 
-    window.SmartyBankBridge = { drainPending, parse, process, normalizeMoney, diagnostics, reviewNext };
+    function repair(force=false) {
+        const native=window.SmartyAndroid;
+        if (!native) return 'not_android';
+        if (!native.isNotificationListenerEnabled?.()) return 'permission_missing';
+        if (diagnostics().native?.connected) return 'connected';
+        const now=Date.now();
+        if (!force && now-lastReconnectTry<60000) return 'throttled';
+        lastReconnectTry=now;
+        try {
+            if (force && native.reconnectBankListener) return native.reconnectBankListener();
+            native.requestBankListenerRebind?.();
+            return 'requested';
+        } catch (error) {
+            lastError='Reconexión: '+(error?.message||String(error));
+            return 'error';
+        }
+    }
+    function reconnect() {
+        const result=repair(true);
+        const messages={permission_missing:'El acceso a notificaciones está desactivado. Vuelve a autorizarlo en Android.',
+            connected:'El servicio ya está conectado.',requested:'Reconexión solicitada a Android. Comprueba el estado en unos segundos.',
+            throttled:'Reconexión solicitada recientemente.',not_android:'Solo disponible en la aplicación Android.'};
+        const message=messages[result]||(result.startsWith('error')?'Error: '+result:'Estado: '+result);
+        if(typeof UI!=='undefined'&&UI.showSnackbar)UI.showSnackbar(message);
+        if(result==='permission_missing')window.SmartyAndroid?.openNotificationSettings?.();
+        setTimeout(()=>{
+            const status=diagnostics().native;
+            const target=document.getElementById('smarty-bank-health-state');
+            if(target)target.textContent=!status?.permission?'Sin permiso':status.connected?'Servicio conectado':'Desconectado · revisa acceso a notificaciones';
+        },1600);
+        return result;
+    }
+    window.SmartyBankBridge = { drainPending, parse, process, normalizeMoney, diagnostics, reviewNext, repair, reconnect };
     window.addEventListener('SmartyBankNotification', () => drainPending());
     function activate() {
         if (ready) return;
@@ -234,16 +267,17 @@
                 !native.getAllowedNotificationPackages()) {
                 native.setAllowedNotificationPackages(configured.join(','));
             }
-            drainPending(); reviewNext();
+            repair(false); drainPending(); reviewNext();
     }
     window.addEventListener('load', () => setTimeout(activate, 700));
     if (document.readyState === 'complete') setTimeout(activate, 900);
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') { drainPending(); reviewNext(); }
+        if (document.visibilityState === 'visible') { repair(false); drainPending(); reviewNext(); }
     });
-    window.addEventListener('focus', () => { drainPending(); reviewNext(); });
+    window.addEventListener('focus', () => { repair(false); drainPending(); reviewNext(); });
     setInterval(() => {
         if (!ready && document.readyState === 'complete') activate();
+        if (document.visibilityState === 'visible') repair(false);
         drainPending();
         if (reviewOpen && !document.getElementById('modal-expense')?.classList.contains('open')) reviewOpen = false;
         reviewNext();
