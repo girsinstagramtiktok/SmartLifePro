@@ -8,7 +8,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const base=__dirname;
 const read=(name)=>fs.readFileSync(path.join(base,'www',name),'utf8');
-for(const f of ['index.html','style.css','bento-home.css','bento-global.css','bento-home.js','smarty-biometrics.js','smarty-app-updater.js','smarty-release-config.js','data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','bank-bridge.js','camera-bridge.js','smarty-pro-addons.js','smarty-ota.js']){
+for(const f of ['index.html','style.css','bento-home.css','bento-global.css','bento-home.js','smarty-biometrics.js','smarty-app-updater.js','smarty-daily-backup.js','smarty-release-config.js','data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','bank-bridge.js','camera-bridge.js','smarty-pro-addons.js','smarty-ota.js']){
  assert.ok(fs.existsSync(path.join(base,'www',f)),'Falta '+f+' en el APK');
 }
 const html=read('index.html');
@@ -16,7 +16,7 @@ const addons=read('smarty-pro-addons.js');
 const scripts=[...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/script>/gi)].map(x=>x[1]);
 const main=scripts.indexOf('main.js');
 assert.ok(main>=0);
-assert.deepEqual(scripts.slice(main,main+5),['main.js','smarty-release-config.js','smarty-app-updater.js','smarty-pro-addons.js','smarty-ota.js']);
+assert.deepEqual(scripts.slice(main,main+6),['main.js','smarty-release-config.js','smarty-app-updater.js','smarty-pro-addons.js','smarty-ota.js','smarty-daily-backup.js']);
 assert.match(html,/bento-home.css/);assert.match(html,/bento-global.css/);
 assert.match(html,/smarty-prepaint/);
 assert.doesNotMatch(html,/src=["'](?:ota-client|ota-config)\.js/);
@@ -24,7 +24,7 @@ assert.match(addons,/window\.SmartyAppUpdater\?\.checkNow\(\)/);
 assert.match(addons,/smarty-native-update-state/);
 assert.doesNotMatch(addons,/smart-life-pro\.vercel\.app\/smarty-ota\.js\?v=/);
 assert.equal(read('smarty-ota.js'),fs.readFileSync(path.join(base,'smarty-ota.js'),'utf8'));
-for(const f of ['smarty-ota.js','smarty-app-updater.js','smarty-pro-addons.js'])new vm.Script(read(f),{filename:f});
+for(const f of ['smarty-ota.js','smarty-app-updater.js','smarty-daily-backup.js','smarty-pro-addons.js'])new vm.Script(read(f),{filename:f});
 const cfg=read('smarty-release-config.js');
 assert.match(cfg,/SMARTY_RELEASE_CONFIG/);
 assert.doesNotMatch(cfg,/PRIVATE_TOKEN|PASSWORD|KEYSTORE|Bearer/i);

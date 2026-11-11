@@ -1,98 +1,60 @@
-/* SmartLifePro - actualizaciones nativas firmadas desde GitHub Releases.
- * En APK: consultar /releases/latest, verificar SHA-256 y firma en el puente Android.
- * No utiliza claves ni tokens de GitHub en el teléfono. Solo repositorios públicos.
- */
-(function () {
-  'use strict';
-  let candidate=null;
-  let downloading=false;
-  let installedReady=false;
-  let lastStatus='';
-  const t={
-    es:{checking:'Buscando nuevas versiones…',current:'Ya tienes la versión más reciente.',available:'Nueva versión disponible',notConfigured:'Actualizador sin configurar en este APK.',publicRepo:'No se pudo consultar GitHub Releases. El repositorio y la versión publicada deben ser públicos.',checksum:'La publicación no ofrece una huella SHA-256 verificable.',downloading:'Descargando actualización…',verified:'APK descargado y verificado. Android pedirá confirmar la instalación.',permission:'Autoriza «Instalar apps desconocidas» para SmartLifePro y vuelve aquí para continuar.',failed:'No fue posible actualizar:',noNative:'Necesitas instalar primero un APK con el actualizador nativo.',install:'Instalar APK descargado',download:'Descargar e instalar',version:'Versión disponible',opening:'Solicitando al instalador de Android…',diag:'Diagnóstico de instalación'},
-    pt:{checking:'Procurando atualizações…',current:'Você já tem a versão mais recente.',available:'Nova versão disponível',notConfigured:'Atualizador não configurado neste APK.',publicRepo:'Não foi possível consultar o GitHub Releases. O repositório e a versão precisam ser públicos.',checksum:'A publicação não possui SHA-256 verificável.',downloading:'Baixando atualização…',verified:'APK verificado. O Android solicitará a confirmação da instalação.',permission:'Autorize a instalação de apps desta fonte para SmartLifePro e volte aqui.',failed:'Falha ao atualizar:',noNative:'Instale primeiro um APK com o atualizador nativo.',install:'Instalar APK baixado',download:'Baixar e instalar',version:'Versão disponível',opening:'Solicitando o instalador do Android…',diag:'Diagnóstico da instalação'},
-    en:{checking:'Checking for updates…',current:'Your app is already up to date.',available:'New version available',notConfigured:'Updater is not configured in this APK.',publicRepo:'Could not check GitHub Releases. The repository and published release must be public.',checksum:'The release has no verifiable SHA-256.',downloading:'Downloading update…',verified:'APK verified. Android will request installation confirmation.',permission:'Allow installs from SmartLifePro in Android Settings, then return here.',failed:'Update failed:',noNative:'First install an APK that includes the native updater.',install:'Install downloaded APK',download:'Download and install',version:'Available version',opening:'Requesting Android package installer…',diag:'Installation diagnostics'}
-  };
-  function words(){return t[window.Data?.store?.settings?.lang]||t.es;}
-  function panel(){return document.getElementById('smarty-native-update-state');}
-  function status(message){lastStatus=message;const el=panel();if(el)el.textContent=message;else window.UI?.showSnackbar?.(message);}
-  function controls(){
-    const e=panel();if(!e)return;
-    if(lastStatus)e.textContent=lastStatus;
-    let b=document.getElementById('smarty-update-install');
-    if(!b){b=document.createElement('button');b.id='smarty-update-install';b.className='btn-full';b.style.cssText='padding:10px;margin:8px 0;font-size:13px';e.insertAdjacentElement('afterend',b);}
-    b.hidden=downloading||(!candidate&&!installedReady);
-    b.textContent=installedReady?words().install:words().download;
-    b.onclick=installedReady?installDownloaded:downloadNow;
-    let d=document.getElementById('smarty-update-diagnostics');
-    if(!d){d=document.createElement('button');d.id='smarty-update-diagnostics';d.className='text-btn-small';d.style.cssText='display:block;margin:6px 0 12px;padding:8px;font-size:12px';b.insertAdjacentElement('afterend',d);}
-    d.hidden=!installedReady;
-    d.textContent=words().diag;
-    d.onclick=showDiagnostics;
-  }
-  function api(){return window.SmartyAppUpdateNative;}
-  function repoName(){const value=window.SMARTY_RELEASE_CONFIG?.repository;return typeof value==='string'&&/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(value)?value:null;}
-  async function checkNow(){
-    if(downloading)return;
-    const repo=repoName();
-    if(!repo){status(words().notConfigured);return;}
-    if(typeof api()?.getInstalledVersionCode!=='function'){status(words().noNative);return;}
-    status(words().checking);
-    try{
-      const res=await fetch('https://api.github.com/repos/'+repo+'/releases/latest',{headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
-      if(!res.ok)throw new Error('GitHub HTTP '+res.status+' — '+words().publicRepo);
-      const rel=await res.json();
-      const version=String(rel.tag_name||'').match(/^v(\d{5,12})$/);
-      if(!version)throw new Error('La publicación no tiene una etiqueta compatible (v100001).');
-      const versionCode=Number(version[1]);
-      const installed=Number(api().getInstalledVersionCode());
-      if(!Number.isSafeInteger(versionCode)||versionCode<=installed){candidate=null;status(words().current);controls();return;}
-      const asset=(rel.assets||[]).find(a=>a.name==='SmartLifePro.apk'&&a.state==='uploaded');
-      if(!asset)throw new Error('No se encontró SmartLifePro.apk en la publicación.');
-      const url=String(asset.browser_download_url||'');
-      if(!url.startsWith('https://github.com/'+repo+'/releases/download/'))throw new Error('URL de descarga inesperada.');
-      const match=String(asset.digest||'').match(/^sha256:([0-9a-f]{64})$/i);
-      if(!match)throw new Error(words().checksum);
-      candidate={versionCode,url,sha256:match[1].toLowerCase(),label:String(rel.name||rel.tag_name)};
-      installedReady=false;
-      status(words().available+' — '+candidate.label);
-      controls();
-    }catch(err){candidate=null;status(words().failed+' '+String(err?.message||err));controls();}
-  }
-  function downloadNow(){
-    if(!candidate||downloading||typeof api()?.downloadAndInstall!=='function')return;
-    downloading=true;status(words().downloading);controls();
-    try{api().downloadAndInstall(candidate.url,candidate.sha256,String(candidate.versionCode));}
-    catch(err){downloading=false;status(words().failed+' '+String(err));controls();}
-  }
-  function installDownloaded(){
-    if(typeof api()?.installDownloadedApk!=='function'){
-      status(words().noNative);return;
-    }
-    status(words().opening);
-    try{
-      const reply=api().installDownloadedApk();
-      if(typeof reply==='string'&&reply.trim())status(reply);
-    }catch(err){status(words().failed+' '+String(err));}
-  }
-  function showDiagnostics(){
-    let report='';
-    try{
-      if(typeof api()?.getInstallDiagnostics!=='function')report='El APK instalado no incluye el diagnóstico nativo nuevo.';
-      else report=String(api().getInstallDiagnostics());
-    }catch(err){report=String(err);}
-    status('Diagnóstico APK: '+report);
-  }
-  function nativeEvent(kind,value){
-    const s=String(value??'');
-    if(kind==='progress'){status(words().downloading+' '+s+'%');return;}
-    downloading=false;
-    if(kind==='ready') {installedReady=true;status(words().verified);}
-    else if(kind==='permission'){installedReady=true;status(words().permission);}
-    else if(kind==='installing'){installedReady=true;status(words().opening+' Si no aparece la ventana, revisa los permisos y ejecuta el diagnóstico.');}
-    else{installedReady=false;status(words().failed+' '+s);}
-    controls();
-  }
-  window.SmartyAppUpdater={checkNow,downloadNow,installDownloaded,showDiagnostics,nativeEvent,render:controls};
-  document.addEventListener('DOMContentLoaded',controls);
+/* SmartLifePro: comprueba Releases y guarda APK VERIFICADO en Descargas/SmartLifePro.
+   El usuario instala desde Mis archivos, sin abrir el instalador desde WebView. */
+(function(){'use strict';
+ let candidate=null, downloading=false,lastMessage='';
+ const dict={
+ es:{checking:'Buscando actualizaciones…',current:'Ya tienes la versión más reciente.',available:'Nueva versión',noNative:'Instala el APK nuevo con descarga a Descargas.',notConfigured:'No está configurado el repositorio.',downloading:'Descargando APK…',saved:'APK verificado y guardado en:',next:'Abre Mis archivos → Almacenamiento interno → Descargas → SmartLifePro y toca el APK para instalarlo.',download:'Descargar APK a Descargas',error:'Error:',checksum:'La publicación no contiene el SHA-256 del APK.'},
+ pt:{checking:'Procurando atualizações…',current:'Você já tem a versão mais recente.',available:'Nova versão',noNative:'Instale o novo APK com download na pasta Downloads.',notConfigured:'Repositório não configurado.',downloading:'Baixando APK…',saved:'APK verificado e salvo em:',next:'Abra Meus Arquivos → Armazenamento interno → Downloads → SmartLifePro e toque no APK para instalar.',download:'Salvar APK em Downloads',error:'Erro:',checksum:'A publicação não inclui SHA-256 do APK.'},
+ en:{checking:'Checking for updates…',current:'You have the latest version.',available:'New version',noNative:'Install the new APK with downloads support.',notConfigured:'Repository not configured.',downloading:'Downloading APK…',saved:'Verified APK saved to:',next:'Open My Files → Internal storage → Downloads → SmartLifePro, then tap the APK.',download:'Save APK to Downloads',error:'Error:',checksum:'Release does not contain the APK SHA-256.'}
+ };
+ function lang(){try{return typeof Data!=='undefined'?Data.store?.settings?.lang:'es'}catch(_){return 'es'}}
+ function t(){return dict[lang()]||dict.es;}
+ function api(){return window.SmartyAppUpdateNative;}
+ function panel(){return document.getElementById('smarty-native-update-state');}
+ function status(text){lastMessage=text;const el=panel();if(el)el.textContent=text;else if(typeof UI!=='undefined')UI.showSnackbar(text);}
+ function controls(){const el=panel();if(!el)return;if(lastMessage)el.textContent=lastMessage;
+  let btn=document.getElementById('smarty-update-download');
+  if(!btn){btn=document.createElement('button');btn.id='smarty-update-download';btn.className='btn-full';btn.style.cssText='margin:8px 0;padding:11px;font-size:13px';el.insertAdjacentElement('afterend',btn);}
+  btn.textContent=t().download;btn.disabled=downloading;btn.hidden=!candidate;
+  btn.onclick=downloadNow;
+  // Eliminar controles antiguos que intentaban forzar la instalación desde WebView.
+  document.getElementById('smarty-update-install')?.remove();
+  document.getElementById('smarty-update-diagnostics')?.remove();
+ }
+ function repo(){const x=window.SMARTY_RELEASE_CONFIG?.repository;return typeof x==='string'&&/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(x)?x:null;}
+ async function checkNow(){
+  if(downloading)return;candidate=null;controls();
+  const name=repo();if(!name){status(t().notConfigured);return;}
+  if(typeof api()?.downloadAndSave!=='function'){status(t().noNative);return;}
+  status(t().checking);
+  try{
+   const response=await fetch('https://api.github.com/repos/'+name+'/releases/latest',{headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
+   if(!response.ok)throw new Error('GitHub '+response.status+'; el repositorio y Release deben ser públicos');
+   const rel=await response.json();const match=String(rel.tag_name||'').match(/^v(\d{5,12})$/);
+   if(!match)throw new Error('Etiqueta de release incompatible');
+   const version=Number(match[1]),installed=Number(api().getInstalledVersionCode());
+   if(!Number.isSafeInteger(version)||version<=installed){status(t().current);return;}
+   const asset=(rel.assets||[]).find(x=>x.name==='SmartLifePro.apk'&&x.state==='uploaded');
+   if(!asset)throw new Error('SmartLifePro.apk no existe en Releases');
+   const link=String(asset.browser_download_url||'');
+   if(!link.startsWith('https://github.com/'+name+'/releases/download/'))throw new Error('URL de descarga no confiable');
+   const hash=String(asset.digest||'').match(/^sha256:([0-9a-f]{64})$/i);
+   if(!hash)throw new Error(t().checksum);
+   candidate={link,hash:hash[1],version};status(t().available+': '+(rel.name||rel.tag_name));controls();
+  }catch(error){status(t().error+' '+String(error?.message||error));}
+ }
+ function downloadNow(){if(!candidate||downloading)return;
+  downloading=true;status(t().downloading);controls();
+  try{api().downloadAndSave(candidate.link,candidate.hash,String(candidate.version));}
+  catch(error){downloading=false;status(t().error+' '+error);controls();}
+ }
+ function nativeEvent(kind,msg){
+  if(kind==='progress'){status(t().downloading+' '+msg+'%');return;}
+  downloading=false;
+  if(kind==='saved'){candidate=null;status(t().saved+' '+String(msg)+'\n'+t().next);}
+  else status(t().error+' '+String(msg));
+  controls();
+ }
+ window.SmartyAppUpdater={checkNow,downloadNow,nativeEvent,render:controls};
+ document.addEventListener('DOMContentLoaded',controls);
 })();
