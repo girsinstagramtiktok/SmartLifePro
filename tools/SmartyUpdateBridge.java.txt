@@ -31,6 +31,8 @@ public final class SmartyUpdateBridge {
     private final MainActivity host;
     private final ExecutorService queue=Executors.newSingleThreadExecutor();
     private volatile boolean busy=false;
+    private volatile String lastInstallerAction="sin intento";
+    private volatile String lastInstallerError="";
     private static final long MAX_APK=200L*1024L*1024L;
     public SmartyUpdateBridge(MainActivity activity){this.host=activity;}
 
@@ -126,52 +128,90 @@ public final class SmartyUpdateBridge {
             finally{busy=false;}
         });
     }
-    /** Estado legible para diagnosticar por qué no se abre el instalador. */
+    /** Diagnóstico real del APK + FileProvider, no solo del permiso de instalación. */
     @JavascriptInterface public String getInstallDiagnostics(){
         JSONObject result=new JSONObject();
-        try{
+        try {
             File file=apk();
+            PackageManager pm=host.getPackageManager();
             result.put("androidSdk",Build.VERSION.SDK_INT);
             result.put("apkPresent",file.isFile());
             result.put("apkSizeBytes",file.isFile()?file.length():0);
             result.put("packageName",host.getPackageName());
-            result.put("canInstallUnknownApps",Build.VERSION.SDK_INT<26||host.getPackageManager().canRequestPackageInstalls());
-            result.put("installIntentAvailable",new Intent(Intent.ACTION_INSTALL_PACKAGE).setData(Uri.parse("content://example.invalid/apk")).resolveActivity(host.getPackageManager())!=null);
-        }catch(Exception e){try{result.put("diagnosticError",String.valueOf(e.getMessage()));}catch(Exception ignored){}}
+            result.put("canInstallUnknownApps",Build.VERSION.SDK_INT<26||pm.canRequestPackageInstalls());
+            result.put("lastInstallerAction",lastInstallerAction);
+            result.put("lastInstallerError",lastInstallerError);
+            // La visibilidad de paquetes de Android 11+ hace que resolveActivity
+            // pueda devolver null incluso si el instalador sí está disponible.
+            result.put("installerMethod","ACTION_VIEW con MIME de APK (FileProvider)");
+            if(file.isFile()){
+                int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;
+                PackageInfo incoming=pm.getPackageArchiveInfo(file.getAbsolutePath(),flags);
+                PackageInfo installed=pm.getPackageInfo(host.getPackageName(),flags);
+                result.put("apkParseable",incoming!=null);
+                result.put("installedVersionCode",version(installed));
+                if(incoming!=null){
+                    result.put("apkVersionCode",version(incoming));
+                    result.put("apkVersionIsNewer",version(incoming)>version(installed));
+                    result.put("apkPackageMatches",host.getPackageName().equals(incoming.packageName));
+                    try{result.put("apkSignatureMatches",!certificates(installed).isEmpty()&&certificates(incoming).equals(certificates(installed)));}
+                    catch(Exception e){result.put("apkSignatureError",String.valueOf(e.getMessage()));}
+                }
+                try{
+                    Uri uri=FileProvider.getUriForFile(host,host.getPackageName()+".smartyupdates",file);
+                    result.put("fileProviderUriValid","content".equals(uri.getScheme()));
+                }catch(Exception e){result.put("fileProviderError",e.getClass().getSimpleName()+": "+String.valueOf(e.getMessage()));}
+            }
+        }catch(Exception e){
+            try{result.put("diagnosticError",e.getClass().getSimpleName()+": "+String.valueOf(e.getMessage()));}
+            catch(Exception ignored){}
+        }
         return result.toString();
     }
 
-    /** Corre en el hilo UI y muestra mensajes explícitos si Android rechaza el Intent. */
+    /** Abre primero el manejador MIME real de archivos APK en Android/Samsung. */
     private void install(File file,long expected){
         host.runOnUiThread(() -> {
             try {
                 verify(file,expected);
                 if(Build.VERSION.SDK_INT>=26&&!host.getPackageManager().canRequestPackageInstalls()){
+                    lastInstallerAction="permission";
+                    lastInstallerError="Permiso de instalación pendiente";
                     emit("permission","SmartLifePro necesita permiso para instalar APK desde esta fuente.");
                     Intent settings=new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+host.getPackageName()));
                     host.startActivity(settings);
                     return;
                 }
                 Uri uri=FileProvider.getUriForFile(host,host.getPackageName()+".smartyupdates",file);
-                Intent i=new Intent(Intent.ACTION_INSTALL_PACKAGE);
-                i.setData(uri);
-                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                i.setClipData(ClipData.newRawUri("SmartLifePro.apk",uri));
-                // Intent.ACTION_INSTALL_PACKAGE puede no estar registrado en algunas ROMs.
-                // No usar resolveActivity como filtro: Android 11+ limita visibilidad de paquetes.
-                try{
-                    host.startActivity(i);
+                // ACTION_INSTALL_PACKAGE es obsoleto desde API 29 y puede no abrir
+                // una ventana en algunas ROM. ACTION_VIEW con MIME es el primer intento.
+                Intent view=new Intent(Intent.ACTION_VIEW);
+                view.setDataAndType(uri,"application/vnd.android.package-archive");
+                view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                view.setClipData(ClipData.newRawUri("SmartLifePro.apk",uri));
+                try {
+                    lastInstallerAction="ACTION_VIEW";
+                    lastInstallerError="";
+                    host.startActivity(view);
                 }catch(ActivityNotFoundException missing){
-                    Intent fallback=new Intent(Intent.ACTION_VIEW);
-                    fallback.setDataAndType(uri,"application/vnd.android.package-archive");
+                    lastInstallerAction="ACTION_INSTALL_PACKAGE (fallback)";
+                    Intent fallback=new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                    fallback.setData(uri);
                     fallback.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     fallback.setClipData(ClipData.newRawUri("SmartLifePro.apk",uri));
                     host.startActivity(fallback);
                 }
-                emit("installing","Solicitud de instalación enviada a Android.");
-            }catch(ActivityNotFoundException e){emit("error","No se encuentra el instalador de Android: "+e.getMessage());}
-            catch(SecurityException e){emit("error","Android bloqueó la instalación: "+e.getMessage());}
-            catch(Exception e){emit("error","No se abrió el instalador: "+e.getClass().getSimpleName()+": "+String.valueOf(e.getMessage()));}
+                emit("installing","Solicitud enviada mediante "+lastInstallerAction+". Si no aparece el instalador, revisa el diagnóstico: versión, firma, FileProvider y Bloqueador automático de Samsung.");
+            }catch(ActivityNotFoundException e){
+                lastInstallerError="No se encuentra instalador Android: "+String.valueOf(e.getMessage());
+                emit("error",lastInstallerError);
+            }catch(SecurityException e){
+                lastInstallerError="Android bloqueó la instalación: "+String.valueOf(e.getMessage());
+                emit("error",lastInstallerError);
+            }catch(Exception e){
+                lastInstallerError="No se abrió el instalador: "+e.getClass().getSimpleName()+": "+String.valueOf(e.getMessage());
+                emit("error",lastInstallerError);
+            }
         });
     }
     /** Responde inmediatamente a JavaScript sin depender de eventos asíncronos. */
