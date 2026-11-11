@@ -9,9 +9,9 @@
   let installedReady=false;
   let lastStatus='';
   const t={
-    es:{checking:'Buscando nuevas versiones…',current:'Ya tienes la versión más reciente.',available:'Nueva versión disponible',notConfigured:'Actualizador sin configurar en este APK.',publicRepo:'No se pudo consultar GitHub Releases. El repositorio y la versión publicada deben ser públicos.',checksum:'La publicación no ofrece una huella SHA-256 verificable.',downloading:'Descargando actualización…',verified:'APK descargado y verificado. Android pedirá confirmar la instalación.',permission:'Autoriza «Instalar apps desconocidas» para SmartLifePro y vuelve aquí para continuar.',failed:'No fue posible actualizar:',noNative:'Necesitas instalar primero un APK con el actualizador nativo.',install:'Instalar APK descargado',download:'Descargar e instalar',version:'Versión disponible'},
-    pt:{checking:'Procurando atualizações…',current:'Você já tem a versão mais recente.',available:'Nova versão disponível',notConfigured:'Atualizador não configurado neste APK.',publicRepo:'Não foi possível consultar o GitHub Releases. O repositório e a versão precisam ser públicos.',checksum:'A publicação não possui SHA-256 verificável.',downloading:'Baixando atualização…',verified:'APK verificado. O Android solicitará a confirmação da instalação.',permission:'Autorize a instalação de apps desta fonte para SmartLifePro e volte aqui.',failed:'Falha ao atualizar:',noNative:'Instale primeiro um APK com o atualizador nativo.',install:'Instalar APK baixado',download:'Baixar e instalar',version:'Versão disponível'},
-    en:{checking:'Checking for updates…',current:'Your app is already up to date.',available:'New version available',notConfigured:'Updater is not configured in this APK.',publicRepo:'Could not check GitHub Releases. The repository and published release must be public.',checksum:'The release has no verifiable SHA-256.',downloading:'Downloading update…',verified:'APK verified. Android will request installation confirmation.',permission:'Allow installs from SmartLifePro in Android Settings, then return here.',failed:'Update failed:',noNative:'First install an APK that includes the native updater.',install:'Install downloaded APK',download:'Download and install',version:'Available version'}
+    es:{checking:'Buscando nuevas versiones…',current:'Ya tienes la versión más reciente.',available:'Nueva versión disponible',notConfigured:'Actualizador sin configurar en este APK.',publicRepo:'No se pudo consultar GitHub Releases. El repositorio y la versión publicada deben ser públicos.',checksum:'La publicación no ofrece una huella SHA-256 verificable.',downloading:'Descargando actualización…',verified:'APK descargado y verificado. Android pedirá confirmar la instalación.',permission:'Autoriza «Instalar apps desconocidas» para SmartLifePro y vuelve aquí para continuar.',failed:'No fue posible actualizar:',noNative:'Necesitas instalar primero un APK con el actualizador nativo.',install:'Instalar APK descargado',download:'Descargar e instalar',version:'Versión disponible',opening:'Solicitando al instalador de Android…',diag:'Diagnóstico de instalación'},
+    pt:{checking:'Procurando atualizações…',current:'Você já tem a versão mais recente.',available:'Nova versão disponível',notConfigured:'Atualizador não configurado neste APK.',publicRepo:'Não foi possível consultar o GitHub Releases. O repositório e a versão precisam ser públicos.',checksum:'A publicação não possui SHA-256 verificável.',downloading:'Baixando atualização…',verified:'APK verificado. O Android solicitará a confirmação da instalação.',permission:'Autorize a instalação de apps desta fonte para SmartLifePro e volte aqui.',failed:'Falha ao atualizar:',noNative:'Instale primeiro um APK com o atualizador nativo.',install:'Instalar APK baixado',download:'Baixar e instalar',version:'Versão disponível',opening:'Solicitando o instalador do Android…',diag:'Diagnóstico da instalação'},
+    en:{checking:'Checking for updates…',current:'Your app is already up to date.',available:'New version available',notConfigured:'Updater is not configured in this APK.',publicRepo:'Could not check GitHub Releases. The repository and published release must be public.',checksum:'The release has no verifiable SHA-256.',downloading:'Downloading update…',verified:'APK verified. Android will request installation confirmation.',permission:'Allow installs from SmartLifePro in Android Settings, then return here.',failed:'Update failed:',noNative:'First install an APK that includes the native updater.',install:'Install downloaded APK',download:'Download and install',version:'Available version',opening:'Requesting Android package installer…',diag:'Installation diagnostics'}
   };
   function words(){return t[window.Data?.store?.settings?.lang]||t.es;}
   function panel(){return document.getElementById('smarty-native-update-state');}
@@ -24,6 +24,11 @@
     b.hidden=downloading||(!candidate&&!installedReady);
     b.textContent=installedReady?words().install:words().download;
     b.onclick=installedReady?installDownloaded:downloadNow;
+    let d=document.getElementById('smarty-update-diagnostics');
+    if(!d){d=document.createElement('button');d.id='smarty-update-diagnostics';d.className='text-btn-small';d.style.cssText='display:block;margin:6px 0 12px;padding:8px;font-size:12px';b.insertAdjacentElement('afterend',d);}
+    d.hidden=!installedReady;
+    d.textContent=words().diag;
+    d.onclick=showDiagnostics;
   }
   function api(){return window.SmartyAppUpdateNative;}
   function repoName(){const value=window.SMARTY_RELEASE_CONFIG?.repository;return typeof value==='string'&&/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(value)?value:null;}
@@ -61,8 +66,22 @@
     catch(err){downloading=false;status(words().failed+' '+String(err));controls();}
   }
   function installDownloaded(){
-    if(typeof api()?.installDownloadedApk!=='function')return;
-    try{api().installDownloadedApk();}catch(err){status(words().failed+' '+String(err));}
+    if(typeof api()?.installDownloadedApk!=='function'){
+      status(words().noNative);return;
+    }
+    status(words().opening);
+    try{
+      const reply=api().installDownloadedApk();
+      if(typeof reply==='string'&&reply.trim())status(reply);
+    }catch(err){status(words().failed+' '+String(err));}
+  }
+  function showDiagnostics(){
+    let report='';
+    try{
+      if(typeof api()?.getInstallDiagnostics!=='function')report='El APK instalado no incluye el diagnóstico nativo nuevo.';
+      else report=String(api().getInstallDiagnostics());
+    }catch(err){report=String(err);}
+    status('Diagnóstico APK: '+report);
   }
   function nativeEvent(kind,value){
     const s=String(value??'');
@@ -70,10 +89,10 @@
     downloading=false;
     if(kind==='ready') {installedReady=true;status(words().verified);}
     else if(kind==='permission'){installedReady=true;status(words().permission);}
-    else if(kind==='installing'){installedReady=true;status(words().verified);}
+    else if(kind==='installing'){installedReady=true;status(words().opening+' Si no aparece la ventana, revisa los permisos y ejecuta el diagnóstico.');}
     else{installedReady=false;status(words().failed+' '+s);}
     controls();
   }
-  window.SmartyAppUpdater={checkNow,downloadNow,installDownloaded,nativeEvent,render:controls};
+  window.SmartyAppUpdater={checkNow,downloadNow,installDownloaded,showDiagnostics,nativeEvent,render:controls};
   document.addEventListener('DOMContentLoaded',controls);
 })();
