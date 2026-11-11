@@ -913,10 +913,6 @@ msg_bio_inactive: "Lock Disabled 🔓"
                     </div>
                 </div>
 
-                <button class="btn-danger-outline" onclick="Main.factoryReset()" style="margin-top:15px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                    ${this.t('btn_reset')}
-                </button>
             </div>
 
             <div class="div-line" style="height:1px; background:rgba(120,120,120,0.1); margin:20px 0;"></div>
@@ -947,9 +943,6 @@ msg_bio_inactive: "Lock Disabled 🔓"
                 </button>
             </div>
             
-            <div style="text-align:center; color:var(--text-sec); font-size:11px; padding-bottom: 20px;">
-                Smarty v10.2<br>ID: ${Data.store.meta ? (Data.store.meta.installId || 'N/A') : 'Local'}
-            </div>
         `;
     },
 
