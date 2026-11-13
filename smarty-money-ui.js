@@ -12,7 +12,8 @@ const alertUser=msg=>typeof UI!=='undefined'&&UI.showSnackbar?UI.showSnackbar(ms
 const brandDomains={Nubank:'nubank.com.br',Itaú:'itau.com.br','Banco Inter':'inter.co','Banco do Brasil':'bb.com.br',Bradesco:'bradesco.com.br',Santander:'santander.com.br',Caixa:'caixa.gov.br','Mercado Pago':'mercadopago.com.br',PicPay:'picpay.com',C6:'c6bank.com.br',Otro:''};
 const brandOptions=selected=>Object.entries(brandDomains).map(([k,v])=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(k)}</option>`).join('');
 const options=(elements,selected='',empty='Seleccionar...')=>`<option value="">${esc(empty)}</option>`+elements.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join('');
-const sourceOptions=(selected='')=>`<option value="">${t('No asignar todavía','Não atribuir','Not assigned')}</option>`+s().accounts.map(x=>`<option value="account:${esc(x.id)}" ${selected===`account:${x.id}`?'selected':''}>${esc(x.name)}</option>`).join('')+s().cards.map(x=>`<option value="card:${esc(x.id)}" ${selected===`card:${x.id}`?'selected':''}>💳 ${esc(x.name)}</option>`).join('');
+// Débito y crédito son fuentes distintas, incluso si pertenecen al mismo banco.
+const sourceOptions=(selected='')=>`<option value="">${t('No asignar todavía','Não atribuir','Not assigned')}</option>`+s().accounts.map(x=>`<option value="account:${esc(x.id)}" ${selected===`account:${x.id}`?'selected':''}>${esc(x.name)} · ${t('Débito / saldo','Débito / saldo','Debit / balance')}</option>`).join('')+s().cards.map(x=>`<option value="card:${esc(x.id)}" ${selected===`card:${x.id}`?'selected':''}>${esc(x.name)} · ${t('Crédito / límite','Crédito / limite','Credit / limit')}</option>`).join('');
 const parseSource=v=>{const m=/^(account|card):(sm_[a-z0-9_]+)$/.exec(v||'');return m?{type:m[1],id:m[2]}:null};
 function logo(domain,name){const known=Object.values(brandDomains).includes(domain)&&domain;return `<span class="slp-bank-logo">${known?`<img loading="lazy" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64" alt="" onerror="this.remove()">`:''}<span>${esc((name||'?').slice(0,1).toUpperCase())}</span></span>`}
 const bankPalette={
@@ -89,29 +90,36 @@ function renderAll(){renderAccounts();renderSavings()}
 const field=(label,name,type='text',value='',attrs='')=>`<label class="slp-form-field"><span>${esc(label)}</span><input name="${esc(name)}" type="${type}" value="${esc(value)}" ${attrs}></label>`;
 const selectField=(label,name,optionsHtml)=>`<label class="slp-form-field"><span>${esc(label)}</span><select name="${esc(name)}">${optionsHtml}</select></label>`;
 function showForm(title,fields,submit,setup){const old=$('slp-money-dialog');old?.remove();const wrapper=document.createElement('div');wrapper.id='slp-money-dialog';wrapper.className='slp-dialog-backdrop';wrapper.innerHTML=`<form class="slp-money-dialog"><div class="slp-dialog-head"><h3>${esc(title)}</h3><button type="button" class="slp-icon-close" aria-label="Cerrar">×</button></div><div class="slp-dialog-fields">${fields}</div><div class="slp-dialog-actions"><button type="button" class="slp-action slp-quiet" data-cancel>${t('Cancelar','Cancelar','Cancel')}</button><button type="submit" class="slp-action slp-primary">${t('Guardar','Salvar','Save')}</button></div></form>`;document.body.appendChild(wrapper);const close=()=>wrapper.remove();wrapper.addEventListener('click',e=>{if(e.target===wrapper||e.target.closest('[data-cancel],.slp-icon-close'))close()});const form=wrapper.querySelector('form');form.addEventListener('submit',e=>{e.preventDefault();try{submit(Object.fromEntries(new FormData(form)));save();close()}catch(err){alertUser(err.message)}});if(typeof setup==='function')setup(form);form.querySelector('input,select')?.focus();}
-function formAccount(accountId=''){
+function formAccount(accountId='',fromCardId=''){
  const a=accountId?s().accounts.find(x=>x.id===accountId):null;
+ const related=fromCardId?s().cards.find(x=>x.id===fromCardId):null;
  if(accountId&&!a)return alertUser(t('Cuenta inexistente','Conta não encontrada','Account not found'));
- showForm(a?t('Editar cuenta','Editar conta','Edit account'):t('Añadir cuenta','Adicionar conta','Add account'),
- field(t('Nombre','Nome','Name'),'name','text',a?.name||'','required maxlength=80')+
- selectField(t('Tipo','Tipo','Type'),'type',[['bank',t('Banco','Banco','Bank')],['cash',t('Efectivo','Dinheiro','Cash')],['wallet',t('Billetera','Carteira','Wallet')]].map(([v,label])=>`<option value="${v}" ${v===(a?.type||'bank')?'selected':''}>${label}</option>`).join(''))+
- selectField(t('Banco / logotipo','Banco / logotipo','Bank / logo'),'bankDomain',brandOptions(a?.bankDomain||''))+
+ if(fromCardId&&!related)return alertUser(t('Tarjeta inexistente','Cartão não encontrado','Card not found'));
+ const detected=related?window.SmartyWallet?.brand?.(related):null;
+ const bankName=detected&&detected.id!=='other'?detected.name:related?.name||'';
+ showForm(a?t('Editar cuenta','Editar conta','Edit account'):t('Añadir cuenta / débito','Adicionar conta / débito','Add account / debit'),
+ field(t('Nombre','Nome','Name'),'name','text',a?.name||(bankName?`${bankName} · ${t('Débito','Débito','Debit')}`:''),'required maxlength=80')+
+ selectField(t('Tipo','Tipo','Type'),'type',[['bank',t('Cuenta bancaria / débito','Conta bancária / débito','Bank account / debit')],['cash',t('Efectivo','Dinheiro','Cash')],['wallet',t('Billetera','Carteira','Wallet')]].map(([v,label])=>`<option value="${v}" ${v===(a?.type||'bank')?'selected':''}>${label}</option>`).join(''))+
+ selectField(t('Banco / logotipo','Banco / logotipo','Bank / logo'),'bankDomain',brandOptions(a?.bankDomain||related?.bankDomain||window.SmartyWallet?.brand?.(related)?.domain||''))+
  field(t('Saldo inicial (modifica el saldo calculado)','Saldo inicial (altera saldo calculado)','Opening balance (changes calculated balance)'),'openingBalance','number',a?C.fromCents(a.openingCents):'0','step=0.01 required')+
+ (related?`<label class="slp-form-field slp-form-span slp-inline-check"><input type="checkbox" name="billAccount" value="yes" checked><span>${t('Usar esta cuenta para pagar la factura del crédito (sin cobros automáticos)','Usar para pagar a fatura (sem pagamento automático)','Use this account for the credit bill (no automatic payments)')}</span></label>`:'')+
  (a?`<p class="slp-money-fieldnote">${t('Modificar el saldo inicial no borra tus movimientos; para corregir el saldo actual usa Ajustar saldo.','Alterar o saldo inicial não apaga movimentos; para conciliar, use Ajustar saldo.','Changing opening balance does not delete activity; use Adjust balance for current reconciliation.')}</p>`:''),
- v=>a?C.updateAccount(s(),a.id,v):C.createAccount(s(),v));
+ v=>{if(a)return C.updateAccount(s(),a.id,v);const account=C.createAccount(s(),v);if(related&&v.billAccount==='yes')related.payAccountId=account.id;return account;});
 }
-function formCard(cardId=''){
+function formCard(cardId='',fromAccountId=''){
  const c=cardId?s().cards.find(x=>x.id===cardId):null;
+ const related=fromAccountId?s().accounts.find(x=>x.id===fromAccountId):null;
  if(cardId&&!c)return alertUser(t('Tarjeta inexistente','Cartão não encontrado','Card not found'));
+ if(fromAccountId&&!related)return alertUser(t('Cuenta inexistente','Conta não encontrada','Account not found'));
  showForm(c?t('Editar tarjeta','Editar cartão','Edit card'):t('Añadir tarjeta de crédito','Adicionar cartão de crédito','Add credit card'),
- field(t('Nombre','Nome','Name'),'name','text',c?.name||'','required maxlength=80')+
- selectField(t('Banco y logo','Banco e logotipo','Bank and logo'),'bankDomain',brandOptions(c?.bankDomain||''))+
+ field(t('Nombre','Nome','Name'),'name','text',c?.name||(related?`${window.SmartyWallet?.brand?.(related)?.id!=='other'?window.SmartyWallet?.brand?.(related)?.name:related.name} · ${t('Crédito','Crédito','Credit')}`:''),'required maxlength=80')+
+ selectField(t('Banco y logo','Banco e logotipo','Bank and logo'),'bankDomain',brandOptions(c?.bankDomain||related?.bankDomain||window.SmartyWallet?.brand?.(related)?.domain||''))+
  field(t('Límite total de crédito (R$)','Limite total (R$)','Total credit limit (R$)'),'limit','number',c?C.fromCents(c.limitCents):'','min=0.01 step=0.01 required')+
  field(t('Crédito utilizado actualmente (R$)','Crédito utilizado actualmente (R$)','Currently used credit (R$)'),'usedNow','number',c?C.fromCents(C.cardUsed(s(),c.id)):'0','min=0 step=0.01 required')+
  field(t('Día de corte','Dia de fechamento','Closing day'),'cutoffDay','number',c?.cutoffDay||'20','min=1 max=31 required')+
  field(t('Día de vencimiento','Dia de vencimento','Due day'),'dueDay','number',c?.dueDay||'5','min=1 max=31 required')+
  field(t('Avisar días antes','Avisar dias antes','Notify days before'),'noticeDays','number',c?.noticeDays??3,'min=0 max=15 required')+
- selectField(t('Cuenta para pagar factura','Conta para pagar fatura','Bill payment account'),'payAccountId',options(s().accounts,c?.payAccountId||''))+
+ selectField(t('Cuenta para pagar factura','Conta para pagar fatura','Bill payment account'),'payAccountId',options(s().accounts,c?.payAccountId||related?.id||''))+
  (c?`<p class="slp-money-fieldnote">${t('El crédito utilizado es el importe actual. Ajustarlo no borra compras ni pagos anteriores y no genera un gasto nuevo.','O valor utilizado é o saldo atual; o ajuste não apaga compras nem cria nova despesa.','Used credit is the current balance; adjusting it preserves transactions and does not create new spending.')}</p>`:''),
  v=>{
    const desired=Number(v.usedNow);
@@ -225,5 +233,7 @@ async function refreshMarket(forced=false){
 }
 function start(){if(!d()||!$('view-finance'))return;C.state(d().store);createTabs();if(Catalog){const st=s();const rates=Catalog.marketRates(st.preferences);C.applyMarketRates(st,rates);refreshMarket(false);}installExpenseSource();setTimeout(()=>{attachHooks();attachShoppingHooks()},900);window.addEventListener('load',()=>setTimeout(()=>{attachHooks();attachShoppingHooks()},1200),{once:true});document.addEventListener('click',e=>{const b=e.target.closest('[data-money-action]');if(b)handleAction(b.dataset.moneyAction)});window.addEventListener('focus',onResume);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onResume()});window.addEventListener('load',()=>setTimeout(onResume,950),{once:true});onResume();}
 function onResume(){if(!d())return;const st=s();let moved=C.applyFixedDue(st,d().store.subscriptions||[]);for(const exp of d().store.expenses||[]){if(exp.smSource&&exp.date<=Date.now()&&!st.movements.some(m=>m.key===`expense:${exp.id}`)){const entry=C.applyExpense(st,exp,exp.smSource);if(entry)moved.push(entry)}}if(moved.length){d().save();console.info('[SmartyMoney] Movimientos locales aplicados',moved.length)}render()}
-window.SmartyMoneyUI={start,render,renderAll,logo,brandDomains,editAccount:formAccount,editCard:formCard,editSaving:formSaving};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.SmartyMoneyUI={start,render,renderAll,logo,brandDomains,editAccount:formAccount,editCard:formCard,editSaving:formSaving,
+ addAccountForCard:cardId=>formAccount('',cardId),
+ addCardForAccount:accountId=>formCard('',accountId)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
