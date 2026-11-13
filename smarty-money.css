@@ -1,0 +1,48 @@
+/* SmartLifePro — Bento: módulos nuevos y ajustes compactos. CSS aislado. */
+#view-finance .slp-finance-tabs{display:flex;overflow-x:auto;gap:5px;scrollbar-width:none;white-space:nowrap;padding:3px}
+#view-finance .slp-finance-tabs .segment-btn{flex:0 0 auto;min-width:76px;padding:9px 12px;font-size:12px;border-radius:13px}
+.slp-money-hero{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.slp-money-hero .slp-money-pair{border-radius:18px;background:var(--b-budget,#e2efe7);padding:13px;min-width:0}
+.slp-money-pair{display:flex;flex-direction:column;gap:3px;min-width:0}.slp-money-pair small{color:var(--b-muted,#71877d);font-size:10px;line-height:1.4}.slp-money-pair strong{font-size:17px;color:var(--b-ink,#163c33);overflow-wrap:anywhere}
+.slp-money-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.slp-action{border:1px solid rgba(90,135,122,.15);cursor:pointer;padding:8px 12px;font-size:12px;font-weight:750;border-radius:13px;font-family:inherit;transition:transform .14s ease,opacity .14s ease}
+.slp-action:active{transform:scale(.97)}.slp-quiet{background:var(--b-budget,#e3efe9);color:var(--b-ink,#163c33)}.slp-primary{background:var(--b-nav,#17463b);color:var(--b-nav-ink,#fff)}
+.slp-money-heading{font-size:15px;margin:18px 2px 9px;color:var(--b-ink,#163c33);font-weight:800}
+.slp-money-tile{background:var(--b-chart,#fff);border:1px solid rgba(105,147,133,.1);border-radius:19px;padding:13px 14px;margin:9px 0;box-shadow:0 4px 17px rgba(19,66,52,.035)}
+.slp-money-tile p,.slp-money-help{font-size:12px;line-height:1.45;color:var(--b-muted,#73877f)}
+.slp-money-top{display:flex;align-items:center;gap:10px}.slp-money-top strong{font-weight:800;font-size:13px}.slp-money-grow{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;overflow-wrap:anywhere}
+.slp-money-grow small{font-size:10px;color:var(--b-muted,#73877f)}.slp-money-split{display:flex;justify-content:space-between;gap:12px;margin-top:12px;flex-wrap:wrap}.slp-money-split .slp-money-pair strong{font-size:15px}
+.slp-bank-logo{position:relative;width:35px;height:35px;flex:0 0 35px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;background:var(--b-budget,#e0ece7);color:var(--b-ink,#163c33);font-weight:800}.slp-bank-logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:4px;box-sizing:border-box;border-radius:10px;background:#fff}
+.slp-meter{height:6px;overflow:hidden;border-radius:10px;background:var(--b-budget,#deebe4);margin:12px 0 8px}.slp-meter>span{display:block;height:100%;background:var(--b-percent,#6b46d9);border-radius:10px}
+.slp-select{display:block;width:100%;margin-top:8px;padding:10px 12px;background:var(--b-budget,#e7f2eb);color:var(--b-ink,#163c33);border:1px solid rgba(82,132,114,.15);border-radius:12px;font-family:inherit;font-size:12px}
+.slp-dialog-backdrop{position:fixed;inset:0;background:rgba(11,29,23,.55);z-index:100500;display:flex;align-items:flex-end;justify-content:center;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.slp-money-dialog{width:100%;max-width:480px;max-height:min(86vh,740px);overflow-y:auto;box-sizing:border-box;padding:19px 19px 25px;background:var(--b-chart,#fff);border-radius:25px 25px 0 0;color:var(--b-ink,#153a30);box-shadow:0 -12px 45px rgba(0,0,0,.18)}
+.slp-dialog-head,.slp-dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}.slp-dialog-head h3{font-size:17px;margin:0 0 14px}.slp-dialog-actions{margin-top:18px;justify-content:flex-end}
+.slp-icon-close{border:0;border-radius:12px;width:34px;height:34px;background:var(--b-budget,#e4eee8);color:var(--b-ink,#18392f);font-size:22px}.slp-dialog-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slp-form-field{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;font-weight:650;color:var(--b-ink,#173c34)}.slp-form-field input,.slp-form-field select{min-width:0;box-sizing:border-box;display:block;width:100%;border:1px solid rgba(78,124,108,.18);background:var(--b-budget,#e8f2ed);border-radius:12px;padding:10px;color:var(--b-ink,#163c33);font:inherit;font-size:13px}.slp-form-field:first-child{grid-column:1/-1}.slp-expense-source{margin:10px 0 13px}
+.slp-reminder-button{flex:0 0 auto;min-width:35px;height:35px;margin-left:5px;border-radius:12px;border:1px solid rgba(76,137,116,.18);background:var(--b-budget,#d9e9df);color:var(--b-ink,#173c34);font-size:17px;cursor:pointer}.slp-reminder-button.is-active{background:var(--b-plus,#dcf78c);color:#16352d}
+/* Compact Bento settings: no se ocultan ni eliminan opciones */
+#view-settings.slp-settings-modern .scroll-content{padding-bottom:125px}
+#view-settings.slp-settings-modern .settings-card.full-width{padding:9px!important;background:transparent;box-shadow:none;border:0}
+#view-settings .slp-settings-group{margin:7px 0;border:1px solid rgba(102,143,125,.12);background:var(--b-chart,#fff);border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(29,61,51,.035)}
+#view-settings .slp-settings-group summary{padding:13px 14px;list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--b-ink,#163c33);font-size:13px;font-weight:800}
+#view-settings .slp-settings-group summary::-webkit-details-marker{display:none}
+#view-settings .slp-chevron{font-size:19px;color:var(--b-muted,#74887f);transform:rotate(0);transition:transform .18s ease}
+#view-settings .slp-settings-group[open] .slp-chevron{transform:rotate(180deg)}
+#view-settings .slp-settings-inside{padding:0 12px 12px}
+#view-settings .slp-settings-inside>.setting-group,#view-settings .slp-settings-inside>.settings-card{margin-bottom:7px!important}
+#view-settings .slp-settings-inside .section-label{display:none}
+#view-settings .slp-settings-inside .setting-item{min-height:39px;padding:8px 2px;margin:2px 0!important;gap:8px;font-size:12px;border-top-color:rgba(50,90,80,.08)!important}
+#view-settings .slp-settings-inside .lang-grid,#view-settings .slp-settings-inside .font-selector-grid{gap:6px;margin:7px 0}
+#view-settings .slp-settings-inside .lang-btn-opt,#view-settings .slp-settings-inside .font-btn{padding:7px 5px!important;font-size:11px}
+#view-settings .slp-settings-inside .glass-card{padding:10px!important;margin-bottom:9px!important}
+#view-settings .slp-settings-inside .btn-data-row{margin-top:8px!important}
+#view-settings #bento-theme-settings h3{font-size:14px;margin:4px 0 3px}
+#view-settings #bento-theme-settings p{font-size:11px;margin:2px 0 9px}
+#view-settings .slp-favorites-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 5px;font-size:12px}.slp-favorites-head button{font-size:10px;padding:7px 8px}
+#view-settings .slp-favorite{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid rgba(100,140,120,.12);font-size:12px}
+#view-settings .slp-favorite strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#view-settings .slp-favorite button{border:0;background:var(--b-budget,#e4eee7);border-radius:8px;padding:6px 9px;color:var(--b-ink,#173c34)}
+#view-settings .slp-favorite-dots{display:flex;align-items:center;gap:0}.slp-favorite-dots>span{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.05);margin-right:-2px}
+@media(max-width:370px){.slp-money-hero{gap:7px}.slp-money-hero .slp-money-pair{padding:10px}.slp-money-pair strong{font-size:15px}.slp-money-dialog{padding:14px}.slp-form-field{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){.slp-action,.slp-chevron{transition:none}}
