@@ -46,10 +46,10 @@
     return `<div class="sw-finance-list">${items.map(entry=>{
       const b=brand(entry);const card=type==='card';const main=card?money(C().cardAvailable(st,entry.id)):money(C().accountBalance(st,entry.id));
       const summary=card?tx('Límite disponible','Limite disponível','Available limit'):tx('Saldo local','Saldo local','Local balance');
-      return `<button type="button" class="sw-finance-card" data-sw-open="${type}:${esc(entry.id)}" style="${style(b)}" aria-label="${esc(entry.name)}: ${esc(tx('Ver detalles','Ver detalhes','View details'))}">
+      return `<div class="sw-finance-item" style="${style(b)}"><button type="button" class="sw-finance-card" data-sw-open="${type}:${esc(entry.id)}" aria-label="${esc(entry.name)}: ${esc(tx('Ver detalles','Ver detalhes','View details'))}">
        <span class="sw-finance-top">${logo(b)}<span class="sw-finance-title"><strong>${esc(entry.name)}</strong><small>${kind(type,entry)}</small></span><span class="sw-finance-arrow" aria-hidden="true">↗</span></span>
        <span class="sw-finance-bottom"><span><small>${summary}</small><strong>${main}</strong></span><span class="sw-finance-more">${tx('Ver movimientos','Ver movimentos','View activity')}</span></span>
-      </button>`;
+      </button><button type="button" class="sw-finance-direct-edit" data-sw-direct-edit="${type}:${esc(entry.id)}" aria-label="${tx('Editar','Editar','Edit')} ${esc(entry.name)}">${tx('Editar','Editar','Edit')} ✎</button></div>`;
     }).join('')}</div>`;
   }
   function homeItems(st){
@@ -83,7 +83,7 @@
   function activity(st,type,id){
     return st.movements.filter(m=>type==='account'?(m.accountId===id||m.toAccountId===id):m.cardId===id).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,12);
   }
-  const readableKind=k=>({expense:tx('Compra','Compra','Purchase'),income:tx('Ingreso','Receita','Income'),'fixed-debit':tx('Gasto fijo','Despesa fixa','Fixed expense'),'fixed-card':tx('Gasto fijo','Despesa fixa','Fixed expense'),'card-charge':tx('Compra a crédito','Compra no crédito','Credit purchase'),'card-payment':tx('Pago de factura','Pagamento de fatura','Bill payment'),transfer:tx('Transferencia','Transferência','Transfer'), 'saving-deposit':tx('Depósito a ahorro','Depósito na poupança','Savings deposit'),'saving-withdrawal':tx('Retiro de ahorro','Resgate','Savings withdrawal'),'adjust-plus':tx('Ajuste de saldo','Ajuste de saldo','Balance adjustment'),'adjust-minus':tx('Ajuste de saldo','Ajuste de saldo','Balance adjustment')})[k]||k;
+  const readableKind=k=>({expense:tx('Compra','Compra','Purchase'),income:tx('Ingreso','Receita','Income'),'fixed-debit':tx('Gasto fijo','Despesa fixa','Fixed expense'),'fixed-card':tx('Gasto fijo','Despesa fixa','Fixed expense'),'card-charge':tx('Compra a crédito','Compra no crédito','Credit purchase'),'card-payment':tx('Pago de factura','Pagamento de fatura','Bill payment'),transfer:tx('Transferencia','Transferência','Transfer'), 'saving-deposit':tx('Depósito a ahorro','Depósito na poupança','Savings deposit'),'saving-withdrawal':tx('Retiro de ahorro','Resgate','Savings withdrawal'),'adjust-plus':tx('Ajuste de saldo','Ajuste de saldo','Balance adjustment'),'adjust-minus':tx('Ajuste de saldo','Ajuste de saldo','Balance adjustment'),'card-adjust-plus':tx('Ajuste de crédito','Ajuste de crédito','Credit adjustment'),'card-adjust-minus':tx('Ajuste de crédito','Ajuste de crédito','Credit adjustment')})[k]||k;
   function openItem(type,id){
     const found=getItem(type,id);if(!found)return navigateAll();
     navigateAll();
@@ -93,7 +93,7 @@
     const details=credit?`<div class="sw-detail-stats"><div><small>${tx('Límite total','Limite total','Total limit')}</small><strong>${money(entry.limitCents)}</strong></div><div><small>${tx('Utilizado','Utilizado','Used')}</small><strong>${money(C().cardUsed(st,id))}</strong></div><div><small>${tx('Corte','Fechamento','Closing')}</small><strong>${entry.cutoffDay}</strong></div><div><small>${tx('Vencimiento','Vencimento','Due date')}</small><strong>${entry.dueDay}</strong></div></div>`:'';
     const rows=activity(st,type,id);
     const content=rows.length?rows.map(m=>{
-      const negative=type==='account'?m.accountId===id&&!['income','adjust-plus','saving-withdrawal'].includes(m.kind)&&!(m.kind==='transfer'&&m.toAccountId===id):m.kind!=='card-payment';
+      const negative=type==='account'?m.accountId===id&&!['income','adjust-plus','saving-withdrawal'].includes(m.kind)&&!(m.kind==='transfer'&&m.toAccountId===id):!['card-payment','card-adjust-minus'].includes(m.kind);
       return `<div class="sw-movement"><span><strong>${esc(m.note||readableKind(m.kind))}</strong><small>${esc(m.date)} · ${esc(readableKind(m.kind))}</small></span><strong class="${negative?'sw-out':'sw-in'}">${negative?'−':'+'}${money(m.amountCents)}</strong></div>`;
     }).join(''):`<p class="sw-no-movements">${tx('No hay movimientos registrados en SmartLifePro.','Ainda não há movimentações registradas.','No transactions registered yet.')}</p>`;
     const old=$('sw-detail-backdrop');old?.remove();
@@ -101,12 +101,20 @@
     wrapper.innerHTML=`<section class="sw-detail-sheet" role="dialog" aria-modal="true" aria-label="${esc(entry.name)}">
       <button class="sw-detail-close" data-sw-close aria-label="${tx('Cerrar','Fechar','Close')}">×</button>
       <div class="sw-detail-card" style="${style(b)}"><div class="sw-detail-bank">${logo(b)}<span><strong>${esc(entry.name)}</strong><small>${kind(type,entry)}</small></span></div><small>${title}</small><strong class="sw-detail-amount">${money(primary)}</strong></div>
-      ${details}<div class="sw-detail-actions"><button type="button" data-money-action="${credit?'edit-card':'edit-account'}:${esc(id)}">${tx('Editar datos','Editar dados','Edit details')}</button>${credit?`<button type="button" data-money-action="pay:${esc(id)}">${tx('Pagar factura','Pagar fatura','Pay bill')}</button>`:`<button type="button" data-money-action="adjust:${esc(id)}">${tx('Ajustar saldo','Ajustar saldo','Adjust balance')}</button><button type="button" data-money-action="transfer">${tx('Transferir','Transferir','Transfer')}</button>`}</div>
+      ${details}<div class="sw-detail-actions"><button type="button" data-sw-edit="${esc(id)}">${tx('Editar datos','Editar dados','Edit details')}</button>${credit?`<button type="button" data-money-action="pay:${esc(id)}">${tx('Pagar factura','Pagar fatura','Pay bill')}</button>`:`<button type="button" data-money-action="adjust:${esc(id)}">${tx('Ajustar saldo','Ajustar saldo','Adjust balance')}</button><button type="button" data-money-action="transfer">${tx('Transferir','Transferir','Transfer')}</button>`}</div>
       <h3>${tx('Movimientos recientes','Movimentações recentes','Recent activity')}</h3><div class="sw-detail-list">${rows.length?content:content}</div>
       <p class="sw-detail-footnote">${tx('Saldos locales; no están sincronizados con el banco.','Saldos locais, sem conexão ao banco.','Local balances; not connected to your bank.')}</p>
     </section>`;
     document.body.appendChild(wrapper);
-    wrapper.addEventListener('click',e=>{if(e.target===wrapper||e.target.closest('[data-sw-close]'))wrapper.remove();else if(e.target.closest('[data-money-action]'))queueMicrotask(()=>wrapper.remove())});
+    wrapper.addEventListener('click',e=>{
+      if(e.target===wrapper||e.target.closest('[data-sw-close]')){wrapper.remove();return;}
+      if(e.target.closest('[data-sw-edit]')){
+        e.preventDefault();e.stopPropagation();wrapper.remove();
+        (credit?root.SmartyMoneyUI?.editCard:root.SmartyMoneyUI?.editAccount)?.(id);
+        return;
+      }
+      if(e.target.closest('[data-money-action]'))wrapper.remove();
+    });
     wrapper.querySelector('[data-sw-close]')?.focus();
   }
   function advisorContext(question=''){
@@ -127,7 +135,12 @@
     if(!$('bento-wallet-items'))return;
     if(root.SmartyMoneyUI){const original=root.SmartyMoneyUI.render;if(typeof original==='function'&&!original.__swWrapped){const wrapped=function(...args){const res=original.apply(this,args);render();return res};wrapped.__swWrapped=true;root.SmartyMoneyUI.render=wrapped;}}
     installHooksOnLoad();
-    document.addEventListener('click',e=>{const card=e.target.closest('[data-sw-open]');if(card){const raw=card.dataset.swOpen||'',idx=raw.indexOf(':');if(idx>0)openItem(raw.slice(0,idx),raw.slice(idx+1));return;}if(e.target.closest('[data-sw-all]'))navigateAll()});
+    document.addEventListener('click',e=>{
+      const edit=e.target.closest('[data-sw-direct-edit]');
+      if(edit){const [type,id]=(edit.dataset.swDirectEdit||'').split(':');(type==='card'?root.SmartyMoneyUI?.editCard:root.SmartyMoneyUI?.editAccount)?.(id);return;}
+      const card=e.target.closest('[data-sw-open]');if(card){const raw=card.dataset.swOpen||'',idx=raw.indexOf(':');if(idx>0)openItem(raw.slice(0,idx),raw.slice(idx+1));return;}
+      if(e.target.closest('[data-sw-all]'))navigateAll();
+    });
     document.addEventListener('keydown',e=>{if(e.key==='Escape')$('sw-detail-backdrop')?.remove()});
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')render()});
     root.addEventListener('focus',render);root.addEventListener('load',()=>{installHooksOnLoad();render()},{once:true});

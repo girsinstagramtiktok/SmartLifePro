@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v23.1-editable-rates'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v23.2-visible-savings-card-edit'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

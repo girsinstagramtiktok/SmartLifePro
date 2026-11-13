@@ -41,7 +41,12 @@ function createTabs(){const menu=$('view-finance')?.querySelector('.segment-cont
 for(const [key,title] of [['accounts',t('Cuentas','Contas','Accounts')],['savings',t('Ahorros','Poupanças','Savings')]]){
  if(!$(`fin-tab-${key}`)){const b=document.createElement('button');b.type='button';b.id=`fin-tab-${key}`;b.className='segment-btn';b.textContent=title;b.addEventListener('click',()=>{Finance.setTab(key);render()});menu.appendChild(b)}else $(`fin-tab-${key}`).textContent=title;
  if(!$(`finance-content-${key}`)){const el=document.createElement('div');el.id=`finance-content-${key}`;el.className='finance-tab-content hidden';el.style.display='none';menu.parentElement.appendChild(el)}
-}menu.classList.add('slp-finance-tabs');}
+}
+// Todas las secciones están visibles en dos filas, sin deslizar horizontalmente.
+for(const key of ['accounts','savings','history','subs','installments']){
+ const tab=$(`fin-tab-${key}`);if(tab)menu.appendChild(tab);
+}
+menu.classList.add('slp-finance-tabs');}
 function renderAccounts(){const container=$('finance-content-accounts');if(!container)return;const st=s(),balance=st.accounts.reduce((v,a)=>v+C.accountBalance(st,a.id),0),cards=st.cards.reduce((v,c)=>v+C.cardUsed(st,c.id),0);
 let html=`<div class="slp-money-hero">${label(t('Saldo en cuentas','Saldo em contas','Account balances'),money(balance))}${label(t('Deuda en tarjetas','Dívida nos cartões','Card debt'),money(cards))}</div><div class="slp-money-actions">${btn(t('+ Cuenta','+ Conta','+ Account'),'account')}${btn(t('+ Tarjeta','+ Cartão','+ Card'),'card')}${btn(t('+ Ingreso','+ Receita','+ Income'),'income')}${btn(t('Transferir','Transferir','Transfer'),'transfer')}</div>`;
 html+=`<h3 class="slp-money-heading">${t('Cuentas y efectivo','Contas e dinheiro','Accounts and cash')}</h3>`;
@@ -60,15 +65,22 @@ container.querySelectorAll('select[data-fixed-sub]').forEach(sel=>sel.addEventLi
 }
 function renderSavings(){
  const container=$('finance-content-savings');if(!container)return;
- const st=s(),rates=Catalog?.marketRates(st.preferences),rateDate=rates?.asOf||'';
- let html=`<div class="slp-money-actions">${btn(t('+ Nuevo ahorro','+ Nova poupança','+ New saving'),'saving')}${btn(t('Actualizar tasas BCB','Atualizar taxas BCB','Refresh BCB rates'),'rates')}</div>`;
- if(rates)html+=`<div class="slp-market-status">CDI ${Number(rates.cdiAnnual).toFixed(2)}% a.a. · Selic ${Number(rates.selicAnnual).toFixed(2)}% a.a. · TR ${Number(rates.trMonthly).toFixed(4)}% a.m. <small>${t('Referencia','Referência','Reference')}: ${esc(rateDate)} · ${esc(rates.source==='bcb-sgs'?'BCB/SGS':t('referencia guardada','referência salva','saved reference'))}</small></div>`;
- html+=`<p class="slp-money-help">${t('Estimaciones, no saldos bancarios. Las tasas de ofertas pueden cambiar; los rendimientos netos dependen de impuestos y condiciones.','Estimativas, não saldos bancários. Taxas e impostos variam.','Estimates, not bank balances. Offers and taxes vary.')}</p>`;
- if(!st.savings.length)html+=box(`<p>${t('Selecciona un producto brasileño y la app rellenará sus condiciones de referencia.','Escolha um produto brasileiro e o app preenche a taxa de referência.','Choose a Brazilian product to fill its reference terms.')}</p>`);
- for(const x of st.savings){
-  const pr=Catalog?.byId(x.productId),p=C.savingsProjection(x),missing=p.needsRate;
-  let rateDesc=x.rateType==='poupanca'?t('Poupança · TR y Selic','Poupança · TR e Selic','Savings · TR and Selic'):x.rateType==='cdi'?`${x.cdiPercent}% CDI · ${Number(x.cdiAnnual||0).toFixed(2)}% a.a.`:`${x.annualRate}% a.a.`;
-  html+=box(`<div class="slp-money-top"><span class="slp-money-grow"><strong>${esc(x.name)}</strong><small>${esc(pr?.bank||'')} · ${esc(rateDesc)} · ${t('estimado','estimado','estimated')}</small></span></div><div class="slp-money-split">${label(t('Saldo estimado','Saldo estimado','Estimated balance'),money(p.grossCents))}${label(t('Intereses brutos estimados','Juros brutos estimados','Estimated gross interest'),missing?t('Falta tasa','Falta taxa','Rate needed'):`+ ${money(p.interestCents)}`)}</div><div class="slp-money-actions">${btn(t('Editar','Editar','Edit'),'edit-saving:'+x.id)}${btn(t('Depositar','Depositar','Deposit'),'deposit:'+x.id)}${btn(t('Retirar','Retirar','Withdraw'),'withdraw:'+x.id)}${btn(t('Ajustar saldo real','Atualizar saldo real','Update balance'),'reconcile:'+x.id)}</div>`);
+ const st=s(),rates=Catalog?.marketRates(st.preferences),ratesDate=rates?.asOf||'';
+ const entries=st.savings.map(x=>({x,pr:Catalog?.byId(x.productId),projection:C.savingsProjection(x)}));
+ const sum=(key)=>entries.reduce((acc,item)=>acc+(Number(item.projection[key])||0),0);
+ let html=`<section class="slp-savings-summary"><div class="slp-savings-summary-head"><span>${t('Mis ahorros','Minhas reservas','My savings')}</span><span class="slp-savings-summary-count">${entries.length} ${t('productos','produtos','products')}</span></div><strong class="slp-savings-total">${money(sum('grossCents'))}</strong><span class="slp-savings-total-note">${t('Saldo bruto estimado, no verificado','Saldo bruto estimado, não verificado','Estimated gross balance, not verified')}</span><div class="slp-savings-gain"><span>${t('Rendimiento bruto estimado','Rendimento bruto estimado','Estimated gross gain')}</span><strong>+ ${money(sum('interestCents'))}</strong></div></section>`;
+ html+=`<div class="slp-savings-tools">${btn(t('+ Añadir ahorro','+ Adicionar reserva','+ Add saving'),'saving','slp-primary')}${btn(t('Actualizar tasas','Atualizar taxas','Update rates'),'rates')}</div>`;
+ if(rates)html+=`<div class="slp-market-compact"><span>${t('Tasas de referencia','Taxas de referência','Reference rates')}: CDI ${Number(rates.cdiAnnual).toFixed(2)}% · Selic ${Number(rates.selicAnnual).toFixed(2)}%</span><small>${t('BCB · fecha','BCB · data','BCB · as of')} ${esc(ratesDate)}</small></div>`;
+ if(!entries.length)html+=`<div class="slp-savings-empty"><span class="slp-savings-empty-symbol">◇</span><strong>${t('Tus ahorros, en un solo lugar','Suas reservas em um só lugar','Your savings in one place')}</strong><p>${t('Añade una caixinha, CDB o poupança para empezar a ver su rendimiento estimado.','Adicione uma caixinha, CDB ou poupança para acompanhar o rendimento estimado.','Add a caixinha, CDB or savings account to see estimated yield.')}</p></div>`;
+ else html+=`<h3 class="slp-money-heading slp-savings-heading">${t('Mis productos','Meus produtos','My products')}</h3>`;
+ for(const {x,pr,projection:projected} of entries){
+  const missing=projected.needsRate;
+  const rateDesc=x.rateType==='poupanca'?t('Poupança · TR + Selic','Poupança · TR + Selic','Savings · TR + Selic'):x.rateType==='cdi'?`${Number(x.cdiPercent||0).toLocaleString('pt-BR')}% CDI`:`${Number(x.annualRate||0).toLocaleString('pt-BR')}% a.a.`;
+  const kind=pr?.bank||x.name;
+  const b=window.SmartyWallet?.brand?.({name:kind,bankDomain:''});
+  const image=b?window.SmartyWallet.logo(b):`<span class="slp-saving-identity">${esc((kind||'?').slice(0,1).toUpperCase())}</span>`;
+  const risk=missing?`<span class="slp-saving-warning">${t('Configurar tasa','Definir taxa','Set rate')}</span>`:`<span class="slp-saving-return">+ ${money(projected.interestCents)}</span>`;
+  html+=`<details class="slp-saving-product"><summary><span class="slp-saving-top">${image}<span class="slp-saving-name"><strong>${esc(x.name)}</strong><small>${esc(kind)} · ${esc(rateDesc)}</small></span><span class="slp-saving-expander" aria-hidden="true">⌄</span></span><span class="slp-saving-bottom"><span><small>${t('Saldo estimado','Saldo estimado','Estimated balance')}</small><strong>${money(projected.grossCents)}</strong></span><span class="slp-saving-return-wrap"><small>${t('Rendimiento bruto','Rendimento bruto','Gross yield')}</small>${risk}</span></span></summary><div class="slp-saving-details"><p>${t('Estimación, no saldo confirmado. Puede variar por impuestos y condiciones bancarias.','Estimativa, não saldo confirmado; impostos e condições podem alterar o valor.','Estimate, not confirmed balance. Taxes and terms may change it.')}</p><div class="slp-saving-actions">${btn(t('Editar producto','Editar produto','Edit product'),'edit-saving:'+x.id)}${btn(t('Depositar','Depositar','Deposit'),'deposit:'+x.id)}${btn(t('Retirar','Retirar','Withdraw'),'withdraw:'+x.id)}${btn(t('Ajustar saldo','Ajustar saldo','Reconcile'),'reconcile:'+x.id)}</div></div></details>`;
  }
  container.innerHTML=html;
 }
@@ -95,13 +107,20 @@ function formCard(cardId=''){
  field(t('Nombre','Nome','Name'),'name','text',c?.name||'','required maxlength=80')+
  selectField(t('Banco y logo','Banco e logotipo','Bank and logo'),'bankDomain',brandOptions(c?.bankDomain||''))+
  field(t('Límite total de crédito (R$)','Limite total (R$)','Total credit limit (R$)'),'limit','number',c?C.fromCents(c.limitCents):'','min=0.01 step=0.01 required')+
- field(t('Crédito utilizado inicialmente','Crédito utilizado inicialmente','Initially used credit'),'openingUsed','number',c?C.fromCents(c.openingUsedCents):'0','min=0 step=0.01 required')+
+ field(t('Crédito utilizado actualmente (R$)','Crédito utilizado actualmente (R$)','Currently used credit (R$)'),'usedNow','number',c?C.fromCents(C.cardUsed(s(),c.id)):'0','min=0 step=0.01 required')+
  field(t('Día de corte','Dia de fechamento','Closing day'),'cutoffDay','number',c?.cutoffDay||'20','min=1 max=31 required')+
  field(t('Día de vencimiento','Dia de vencimento','Due day'),'dueDay','number',c?.dueDay||'5','min=1 max=31 required')+
  field(t('Avisar días antes','Avisar dias antes','Notify days before'),'noticeDays','number',c?.noticeDays??3,'min=0 max=15 required')+
  selectField(t('Cuenta para pagar factura','Conta para pagar fatura','Bill payment account'),'payAccountId',options(s().accounts,c?.payAccountId||''))+
- (c?`<p class="slp-money-fieldnote">${t('Cambiar el límite recalcula lo disponible sin borrar compras ni facturas.','Alterar o limite recalcula o disponível sem apagar compras.','Changing limit recalculates available credit without deleting transactions.')}</p>`:''),
- v=>{const card=c?C.updateCard(s(),c.id,v):C.createCard(s(),v);window.SmartyListReminders?.scheduleCard?.(card).catch(console.warn)});
+ (c?`<p class="slp-money-fieldnote">${t('El crédito utilizado es el importe actual. Ajustarlo no borra compras ni pagos anteriores y no genera un gasto nuevo.','O valor utilizado é o saldo atual; o ajuste não apaga compras nem cria nova despesa.','Used credit is the current balance; adjusting it preserves transactions and does not create new spending.')}</p>`:''),
+ v=>{
+   const desired=Number(v.usedNow);
+   if(!Number.isFinite(desired)||desired<0)throw Error(t('Introduce un crédito utilizado válido','Informe o crédito utilizado','Enter valid used credit'));
+   // Mantiene el saldo inicial y el historial anteriores; corrige la deuda actual con un ajuste independiente.
+   const card=c?C.updateCard(s(),c.id,{...v,openingUsed:undefined}):C.createCard(s(),{...v,openingUsed:desired});
+   if(c)C.reconcileCardUsed(s(),c.id,desired);
+   window.SmartyListReminders?.scheduleCard?.(card).catch(console.warn);
+  });
 }
 function incomeRuleOptions(selected='last_business'){return [['last_business',t('Último día hábil','Último dia útil','Last business day')],['upto_business',t('Hasta el N.º día hábil','Até o N.º dia útil','By Nth business day')],['day',t('Día fijo aproximado','Dia fixo aproximado','Approx. fixed day')],['once',t('Ingreso puntual','Receita avulsa','One-time income')]].map(([v,label])=>`<option value="${v}" ${v===selected?'selected':''}>${label}</option>`).join('')}
 function formIncome(incomeId=''){
@@ -206,5 +225,5 @@ async function refreshMarket(forced=false){
 }
 function start(){if(!d()||!$('view-finance'))return;C.state(d().store);createTabs();if(Catalog){const st=s();const rates=Catalog.marketRates(st.preferences);C.applyMarketRates(st,rates);refreshMarket(false);}installExpenseSource();setTimeout(()=>{attachHooks();attachShoppingHooks()},900);window.addEventListener('load',()=>setTimeout(()=>{attachHooks();attachShoppingHooks()},1200),{once:true});document.addEventListener('click',e=>{const b=e.target.closest('[data-money-action]');if(b)handleAction(b.dataset.moneyAction)});window.addEventListener('focus',onResume);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onResume()});window.addEventListener('load',()=>setTimeout(onResume,950),{once:true});onResume();}
 function onResume(){if(!d())return;const st=s();let moved=C.applyFixedDue(st,d().store.subscriptions||[]);for(const exp of d().store.expenses||[]){if(exp.smSource&&exp.date<=Date.now()&&!st.movements.some(m=>m.key===`expense:${exp.id}`)){const entry=C.applyExpense(st,exp,exp.smSource);if(entry)moved.push(entry)}}if(moved.length){d().save();console.info('[SmartyMoney] Movimientos locales aplicados',moved.length)}render()}
-window.SmartyMoneyUI={start,render,renderAll,logo,brandDomains};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.SmartyMoneyUI={start,render,renderAll,logo,brandDomains,editAccount:formAccount,editCard:formCard,editSaving:formSaving};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -68,3 +68,81 @@
 .slp-inline-check{flex-direction:row;align-items:center;padding:8px 0}
 .slp-inline-check input{width:18px;height:18px;flex:0 0 18px;accent-color:var(--b-nav,#24604d)}
 .slp-inline-check span{font-size:11px;line-height:1.3}
+
+/* SMARTLIFEPRO BENTO 2026-11-13 — navegación accesible y ahorros compactos.
+   Todos los cambios son puramente visuales; se mantienen las pestañas y los IDs. */
+#view-finance .slp-finance-tabs{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:7px!important;padding:5px!important;margin-bottom:12px!important;
+ overflow:visible!important;white-space:normal!important;
+ border-radius:17px;background:var(--b-budget,#e1eee6);
+}
+#view-finance .slp-finance-tabs .segment-btn{
+ min-width:0!important;width:100%!important;max-width:none!important;
+ min-height:39px!important;box-sizing:border-box!important;padding:8px 5px!important;
+ margin:0!important;border-radius:11px!important;font-size:11px!important;
+ text-overflow:ellipsis;overflow:hidden;white-space:nowrap;
+}
+#view-finance .slp-finance-tabs .segment-btn.active{
+ background:var(--b-nav,#17463b)!important;color:var(--b-nav-ink,#fff)!important;
+ box-shadow:0 3px 8px rgba(15,57,44,.12)!important;
+}
+#view-finance #finance-content-savings{padding-bottom:15px}
+.slp-savings-summary{
+ position:relative;overflow:hidden;border-radius:24px;padding:19px 19px 15px;
+ background:linear-gradient(125deg,var(--b-nav,#164c3f),#286756);
+ color:#fff;box-shadow:0 10px 24px rgba(20,60,49,.13)
+}
+.slp-savings-summary:after{content:'';position:absolute;right:-50px;top:-75px;width:190px;height:190px;border:25px solid rgba(255,255,255,.07);border-radius:50%;pointer-events:none}
+.slp-savings-summary-head,.slp-savings-gain{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:9px}
+.slp-savings-summary-head{font-size:12px;font-weight:750;color:rgba(255,255,255,.86)}
+.slp-savings-summary-count{font-size:10px;padding:5px 9px;border-radius:15px;background:rgba(255,255,255,.14)}
+.slp-savings-total{position:relative;z-index:1;display:block;font-size:clamp(23px,7vw,30px);font-weight:900;letter-spacing:-.04em;margin:12px 0 2px}
+.slp-savings-total-note{display:block;font-size:10px;color:rgba(255,255,255,.7)}
+.slp-savings-gain{margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.2);font-size:11px}
+.slp-savings-gain strong{color:#d7fca7;font-size:14px;white-space:nowrap}
+.slp-savings-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 7px}
+.slp-savings-tools .slp-action{font-size:11px;flex:1;white-space:nowrap;min-height:39px}
+.slp-market-compact{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 10px;padding:5px 3px 12px;font-size:10px;color:var(--b-muted,#677e72)}
+.slp-market-compact span{font-weight:650}.slp-market-compact small{font-size:9px}
+.slp-savings-heading{margin:5px 1px 11px}
+.slp-saving-product{background:var(--b-chart,#fff);border:1px solid rgba(69,115,92,.1);border-radius:18px;margin:9px 0;box-shadow:0 3px 13px rgba(21,52,42,.035);overflow:hidden}
+.slp-saving-product>summary{list-style:none;cursor:pointer;padding:13px 13px 12px;display:flex;flex-direction:column;gap:12px}
+.slp-saving-product>summary::-webkit-details-marker{display:none}
+.slp-saving-top{display:flex;align-items:center;gap:11px;min-width:0}
+.slp-saving-top>.sw-banklogo,.slp-saving-identity{width:39px;height:39px;flex:0 0 39px;display:inline-grid;place-items:center;border-radius:13px;color:#fff;background:var(--b-nav,#236b50)}
+.slp-saving-top .sw-banklogo{background:var(--b-budget,#e8f0e7);color:var(--b-ink,#1e4135)}
+.slp-saving-name{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+.slp-saving-name strong{color:var(--b-ink,#193d31);font-size:13px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slp-saving-name small{font-size:10px;color:var(--b-muted,#6b8076);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slp-saving-expander{font-size:21px;color:var(--b-muted,#7c887d);transform:rotate(0);transition:transform .18s ease}
+.slp-saving-product[open] .slp-saving-expander{transform:rotate(180deg)}
+.slp-saving-bottom{display:flex;justify-content:space-between;align-items:end;gap:9px;padding-top:9px;border-top:1px solid rgba(70,116,95,.08)}
+.slp-saving-bottom>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.slp-saving-bottom small{font-size:9px;color:var(--b-muted,#6b8076)}
+.slp-saving-bottom strong{font-size:17px;color:var(--b-ink,#194237);font-weight:850;white-space:nowrap}
+.slp-saving-return-wrap{align-items:end;text-align:right}
+.slp-saving-return{color:#27866a!important;font-size:12px!important;font-weight:850}
+.slp-saving-warning{font-size:10px;color:#9d6021;font-weight:750}
+.slp-saving-details{padding:11px 13px 13px;border-top:1px solid rgba(70,116,95,.11);background:color-mix(in srgb,var(--b-budget,#e9f2eb) 33%,var(--b-chart,#fff))}
+.slp-saving-details p{font-size:10px;margin:0 0 10px;color:var(--b-muted,#6b8076);line-height:1.5}
+.slp-saving-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.slp-saving-actions>.slp-action{margin:0;font-size:11px;padding:10px 7px}
+.slp-savings-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px;background:var(--b-chart,#fff);border-radius:18px;padding:28px 17px;color:var(--b-ink,#193d33)}
+.slp-savings-empty-symbol{font-size:28px;color:var(--b-nav,#236b50)}
+.slp-savings-empty strong{font-size:14px}.slp-savings-empty p{font-size:11px;color:var(--b-muted,#6b8076);margin:0}
+/* El formulario se muestra encima del detalle de tarjetas. */
+.slp-dialog-backdrop{z-index:150000!important}
+@media(max-width:365px){.slp-saving-bottom strong{font-size:15px}.slp-savings-summary{padding:16px}.slp-savings-tools .slp-action{padding:8px 6px}}
+@media(prefers-reduced-motion:reduce){.slp-saving-expander{transition:none}}
+
+/* Edición visible directamente desde la tarjeta, sin ocultarse en Detalles. */
+.sw-finance-item{position:relative;width:100%;min-width:0}
+.sw-finance-item .sw-finance-card{margin:0}
+.sw-finance-item .sw-finance-card .sw-finance-more{padding-right:72px}
+.sw-finance-direct-edit{position:absolute;right:12px;bottom:12px;z-index:3;
+ border:1px solid rgba(255,255,255,.26);border-radius:10px;
+ background:rgba(255,255,255,.18);color:var(--sw-fg,#fff);
+ font-family:inherit;font-size:11px;font-weight:800;padding:8px 10px;cursor:pointer;
+ backdrop-filter:blur(5px)}
+.sw-finance-direct-edit:active{transform:scale(.97)}

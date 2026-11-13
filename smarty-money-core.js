@@ -25,11 +25,25 @@ function createCard(s,{name,bankDomain='',limit,openingUsed=0,cutoffDay,dueDay,n
 function createMovement(s,{kind,amount,accountId='',toAccountId='',cardId='',date=today(),sourceId='',key='',note=''}){const amountCents=requireAmount(amount);parseDay(date);if(key){const prev=s.movements.find(m=>m.key===key);if(prev)return prev;}
  if(['expense','fixed-debit','card-payment','transfer','saving-deposit'].includes(kind)&&accountId&&!s.accounts.some(a=>a.id===accountId))throw Error('Cuenta desconocida');
  if(kind==='transfer'&&(!accountId||!toAccountId||accountId===toAccountId||!s.accounts.some(a=>a.id===toAccountId)))throw Error('Selecciona dos cuentas diferentes');
- if(['card-charge','fixed-card','card-payment'].includes(kind)&&!s.cards.some(c=>c.id===cardId))throw Error('Tarjeta desconocida');
+ if(['card-charge','fixed-card','card-payment','card-adjust-plus','card-adjust-minus'].includes(kind)&&!s.cards.some(c=>c.id===cardId))throw Error('Tarjeta desconocida');
  const m={id:id(),kind,amountCents,accountId,toAccountId,cardId,date,sourceId,key,note:String(note||'').slice(0,120)};s.movements.push(m);return m}
 function accountBalance(s,accountId){const account=find(s.accounts,accountId);let amount=account.openingCents;for(const m of s.movements){if(m.accountId===accountId){if(['income','adjust-plus','saving-withdrawal'].includes(m.kind))amount+=m.amountCents;else if(['expense','fixed-debit','card-payment','saving-deposit','transfer','adjust-minus'].includes(m.kind))amount-=m.amountCents;}if(m.kind==='transfer'&&m.toAccountId===accountId)amount+=m.amountCents;}return amount}
-function cardUsed(s,cardId){const card=find(s.cards,cardId);let used=card.openingUsedCents;for(const m of s.movements)if(m.cardId===cardId){if(['card-charge','fixed-card'].includes(m.kind))used+=m.amountCents;else if(m.kind==='card-payment')used-=m.amountCents;}return Math.max(0,used)}
+function cardUsed(s,cardId){const card=find(s.cards,cardId);let used=card.openingUsedCents;for(const m of s.movements)if(m.cardId===cardId){if(['card-charge','fixed-card','card-adjust-plus'].includes(m.kind))used+=m.amountCents;else if(['card-payment','card-adjust-minus'].includes(m.kind))used-=m.amountCents;}return Math.max(0,used)}
 function cardAvailable(s,cardId){return find(s.cards,cardId).limitCents-cardUsed(s,cardId)}
+// Conciliar el crédito utilizado REAL sin modificar el histórico de compras o pagos.
+// Este movimiento afecta solo al límite disponible, nunca al presupuesto mensual.
+function reconcileCardUsed(s,cardId,usedNow){
+ find(s.cards,cardId);
+ const value=cents(usedNow);
+ if(value<0)throw Error('El crédito utilizado no puede ser negativo');
+ const current=cardUsed(s,cardId);
+ if(value===current)return null;
+ return createMovement(s,{
+  kind:value>current?'card-adjust-plus':'card-adjust-minus',
+  amount:Math.abs(value-current)/100,cardId,
+  note:'Conciliación manual del crédito utilizado'
+ });
+}
 function payCard(s,cardId,accountId,amount){const due=cardUsed(s,cardId);if(requireAmount(amount)>due)throw Error('El pago supera la deuda registrada');return createMovement(s,{kind:'card-payment',accountId,cardId,amount,note:'Pago de factura'})}
 function transfer(s,from,to,amount,note='Transferencia propia'){return createMovement(s,{kind:'transfer',accountId:from,toAccountId:to,amount,note})}
 function applyExpense(s,expense,source){if(!expense?.id||!source?.id)return null;const isCard=source.type==='card';const amount=expense.isInstallment?Number(expense.installments?.originalTotal||expense.amount):Number(expense.amount);const expDay=localDate(expense.date||Date.now());const isFuture=expDay>today();if(isFuture)return null;return createMovement(s,{kind:isCard?'card-charge':'expense',amount,accountId:isCard?'':source.id,cardId:isCard?source.id:'',date:expDay,sourceId:expense.id,key:`expense:${expense.id}`,note:expense.desc||''})}
@@ -192,5 +206,5 @@ function savingDeposit(s,savingId,accountId,amount,date=today()){
 }
 function savingWithdrawal(s,savingId,accountId,amount,date=today()){const v=find(s.savings,savingId);find(s.accounts,accountId);const c=requireAmount(amount);if(c>savingsProjection(v,date).grossCents)throw Error('El retiro supera el ahorro estimado');const m=createMovement(s,{kind:'saving-withdrawal',amount,accountId,date,note:`Retiro del ahorro: ${v.name}`});v.entries.push({id:m.id,date,amountCents:-c});return m}
 function reconcileSaving(s,savingId,balance,date=today()){const v=find(s.savings,savingId);v.principalCents=cents(balance);v.referenceDate=date;v.entries=[];return v}
-return {state,cents,fromCents,localDate,today,period,createAccount,createCard,updateAccount,updateCard,updateIncome,updateSaving,applyMarketRates,createMovement,accountBalance,cardUsed,cardAvailable,payCard,transfer,applyExpense,unlinkExpense,linkFixedSource,applyFixedDue,brazilBankHolidays,isBusinessDay,nthBusinessDay,lastBusinessDay,expectedWindow,createIncome,incomeReceived,confirmIncome,createSaving,savingAnnualRate,savingsProjection,savingDeposit,savingWithdrawal,reconcileSaving};
+return {state,cents,fromCents,localDate,today,period,createAccount,createCard,updateAccount,updateCard,updateIncome,updateSaving,applyMarketRates,createMovement,accountBalance,cardUsed,cardAvailable,reconcileCardUsed,payCard,transfer,applyExpense,unlinkExpense,linkFixedSource,applyFixedDue,brazilBankHolidays,isBusinessDay,nthBusinessDay,lastBusinessDay,expectedWindow,createIncome,incomeReceived,confirmIncome,createSaving,savingAnnualRate,savingsProjection,savingDeposit,savingWithdrawal,reconcileSaving};
 });
