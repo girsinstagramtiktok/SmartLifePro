@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v23.4-fixed-billing-icons'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v23.5-bank-payment-source'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const ASSETS_TO_CACHE = [
   './assistant.js',
   './finance.js',
   './shopping.js',
+  './smarty-bank-source.js',
   './bank-bridge.js',
   './camera-bridge.js',
   './ota-config.js',

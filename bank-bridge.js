@@ -84,6 +84,9 @@
         // Sólo cargos confirmados: nunca registrar ingresos, estornos, publicidad o solicitudes.
         if (/pix recebido|pix recebida|recebeu (um )?pix|transfer[eê]ncia recebida|dinheiro recebido|reembolso|estorno|refund|cashback|você recebeu|voce recebeu|depósito recebido/i.test(text)) return null;
         if (/não aprovad|nao aprovad|rejeitad|recusad|cancelad|negad|falhou|falha|pendente|tentativa|senha de|código de|codigo de|oferta|promoção|promocao/i.test(text)) return null;
+        // Pago de la factura de crédito ≠ compra nueva. Registrar este aviso
+        // como compra inflaría la deuda y el presupuesto por segunda vez.
+        if (/(?:pagamento|pago|quita[cç][aã]o|pagou)\s+(?:da|de|do|sua|minha)?\s*fatura|fatura\s+(?:paga|quitada|liquidada)|(?:cart[aã]o\s+de\s+cr[eé]dito).{0,35}fatura\s+paga/i.test(text)) return null;
         if (!/(compra|comprou|pagou|pagaste|pagamento (efetuado|realizado|aprovado|confirmado)|pago|pagado|paid|spent|débito|debito|crédito|credito|pix enviado|pix realizado|transfer[eê]ncia enviada|transferencia realizada)/i.test(text)) return null;
         const amount = extractAmount(text);
         if (!amount) return null;
@@ -108,12 +111,25 @@
 
     function recordExpense(expense) {
         if (!Data.store.expenses) Data.store.expenses = [];
-        Data.store.expenses.push({
+        const entry = {
             id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 6),
             date: Date.now(), amount: expense.amount, desc: expense.desc,
             category: typeof UI?.t === 'function' ? UI.t(expense.category) : expense.category,
             isInstallment: false, installments: null, source: 'bank_notification'
-        });
+        };
+        const identified = expense.bankMatch?.source;
+        const C = window.SmartyMoneyCore;
+        if (identified && C) {
+            // Identificación inequívoca: actualizar el saldo local o el crédito
+            // disponible, SIN registrar un segundo gasto en el presupuesto.
+            entry.smSource = {type: identified.type, id: identified.id};
+            entry.bankMatchType = identified.type;
+        }
+        Data.store.expenses.push(entry);
+        if (entry.smSource) {
+            try { C.applyExpense(C.state(Data.store), entry, entry.smSource); }
+            catch(e) { delete entry.smSource; delete entry.bankMatchType; console.warn('[Banco] Origen inválido; gasto conservado para revisión',e); }
+        }
         Data.save();
         if (typeof UI?.renderBudgetChart === 'function') UI.renderBudgetChart();
         if (typeof Finance?.renderHomeWidgets === 'function') Finance.renderHomeWidgets();
@@ -135,6 +151,10 @@
         try {
             const item = pending[0];
             Finance.openSmartExpenseModal(item.amount, item.desc, item.category);
+            // El formulario normal conserva la última cuenta utilizada. Para
+            // avisos bancarios se BORRA esa selección si no hay coincidencia,
+            // evitando cargar la tarjeta incorrecta por accidente.
+            window.SmartyMoneyUI?.setDetectedBankSource?.(item.bankMatch || null);
             if (!modal?.classList.contains('open')) {
                 lastError = 'No se abrió el formulario de confirmación';
                 return;
@@ -149,6 +169,37 @@
         }
     }
 
+    // Si una notificación confirma un gasto fijo QUE YA FUE RESERVADO al
+    // iniciar el mes, no crear un gasto adicional ni otra carga en la tarjeta.
+    // Comparación estricta: misma fecha de cobro, importe, cuenta y comercio.
+    function reconcileFixedCharge(notification, expense) {
+        const C = window.SmartyMoneyCore;
+        const selected = expense.bankMatch?.source;
+        if (!C || !selected || !Array.isArray(Data.store.subscriptions)) return false;
+        const st = C.state(Data.store);
+        const day = new Date().getDate();
+        const text = (String(notification.title || '')+' '+String(notification.text || ''))
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+        const matches = Data.store.subscriptions.filter(sub => {
+            const src = st.fixedSources?.[sub.id];
+            if (!src || src.sourceType !== selected.type || src.sourceId !== selected.id || Number(sub.day) !== day) return false;
+            if (Math.abs(Number(sub.cost)-expense.amount)>0.005) return false;
+            const service = String(sub.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+            const primary = service.split(/[^a-z0-9]+/).find(part=>part.length>=5);
+            return service.length>=5 && (text.includes(service) || (primary && text.includes(primary)));
+        });
+        if(matches.length!==1)return false;
+        const sub=matches[0], key=`fixed:${sub.id}:${C.period()}`;
+        // Normalmente existe porque SmartyMoneyUI lo aplica al reabrir la app.
+        // Si no, se aplica una sola vez mediante la clave del gasto fijo.
+        if(!st.movements.some(m=>m.key===key))C.applyFixedDue(st,Data.store.subscriptions);
+        const movement=st.movements.find(m=>m.key===key);
+        if(!movement)return false;
+        movement.bankConfirmed=true;
+        Data.save();
+        return true;
+    }
+
     // true significa "registrada o descartada intencionalmente"; false = reintentar después.
     function process(notification) {
         if (!ready || !Data?.store?.settings?.bankAutoDetect) return false;
@@ -158,6 +209,17 @@
         if (seen.has(dedup)) return true;
         const expense = parse(notification);
         if (!expense) return true; // Mensaje no bancario; se puede confirmar como leído.
+        // Nunca se envía el texto de la notificación a servidores externos.
+        // Si falta la mención de crédito/débito o hay productos ambiguos,
+        // no se asigna un origen (el usuario puede revisarlo).
+        try {
+            const C = window.SmartyMoneyCore;
+            const matcher = window.SmartyBankSource;
+            if (C && matcher) expense.bankMatch = matcher.infer(notification, C.state(Data.store));
+        } catch(e) { console.warn('[Banco] No fue posible identificar el producto',e); }
+        try {
+            if (reconcileFixedCharge(notification, expense)) { remember(dedup); return true; }
+        } catch(e) { console.warn('[Banco] Comprobación de gasto fijo no disponible',e); }
         if (Data.store.settings.bankAutoSaveMode === 'auto') {
             try { recordExpense(expense); }
             catch (e) {

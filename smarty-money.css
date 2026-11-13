@@ -172,3 +172,14 @@
 .slp-income-item{display:flex;flex-wrap:wrap;gap:9px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(103,137,123,.16)}
 .slp-income-item>.slp-money-grow{min-width:110px}.slp-income-item>strong{font-size:13px;white-space:nowrap}
 .slp-income-item-actions{display:flex;gap:5px;flex-wrap:wrap;width:100%}.slp-income-item-actions .slp-action{padding:6px 10px}
+
+/* Gastos fijos: controles siempre a ancho completo, también con logos de APK. */
+#subs-list .slp-sub-row{display:flex;flex-wrap:wrap!important;align-items:center!important}
+#subs-list .slp-sub-row>.slp-sub-config{box-sizing:border-box;flex:0 0 100%;width:100%;min-width:0;max-width:100%;margin-top:8px;display:flex;align-items:end;gap:8px}
+#subs-list .slp-sub-config label{flex:1 1 auto;min-width:0}
+#subs-list .slp-sub-config button{flex:0 0 auto;min-height:36px}
+
+/* Selector de logo dentro del mismo formulario de Gastos fijos. */
+.slp-sub-icon-picker{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+#subs-list .slp-sub-row>.sba-logo{flex:0 0 38px}
+#subs-list .slp-sub-row>[style*="flex:1"]{min-width:0;flex:1 1 100px!important}

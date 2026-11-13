@@ -112,9 +112,12 @@ function formAccount(accountId='',fromCardId=''){
  selectField(t('Tipo','Tipo','Type'),'type',[['bank',t('Cuenta bancaria / débito','Conta bancária / débito','Bank account / debit')],['cash',t('Efectivo','Dinheiro','Cash')],['wallet',t('Billetera','Carteira','Wallet')]].map(([v,label])=>`<option value="${v}" ${v===(a?.type||'bank')?'selected':''}>${label}</option>`).join(''))+
  selectField(t('Banco / logotipo','Banco / logotipo','Bank / logo'),'bankDomain',brandOptions(a?.bankDomain||related?.bankDomain||window.SmartyWallet?.brand?.(related)?.domain||''))+
  field(t('Saldo inicial (modifica el saldo calculado)','Saldo inicial (altera saldo calculado)','Opening balance (changes calculated balance)'),'openingBalance','number',a?C.fromCents(a.openingCents):'0','step=0.01 required')+
+ field(t('Últimos 4 dígitos del débito (opcional)','Últimos 4 dígitos do débito (opcional)','Debit card last 4 digits (optional)'),'last4','text',a?.last4||'','inputmode=numeric maxlength=4 pattern="[0-9]{4}" placeholder="1234"')+
  (related?`<label class="slp-form-field slp-form-span slp-inline-check"><input type="checkbox" name="billAccount" value="yes" checked><span>${t('Usar esta cuenta para pagar la factura del crédito (sin cobros automáticos)','Usar para pagar a fatura (sem pagamento automático)','Use this account for the credit bill (no automatic payments)')}</span></label>`:'')+
  (a?`<p class="slp-money-fieldnote">${t('Modificar el saldo inicial no borra tus movimientos; para corregir el saldo actual usa Ajustar saldo.','Alterar o saldo inicial não apaga movimentos; para conciliar, use Ajustar saldo.','Changing opening balance does not delete activity; use Adjust balance for current reconciliation.')}</p>`:''),
- v=>{if(a)return C.updateAccount(s(),a.id,v);const account=C.createAccount(s(),v);if(related&&v.billAccount==='yes')related.payAccountId=account.id;return account;});
+ v=>{const suffix=String(v.last4||'').trim();if(suffix&&!/^\d{4}$/.test(suffix))throw Error(t('Introduce solo 4 dígitos','Informe apenas 4 dígitos','Enter exactly 4 digits'));
+ const account=a?C.updateAccount(s(),a.id,v):C.createAccount(s(),v);account.last4=suffix;
+ if(!a&&related&&v.billAccount==='yes')related.payAccountId=account.id;return account;});
 }
 function formCard(cardId='',fromAccountId=''){
  const c=cardId?s().cards.find(x=>x.id===cardId):null;
@@ -126,6 +129,7 @@ function formCard(cardId='',fromAccountId=''){
  selectField(t('Banco y logo','Banco e logotipo','Bank and logo'),'bankDomain',brandOptions(c?.bankDomain||related?.bankDomain||window.SmartyWallet?.brand?.(related)?.domain||''))+
  field(t('Límite total de crédito (R$)','Limite total (R$)','Total credit limit (R$)'),'limit','number',c?C.fromCents(c.limitCents):'','min=0.01 step=0.01 required')+
  field(t('Crédito utilizado actualmente (R$)','Crédito utilizado actualmente (R$)','Currently used credit (R$)'),'usedNow','number',c?C.fromCents(C.cardUsed(s(),c.id)):'0','min=0 step=0.01 required')+
+ field(t('Últimos 4 dígitos del crédito (opcional)','Últimos 4 dígitos do crédito (opcional)','Credit card last 4 digits (optional)'),'last4','text',c?.last4||'','inputmode=numeric maxlength=4 pattern="[0-9]{4}" placeholder="1234"')+
  field(t('Día de corte','Dia de fechamento','Closing day'),'cutoffDay','number',c?.cutoffDay||'20','min=1 max=31 required')+
  field(t('Día de vencimiento','Dia de vencimento','Due day'),'dueDay','number',c?.dueDay||'5','min=1 max=31 required')+
  field(t('Avisar días antes','Avisar dias antes','Notify days before'),'noticeDays','number',c?.noticeDays??3,'min=0 max=15 required')+
@@ -137,6 +141,8 @@ function formCard(cardId='',fromAccountId=''){
    // Mantiene el saldo inicial y el historial anteriores; corrige la deuda actual con un ajuste independiente.
    const card=c?C.updateCard(s(),c.id,{...v,openingUsed:undefined}):C.createCard(s(),{...v,openingUsed:desired});
    if(c)C.reconcileCardUsed(s(),c.id,desired);
+   const suffix=String(v.last4||'').trim();if(suffix&&!/^\d{4}$/.test(suffix))throw Error(t('Introduce solo 4 dígitos','Informe apenas 4 dígitos','Enter exactly 4 digits'));
+   card.last4=suffix;
    window.SmartyListReminders?.scheduleCard?.(card).catch(console.warn);
   });
 }
@@ -214,7 +220,23 @@ if(cmd==='confirm'){const inc=st.incomes.find(x=>x.id===target);return showForm(
 if(cmd==='deposit'){if(!st.accounts.length)return alertUser(t('Añade una cuenta','Adicione uma conta','Add an account'));return showForm(t('Transferir al ahorro','Transferir à poupança','Deposit to savings'),selectField(t('Cuenta de origen','Conta de origem','Source account'),'accountId',options(st.accounts))+field(t('Importe','Valor','Amount'),'amount','number','','min=0.01 step=0.01 required'),v=>C.savingDeposit(st,target,v.accountId,v.amount))}
 if(cmd==='withdraw'){if(!st.accounts.length)return alertUser(t('Añade una cuenta','Adicione uma conta','Add an account'));return showForm(t('Retirar de ahorro','Retirar da poupança','Withdraw from savings'),selectField(t('Cuenta de destino','Conta de destino','Destination account'),'accountId',options(st.accounts))+field(t('Importe','Valor','Amount'),'amount','number','','min=0.01 step=0.01 required'),v=>C.savingWithdrawal(st,target,v.accountId,v.amount))}
 if(cmd==='reconcile'){const x=st.savings.find(x=>x.id===target);return showForm(t('Saldo real comprobado','Saldo real conferido','Verified real balance'),field(t('Saldo que muestra el banco','Saldo mostrado pelo banco','Balance shown by bank'),'amount','number',C.fromCents(C.savingsProjection(x).grossCents),'min=0.01 step=0.01 required'),v=>C.reconcileSaving(st,target,v.amount));}}
-function installExpenseSource(){const modal=$('modal-expense');if(!modal)return;let el=$('slp-expense-source');if(!el){el=document.createElement('label');el.className='slp-form-field slp-expense-source';el.id='slp-expense-source';el.innerHTML=`<span>${t('Pagado desde','Pago de','Paid from')}</span><select class="slp-select"></select>`;($('exp-desc')?.parentElement||modal.querySelector('.settings-card')).insertBefore(el,$('exp-desc')?.nextSibling||null)}el.querySelector('select').innerHTML=sourceOptions(s().preferences.lastSource||'');}
+function installExpenseSource(){const modal=$('modal-expense');if(!modal)return;let el=$('slp-expense-source');if(!el){el=document.createElement('label');el.className='slp-form-field slp-expense-source';el.id='slp-expense-source';el.innerHTML=`<span>${t('Pagado desde','Pago de','Paid from')}</span><select class="slp-select"></select>`;($('exp-desc')?.parentElement||modal.querySelector('.settings-card')).insertBefore(el,$('exp-desc')?.nextSibling||null)}el.querySelector('select').innerHTML=sourceOptions(s().preferences.lastSource||'');const hint=$('slp-bank-detection-hint');if(hint)hint.remove();}
+// El aviso bancario propone cuenta solo si es inequívoco. Nunca reutilizar la
+// selección de un gasto anterior para un aviso ambiguo.
+function setDetectedBankSource(match){
+ installExpenseSource();
+ const selector=$('slp-expense-source')?.querySelector('select');if(!selector)return;
+ const source=match?.source;
+ const value=source?`${source.type}:${source.id}`:'';
+ selector.value=[...selector.options].some(opt=>opt.value===value)?value:'';
+ let info=$('slp-bank-detection-hint');
+ if(!info){info=document.createElement('small');info.id='slp-bank-detection-hint';info.className='slp-bank-detection-hint';$('slp-expense-source')?.appendChild(info)}
+ if(source&&selector.value){const label=selector.selectedOptions?.[0]?.textContent||'';
+   info.textContent=t('Origen detectado: ','Origem identificada: ','Detected source: ')+label;
+ }else{
+   info.textContent=t('No se pudo identificar con certeza la cuenta o tarjeta. Selecciona una antes de guardar.','Não foi possível identificar com certeza a conta ou cartão. Selecione antes de salvar.','Could not identify the account or card confidently. Select one before saving.');
+ }
+}
 function attachHooks(){if(typeof Finance==='undefined')return;
 const mark=f=>{f.__slpMoneyWrapped=true;return f};
 if(!Finance.openExpenseModal.__slpMoneyWrapped){const open=Finance.openExpenseModal;Finance.openExpenseModal=mark(function(...args){const res=open.apply(this,args);installExpenseSource();return res})}
@@ -241,9 +263,9 @@ async function refreshMarket(forced=false){
  }catch(err){if(forced)alertUser(err.message);console.warn('[SmartyInvestmentCatalog]',err.message)}
  finally{marketInProgress=false}
 }
-function start(){if(!d()||!$('view-finance'))return;C.state(d().store);createTabs();if(Catalog){const st=s();const rates=Catalog.marketRates(st.preferences);C.applyMarketRates(st,rates);refreshMarket(false);}installExpenseSource();setTimeout(()=>{attachHooks();attachShoppingHooks()},900);window.addEventListener('load',()=>setTimeout(()=>{attachHooks();attachShoppingHooks()},1200),{once:true});document.addEventListener('click',e=>{const b=e.target.closest('[data-money-action]');if(b)handleAction(b.dataset.moneyAction)});window.addEventListener('focus',onResume);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onResume()});window.addEventListener('load',()=>setTimeout(onResume,950),{once:true});onResume();}
+function start(){if(!d()||!$('view-finance'))return;C.state(d().store);createTabs();if(Catalog){const st=s();const rates=Catalog.marketRates(st.preferences);C.applyMarketRates(st,rates);refreshMarket(false);}installExpenseSource();attachHooks();setTimeout(()=>{attachHooks();attachShoppingHooks()},900);window.addEventListener('load',()=>setTimeout(()=>{attachHooks();attachShoppingHooks()},1200),{once:true});document.addEventListener('click',e=>{const b=e.target.closest('[data-money-action]');if(b)handleAction(b.dataset.moneyAction)});window.addEventListener('focus',onResume);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onResume()});window.addEventListener('load',()=>setTimeout(onResume,950),{once:true});onResume();}
 function onResume(){if(!d())return;const st=s();let moved=C.applyFixedDue(st,d().store.subscriptions||[]);for(const exp of d().store.expenses||[]){if(exp.smSource&&exp.date<=Date.now()&&!st.movements.some(m=>m.key===`expense:${exp.id}`)){const entry=C.applyExpense(st,exp,exp.smSource);if(entry)moved.push(entry)}}if(moved.length){d().save();console.info('[SmartyMoney] Movimientos locales aplicados',moved.length)}render()}
-window.SmartyMoneyUI={start,render,renderAll,logo,brandDomains,editAccount:formAccount,editCard:formCard,editSaving:formSaving,
+window.SmartyMoneyUI={start,render,renderAll,setDetectedBankSource,logo,brandDomains,editAccount:formAccount,editCard:formCard,editSaving:formSaving,
  addAccountForCard:cardId=>formAccount('',cardId),
  addCardForAccount:accountId=>formCard('',accountId)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -8,7 +8,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const base=__dirname;
 const read=(name)=>fs.readFileSync(path.join(base,'www',name),'utf8');
-for(const f of ['index.html','style.css','bento-home.css','bento-global.css','smarty-daily-spending.css','bento-home.js','smarty-biometrics.js','smarty-daily-spending.js','smarty-app-updater.js','smarty-daily-backup.js','smarty-money-core.js','smarty-investment-catalog.js','smarty-money-ui.js','smarty-list-reminders.js','smarty-settings-modern.js','smarty-money.css','smarty-release-config.js','data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','bank-bridge.js','camera-bridge.js','smarty-pro-addons.js','smarty-ota.js']){
+for(const f of ['index.html','style.css','bento-home.css','bento-global.css','smarty-daily-spending.css','bento-home.js','smarty-biometrics.js','smarty-daily-spending.js','smarty-app-updater.js','smarty-daily-backup.js','smarty-money-core.js','smarty-investment-catalog.js','smarty-money-ui.js','smarty-list-reminders.js','smarty-settings-modern.js','smarty-money.css','smarty-release-config.js','data.js','ui.js','assistant.js','finance.js','shopping.js','main.js','smarty-bank-source.js','bank-bridge.js','camera-bridge.js','smarty-pro-addons.js','smarty-ota.js']){
  assert.ok(fs.existsSync(path.join(base,'www',f)),'Falta '+f+' en el APK');
 }
 const html=read('index.html');

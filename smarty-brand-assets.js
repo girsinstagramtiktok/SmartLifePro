@@ -30,12 +30,25 @@ function subscriptionKey(name){const n=norm(name);if(/chat\s*gpt|open\s*ai|gpt\s
  if(/google\s*one|google\s*storage/.test(n))return 'googleone';if(/microsoft|office\s*365/.test(n))return 'microsoft';if(/amazon/.test(n))return 'amazon';
  if(/notion/.test(n))return 'notion';if(/canva/.test(n))return 'canva';if(/adobe/.test(n))return 'adobe';return 'other';}
 function saved(key){try{const value=root.localStorage?.getItem(PREFIX+key);return value?.startsWith('data:image/')?value:null}catch{return null}}
-function icon(key,label=''){const item=assets[key]||assets.other,markup=esc(item.mark==='•'?String(label||'?').slice(0,2).toUpperCase():item.mark);
- const cached=saved(key);const url=cached||((item.slug&&root.navigator?.onLine!==false)?`https://cdn.simpleicons.org/${encodeURIComponent(item.slug)}`:'');
- return `<span class="sba-logo" style="--sba-bg:${item.color};--sba-ink:${item.ink||'#fff'}" aria-label="${esc(label||key)}"><span class="sba-mark">${markup}</span>${url?`<img alt="" draggable="false" data-sba-key="${esc(key)}" src="${esc(url)}" onload="this.classList.add('sba-ready')" onerror="this.remove()">`:''}</span>`;
+function icon(key,label=''){
+ const item=assets[key]||assets.other;
+ const markup=esc(item.mark==='•'?String(label||'?').slice(0,2).toUpperCase():item.mark);
+ // El APK trae los logos verificados en assets/brands. El almacenamiento
+ // conserva imágenes obtenidas en sesiones previas y el texto siempre es local.
+ const cached=saved(key);
+ const packaged=item.slug?`assets/brands/${key}.svg`:'';
+ const network=(item.slug&&root.navigator?.onLine!==false)?`https://cdn.simpleicons.org/${encodeURIComponent(item.slug)}`:'';
+ const imageUrl=cached||packaged;
+ const fallback=(!cached&&network)?` data-sba-fallback="${esc(network)}"`:'';
+ return `<span class="sba-logo" style="--sba-bg:${item.color};--sba-ink:${item.ink||'#fff'}" aria-label="${esc(label||key)}"><span class="sba-mark">${markup}</span>${imageUrl?`<img alt="" draggable="false" data-sba-key="${esc(key)}" src="${esc(imageUrl)}"${fallback} onload="this.classList.add('sba-ready')" onerror="if(this.dataset.sbaFallback&&!this.dataset.retried&&navigator.onLine!==false){this.dataset.retried='1';this.src=this.dataset.sbaFallback}else this.remove()">`:''}</span>`;
 }
 function bankLogo(input,name=''){const key=bankKey(typeof input==='object'?input:{bankDomain:input,name});return icon(key,name||input?.name||key)}
-function subscriptionLogo(name){return icon(subscriptionKey(name),name)}
+function subscriptionLogo(subscription){
+ const name=typeof subscription==='object'?(subscription?.name||''):subscription;
+ const preferred=typeof subscription==='object'&&Object.prototype.hasOwnProperty.call(assets,subscription?.smBrandKey)?subscription.smBrandKey:null;
+ return icon(preferred||subscriptionKey(name),name);
+}
+
 const inFlight=new Set();
 async function cacheIcon(key){const item=assets[key];if(!item?.slug||saved(key)||inFlight.has(key)||root.navigator?.onLine===false)return;
  let storage;try{storage=root.localStorage}catch{return}
