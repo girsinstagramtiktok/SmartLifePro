@@ -27,6 +27,8 @@ on:
       - 'smarty-pro-addons.js'
       - 'shopping.js'
       - 'bank-bridge.js'
+      - 'smarty-bank-source.js'
+      - 'smarty-bank-source-tests.cjs'
       - 'smarty-daily-spending.js'
       - 'smarty-daily-spending.css'
       - 'smarty-money-*.js'
@@ -83,6 +85,7 @@ jobs:
 
           TZ=America/Sao_Paulo node smarty-tests.cjs
           TZ=America/Sao_Paulo node notification-tests.cjs
+          TZ=America/Sao_Paulo node smarty-bank-source-tests.cjs
           TZ=America/Sao_Paulo node bank-recovery-tests.cjs
           TZ=America/Sao_Paulo node daily-spending-tests.cjs
           TZ=America/Sao_Paulo node smarty-money-tests.cjs
@@ -95,7 +98,8 @@ jobs:
           node quick-ota-tests.cjs
 
           cp index.html style.css bento-home.css bento-global.css smarty-daily-spending.css smarty-money.css smarty-wallet.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js smarty-daily-spending.js smarty-money-core.js smarty-investment-catalog.js smarty-brand-assets.js smarty-money-ui.js smarty-wallet.js smarty-fixed-billing.js smarty-list-reminders.js smarty-settings-modern.js www/
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js smarty-bank-source.js smarty-daily-spending.js smarty-money-core.js smarty-investment-catalog.js smarty-brand-assets.js smarty-money-ui.js smarty-wallet.js smarty-fixed-billing.js smarty-list-reminders.js smarty-settings-modern.js www/
+          node tools/prepare-brand-icons.cjs www
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
           # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
@@ -314,6 +318,7 @@ jobs:
             "  }",
             "",
             "  window.getSmartBrandBadge = function(name) {",
+            "    if (window.SmartyBrandAssets?.subscriptionLogo) return window.SmartyBrandAssets.subscriptionLogo(name);",
             "    const n = String(name || '').toLowerCase().trim();",
             "    const brands = [",
             "      { m: ['netflix'], svg: '<svg viewBox=\"0 0 48 48\"><rect width=\"48\" height=\"48\" rx=\"10\" fill=\"#000\"/><path fill=\"#E50914\" d=\"M14 8h6l8 21V8h6v32h-6l-8-21v21h-6V8z\"/></svg>' },",
@@ -437,13 +442,14 @@ jobs:
             "      subs.forEach(sub => {",
             "        totalCost += parseFloat(sub.cost)||0;",
             "        const div = document.createElement('div'); div.className = 'glass-card item-row';",
-            "        div.innerHTML = window.getSmartBrandBadge(sub.name) + '<div style=\"flex:1\"><div style=\"font-weight:700;\">' + sub.name + '</div><div style=\"font-size:12px; opacity:0.7;\">' + UI.t('sub_charge_day') + ' ' + sub.day + '</div></div><div style=\"font-weight:800; margin-right:15px;\">' + UI.formatMoney(sub.cost) + '</div><button class=\"icon-btn\" style=\"color:var(--danger); width:36px; height:36px;\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"3 6 5 6 21 6\"></polyline><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path></svg></button>';",
+            "        div.innerHTML = window.getSmartBrandBadge(sub) + '<div style=\"flex:1\"><div style=\"font-weight:700;\">' + sub.name + '</div><div style=\"font-size:12px; opacity:0.7;\">' + UI.t('sub_charge_day') + ' ' + sub.day + '</div></div><div style=\"font-weight:800; margin-right:15px;\">' + UI.formatMoney(sub.cost) + '</div><button class=\"icon-btn\" style=\"color:var(--danger); width:36px; height:36px;\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"3 6 5 6 21 6\"></polyline><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path></svg></button>';",
             "        div.querySelector('button').onclick = () => this.deleteSub(sub.id); container.appendChild(div);",
             "      });",
             "      const tDiv = document.createElement('div'); tDiv.className = 'glass-card';",
             "      tDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:15px; margin-top:15px; border:2px solid var(--primary);';",
             "      tDiv.innerHTML = '<div style=\"font-weight:800;\">Total Mensual</div><div style=\"font-size:18px; font-weight:900; color:var(--primary);\">' + UI.formatMoney(totalCost) + '</div>';",
             "      container.appendChild(tDiv);",
+            "      window.SmartyFixedBilling?.decorateList?.();",
             "    };",
             "",
             "    Finance.renderFilterChips = function() {",
