@@ -1587,6 +1587,8 @@ const Assistant = {
 
         const productHistory = this.relevantProductHistory(question);
         const listContext = /(lista|comprar|compra|mercado|supermerc|falta|shopping)/.test(q) ? this.activeListsSummary() : 'omitido por no ser relevante a la pregunta';
+        // Acceso de solo lectura a cuentas, crédito y ahorros; solo si la pregunta lo necesita.
+        const walletContext = window.SmartyWallet?.advisorContext?.(question) || '';
 
         return `Eres Smarty, el asesor financiero personal de Smart Life Pro. Responde usando SOLO los datos suministrados; si falta un dato, dilo claramente y no lo inventes.
 
@@ -1614,6 +1616,9 @@ ${listContext}
 
 HISTORIAL DE PRECIOS RELEVANTE
 ${productHistory || 'omitido por no ser relevante a la pregunta'}
+
+CUENTAS, TARJETAS, AHORROS E INGRESOS (solo cuando sean relevantes)
+${walletContext || 'No solicitado en esta pregunta.'}
 
 REGLAS IMPORTANTES
 1. Los historicos mensuales anteriores incluyen gastos registrados, cuotas aplicables y compras finalizadas. Las suscripciones actuales no tienen fecha de alta historica en la base, por lo que NO debes inventar que existian en meses anteriores.

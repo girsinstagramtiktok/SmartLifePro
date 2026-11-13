@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="bento-home.css">
     <link rel="stylesheet" href="bento-global.css">
     <link rel="stylesheet" href="smarty-money.css">
+    <link rel="stylesheet" href="smarty-wallet.css">
     <link rel="stylesheet" href="smarty-daily-spending.css">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="logo.png">
@@ -80,20 +81,12 @@
                     <span data-bento-t="totalBudget">Presupuesto total</span>
                     <strong><span id="budget-limit">R$0,00</span><span aria-hidden="true"> ↗</span></strong>
                 </button>
-                <section class="bento-chart" aria-label="Evolución del gasto">
+                <section class="bento-wallet" aria-label="Acceso a cuentas y tarjetas">
                     <header class="bento-section-head">
-                        <h2 data-bento-t="chartTitle">Así va tu gasto</h2>
-                        <div class="bento-period" role="group" aria-label="Periodo del gráfico">
-                            <button id="bento-month-btn" data-bento-period="month" aria-pressed="true" data-bento-t="month">Mes</button>
-                            <span aria-hidden="true">/</span>
-                            <button id="bento-week-btn" data-bento-period="week" aria-pressed="false" data-bento-t="week">Semana</button>
-                        </div>
+                        <h2 id="bento-wallet-title">Mis tarjetas</h2>
+                        <button type="button" class="bento-see-all" id="bento-wallet-see-all" data-sw-all>Ver todas ↗</button>
                     </header>
-                    <div id="bento-chart-plot" class="bento-chart-plot" role="img" aria-label="Gasto real frente a ritmo ideal"></div>
-                    <div class="bento-chart-bottom">
-                        <span><span data-bento-t="real">Gasto real</span> <span class="bento-legend-line">—</span> <span data-bento-t="ideal">Ritmo ideal</span></span>
-                        <span id="bento-pace-badge" class="bento-pace-badge">R$0</span>
-                    </div>
+                    <div class="bento-wallet-items" id="bento-wallet-items" role="group" aria-label="Cuentas y tarjetas disponibles"></div>
                 </section>
                 <section class="bento-categories" aria-label="Categorías principales">
                     <header class="bento-section-head">
@@ -530,6 +523,7 @@
     <script src="smarty-daily-spending.js"></script>
     <script src="smarty-money-core.js"></script>
     <script src="smarty-money-ui.js"></script>
+    <script src="smarty-wallet.js"></script>
     <script src="smarty-list-reminders.js"></script>
     <script src="smarty-settings-modern.js"></script>
     
