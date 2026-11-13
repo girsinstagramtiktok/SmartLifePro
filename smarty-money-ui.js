@@ -15,7 +15,8 @@ const options=(elements,selected='',empty='Seleccionar...')=>`<option value="">$
 // Débito y crédito son fuentes distintas, incluso si pertenecen al mismo banco.
 const sourceOptions=(selected='')=>`<option value="">${t('No asignar todavía','Não atribuir','Not assigned')}</option>`+s().accounts.map(x=>`<option value="account:${esc(x.id)}" ${selected===`account:${x.id}`?'selected':''}>${esc(x.name)} · ${t('Débito / saldo','Débito / saldo','Debit / balance')}</option>`).join('')+s().cards.map(x=>`<option value="card:${esc(x.id)}" ${selected===`card:${x.id}`?'selected':''}>${esc(x.name)} · ${t('Crédito / límite','Crédito / limite','Credit / limit')}</option>`).join('');
 const parseSource=v=>{const m=/^(account|card):(sm_[a-z0-9_]+)$/.exec(v||'');return m?{type:m[1],id:m[2]}:null};
-function logo(domain,name){const known=Object.values(brandDomains).includes(domain)&&domain;return `<span class="slp-bank-logo">${known?`<img loading="lazy" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64" alt="" onerror="this.remove()">`:''}<span>${esc((name||'?').slice(0,1).toUpperCase())}</span></span>`}
+function logo(domain,name){return window.SmartyBrandAssets?.bankLogo?.(domain,name)||`<span class="slp-bank-logo"><span>${esc((name||'?').slice(0,1).toUpperCase())}</span></span>`}
+
 const bankPalette={
  'nubank.com.br':['#7d3df2','#5f2bcc','#efe9ff','#ffffff'],
  'inter.co':['#ff7a1a','#d95d00','#fff1e7','#ffffff'],
@@ -59,10 +60,7 @@ html+=`<h3 class="slp-money-heading">${t('Ingresos esperados','Receitas prevista
 if(!st.incomes.length)html+=box(`<p>${t('Añade ingresos recurrentes o puntuales con fecha estimada.','Adicione receitas recorrentes com data prevista.','Add recurring income with expected dates.')}</p>`);
 for(const i of st.incomes){const p=C.period(),received=C.incomeReceived(st,i.id,p);const win=C.expectedWindow(i,p,st.preferences.extraHolidays||[]),dates=win?win.start===win.end?win.end:`${win.start} – ${win.end}`:t('Variable','Variável','Variable');html+=box(`<div class="slp-money-top"><span class="slp-money-grow"><strong>${esc(i.name)}</strong><small>${esc(dates)} · ${received?t('Recibido','Recebido','Received'):t('Previsto, no sumado','Previsto, não somado','Expected, not credited')}</small></span><strong>${money(i.amountCents)}</strong></div>${received?'':btn(t('Confirmar ingreso','Confirmar receita','Confirm income'),'confirm:'+i.id)}`)}
 html+=btn(t('Añadir feriados locales','Adicionar feriados locais','Additional local holidays'),'holidays');
-html+=`<h3 class="slp-money-heading">${t('Origen de los gastos fijos','Origem das despesas fixas','Fixed expense source')}</h3><p class="slp-money-help">${t('Solo afecta los saldos de cuentas o tarjetas. El presupuesto existente no se recalcula.','Só atualiza os saldos. O orçamento não é recalculado.','Only updates balances. The existing budget is unchanged.')}</p>`;
-for(const sub of d().store.subscriptions||[]){const cur=st.fixedSources[sub.id],selected=cur?`${cur.sourceType}:${cur.sourceId}`:'';html+=box(`<div class="slp-money-top"><span class="slp-money-grow"><strong>${esc(sub.name)}</strong><small>${money(C.cents(sub.cost))} · ${t('día','dia','day')} ${Number(sub.day)}</small></span></div><select class="slp-select" data-fixed-sub="${esc(sub.id)}">${sourceOptions(selected)}</select>`)}
 container.innerHTML=html;
-container.querySelectorAll('select[data-fixed-sub]').forEach(sel=>sel.addEventListener('change',()=>{const sub=d().store.subscriptions.find(v=>v.id===sel.dataset.fixedSub);const p=parseSource(sel.value);if(!p)delete s().fixedSources[sub.id];else C.linkFixedSource(s(),sub,p);save();}));
 }
 function renderSavings(){
  const container=$('finance-content-savings');if(!container)return;

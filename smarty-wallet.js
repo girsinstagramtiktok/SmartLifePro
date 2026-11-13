@@ -32,10 +32,8 @@
   }
   function style(b){return `--sw-a:${b.background};--sw-b:${b.background2};--sw-fg:${b.fg}`}
   function logo(b){
-    const word=esc(b.mark);
-    const base=`<span class="sw-banklogo sw-logo-${b.id}" aria-hidden="true"><span class="sw-banklogo-fallback">${word}</span>`;
-    // Solo usa dominios reconocidos. El fallback permanece visible sin conexión.
-    return base+(b.domain?`<img loading="lazy" alt="" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(b.domain)}&sz=128" onerror="this.remove()">`:'')+'</span>';
+    if(root.SmartyBrandAssets?.bankLogo)return root.SmartyBrandAssets.bankLogo(b,b.name);
+    return `<span class="sw-banklogo sw-logo-${esc(b.id)}"><span class="sw-banklogo-fallback">${esc(b.mark)}</span></span>`;
   }
   const kind=(type,entry)=>type==='card'?tx('Crédito','Crédito','Credit'):entry?.type==='cash'?tx('Efectivo','Dinheiro','Cash'):entry?.type==='wallet'?tx('Billetera','Carteira','Wallet'):tx('Cuenta · débito','Conta · débito','Account · debit');
   function allItems(st){return [...st.accounts.map(x=>({type:'account',entry:x})),...st.cards.map(x=>({type:'card',entry:x}))]}

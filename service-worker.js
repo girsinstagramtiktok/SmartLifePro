@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v23.3-dual-debit-credit-banks'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v23.4-fixed-billing-icons'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -28,6 +28,8 @@ const ASSETS_TO_CACHE = [
   './smarty-money-ui.js',
   './smarty-money.css',
   './smarty-wallet.js',
+  './smarty-brand-assets.js',
+  './smarty-fixed-billing.js',
   './smarty-wallet.css',
 
   // --- IMÁGENES DE FONDO ---
