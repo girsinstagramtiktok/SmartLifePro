@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v22.5-financial-compact'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v23.1-editable-rates'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -23,6 +23,12 @@ const ASSETS_TO_CACHE = [
   './camera-bridge.js',
   './ota-config.js',
   './ota-client.js',
+  './smarty-money-core.js',
+  './smarty-investment-catalog.js',
+  './smarty-money-ui.js',
+  './smarty-money.css',
+  './smarty-wallet.js',
+  './smarty-wallet.css',
 
   // --- IMÁGENES DE FONDO ---
   // --- IMÁGENES DE LA MASCOTA ---

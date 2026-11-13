@@ -59,3 +59,12 @@
 #view-settings .slp-favorite-dots{display:flex;align-items:center;gap:0}.slp-favorite-dots>span{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.05);margin-right:-2px}
 @media(max-width:370px){.slp-money-hero{gap:7px}.slp-money-hero .slp-money-pair{padding:10px}.slp-money-pair strong{font-size:15px}.slp-money-dialog{padding:14px}.slp-form-field{grid-column:1/-1}}
 @media(prefers-reduced-motion:reduce){.slp-action,.slp-chevron{transition:none}}
+/* Productos brasileños y edición de datos. Solo afecta módulos nuevos. */
+.slp-market-status{background:var(--b-budget,#edf4ef);border:1px solid rgba(92,150,125,.13);color:var(--b-ink,#1c3d34);padding:9px 12px;border-radius:14px;font-size:11px;font-weight:750;line-height:1.5}
+.slp-market-status small{display:block;font-size:10px;color:var(--b-muted,#76847b);font-weight:500}
+.slp-catalog-note,.slp-money-fieldnote{grid-column:1/-1;margin:0;color:var(--b-muted,#71887e);font-size:11px;line-height:1.45}
+.slp-catalog-note{padding:9px 11px;border-radius:13px;background:var(--b-budget,#eef4ee)}
+.slp-field-hidden{display:none!important}
+.slp-inline-check{flex-direction:row;align-items:center;padding:8px 0}
+.slp-inline-check input{width:18px;height:18px;flex:0 0 18px;accent-color:var(--b-nav,#24604d)}
+.slp-inline-check span{font-size:11px;line-height:1.3}

@@ -59,16 +59,131 @@ function expectedWindow(income,p,customHolidays=[]){const [y,m]=p.split('-').map
 function createIncome(s,{name,amount,accountId,rule='last_business',businessDay=5,day=1,oneTime=false}){find(s.accounts,accountId);const amt=requireAmount(amount);if(!String(name||'').trim())throw Error('Escribe el ingreso');const inc={id:id(),name:String(name).trim().slice(0,80),amountCents:amt,accountId,rule,businessDay:Math.min(20,Math.max(1,+businessDay||5)),day:Math.min(31,Math.max(1,+day||1)),oneTime:!!oneTime,createdAt:today()};s.incomes.push(inc);return inc}
 function incomeReceived(s,incomeId,p=period()){return s.movements.some(m=>m.key===`income:${incomeId}:${p}`)}
 function confirmIncome(s,incomeId,amount,date=today(),forPeriod=period(date)){const inc=find(s.incomes,incomeId);if(incomeReceived(s,incomeId,forPeriod))throw Error('Este ingreso ya fue confirmado');if(inc.oneTime&&s.movements.some(m=>m.sourceId===inc.id&&m.kind==='income'))throw Error('Ingreso puntual ya confirmado');return createMovement(s,{kind:'income',amount,accountId:inc.accountId,sourceId:inc.id,date,key:`income:${incomeId}:${forPeriod}`,note:inc.name})}
-function createSaving(s,{name,principal,rateType='annual',annualRate=0,cdiPercent=100,cdiAnnual=0}){if(!String(name||'').trim())throw Error('Escribe el ahorro');const saving={id:id(),name:String(name).trim().slice(0,80),principalCents:cents(principal),referenceDate:today(),rateType,annualRate:+annualRate||0,cdiPercent:+cdiPercent||100,cdiAnnual:+cdiAnnual||0,entries:[]};s.savings.push(saving);return saving}
-function savingAnnualRate(v){return v.rateType==='cdi'?(v.cdiAnnual*v.cdiPercent/100):v.annualRate}
+function updateAccount(s,accountId,fields){
+ const a=find(s.accounts,accountId);
+ const name=String(fields.name??a.name).trim();if(!name)throw Error('Escribe el nombre de la cuenta');
+ const type=String(fields.type??a.type);if(!['bank','wallet','cash'].includes(type))throw Error('Tipo de cuenta inválido');
+ const bankDomain=String(fields.bankDomain??a.bankDomain??'').slice(0,120);
+ const openingCents=fields.openingBalance===undefined?a.openingCents:cents(fields.openingBalance);
+ Object.assign(a,{name:name.slice(0,80),type,bankDomain,openingCents});return a;
+}
+function updateCard(s,cardId,fields){
+ const c=find(s.cards,cardId),name=String(fields.name??c.name).trim();if(!name)throw Error('Escribe el nombre de la tarjeta');
+ const limitCents=fields.limit===undefined?c.limitCents:requireAmount(fields.limit);
+ const openingUsedCents=fields.openingUsed===undefined?c.openingUsedCents:cents(fields.openingUsed);
+ if(openingUsedCents<0)throw Error('Crédito utilizado inicial inválido');
+ const cutoffDay=Number(fields.cutoffDay??c.cutoffDay),dueDay=Number(fields.dueDay??c.dueDay);
+ if(![cutoffDay,dueDay].every(v=>Number.isInteger(v)&&v>=1&&v<=31))throw Error('Días de factura inválidos');
+ const noticeDays=Number(fields.noticeDays??c.noticeDays);
+ if(!Number.isInteger(noticeDays)||noticeDays<0||noticeDays>15)throw Error('Aviso inválido');
+ const payAccountId=fields.payAccountId===undefined?c.payAccountId:fields.payAccountId;
+ if(payAccountId&&!s.accounts.some(x=>x.id===payAccountId))throw Error('Cuenta de pago inexistente');
+ Object.assign(c,{name:name.slice(0,80),bankDomain:String(fields.bankDomain??c.bankDomain??''),limitCents,openingUsedCents,cutoffDay,dueDay,noticeDays,payAccountId});
+ return c;
+}
+function updateIncome(s,incomeId,fields){
+ const i=find(s.incomes,incomeId),name=String(fields.name??i.name).trim();if(!name)throw Error('Escribe el nombre del ingreso');
+ const amountCents=fields.amount===undefined?i.amountCents:requireAmount(fields.amount);
+ const accountId=fields.accountId??i.accountId;find(s.accounts,accountId);
+ const rule=String(fields.rule??i.rule);if(!['last_business','upto_business','day','once'].includes(rule))throw Error('Regla de fecha inválida');
+ const businessDay=Number(fields.businessDay??i.businessDay??5),day=Number(fields.day??i.day??5);
+ if(!Number.isInteger(day)||day<1||day>31||!Number.isInteger(businessDay)||businessDay<1||businessDay>20)throw Error('Día inválido');
+ Object.assign(i,{name:name.slice(0,80),amountCents,accountId,rule,oneTime:rule==='once',day,businessDay});return i;
+}
+function createSaving(s,{name,principal,rateType='annual',annualRate=0,cdiPercent=100,cdiAnnual=0,selicAnnual=0,trMonthly=0,productId='',autoMarket=false,capCents=0,excessPercent=null,referenceDate=today(),rateAsOf=''}){
+ if(!String(name||'').trim())throw Error('Escribe el ahorro');const principalCents=cents(principal);
+ if(principalCents<0)throw Error('Saldo inicial de ahorro inválido');parseDay(referenceDate);
+ const saving={id:id(),name:String(name).trim().slice(0,80),principalCents,referenceDate,rateType,annualRate:0,cdiPercent:0,cdiAnnual:0,selicAnnual:0,trMonthly:0,productId,autoMarket:!!autoMarket,rateAsOf,
+ capCents,excessPercent,entries:[]};
+ updateSavingRates(saving,{rateType,annualRate,cdiPercent,cdiAnnual,selicAnnual,trMonthly,capCents,excessPercent});
+ s.savings.push(saving);return saving;
+}
+function updateSavingRates(saving,fields){
+ const rateType=String(fields.rateType??saving.rateType??'annual');if(!['cdi','annual','poupanca'].includes(rateType))throw Error('Tipo de rendimiento inválido');
+ const asNumber=(v,fallback,label,max=300)=>{const n=Number(v??fallback??0);if(!Number.isFinite(n)||n<0||n>max)throw Error(`${label} inválido`);return n};
+ const annualRate=asNumber(fields.annualRate,saving.annualRate,'Tasa anual');
+ const cdiPercent=asNumber(fields.cdiPercent,saving.cdiPercent,'Porcentaje CDI',500);
+ const cdiAnnual=asNumber(fields.cdiAnnual,saving.cdiAnnual,'CDI anual',80);
+ const selicAnnual=asNumber(fields.selicAnnual,saving.selicAnnual,'Selic anual',80);
+ const trMonthly=asNumber(fields.trMonthly,saving.trMonthly,'TR mensual',20);
+ const capCents=fields.capCents===undefined?(saving.capCents||0):Number(fields.capCents);
+ const excessPercent=fields.excessPercent===undefined?(saving.excessPercent??null):(fields.excessPercent===null||fields.excessPercent===''?null:asNumber(fields.excessPercent,null,'CDI excedente',500));
+ if(!Number.isSafeInteger(capCents)||capCents<0)throw Error('Tope inválido');
+ Object.assign(saving,{rateType,annualRate,cdiPercent,cdiAnnual,selicAnnual,trMonthly,capCents,excessPercent});
+ return saving;
+}
+function updateSaving(s,savingId,fields){
+ const v=find(s.savings,savingId),name=String(fields.name??v.name).trim();if(!name)throw Error('Escribe el nombre del ahorro');
+ const principalCents=fields.principal===undefined?v.principalCents:cents(fields.principal);
+ if(principalCents<0)throw Error('Saldo inicial inválido');
+ const referenceDate=fields.referenceDate??v.referenceDate;parseDay(referenceDate);
+ const copy={...v};updateSavingRates(copy,fields);
+ Object.assign(v,copy,{name:name.slice(0,80),principalCents,referenceDate,
+ productId:String(fields.productId??v.productId??''),autoMarket:fields.autoMarket===undefined?!!v.autoMarket:fields.autoMarket===true||fields.autoMarket==='true'||fields.autoMarket==='on',
+ rateAsOf:String(fields.rateAsOf??v.rateAsOf??'')});return v;
+}
+function applyMarketRates(s,rates){
+ for(const v of s.savings){if(v.autoMarket===false)continue;
+  if(v.rateType==='cdi'&&Number.isFinite(+rates.cdiAnnual))v.cdiAnnual=+rates.cdiAnnual;
+  if(v.rateType==='poupanca'){
+   if(Number.isFinite(+rates.selicAnnual))v.selicAnnual=+rates.selicAnnual;
+   if(Number.isFinite(+rates.trMonthly))v.trMonthly=+rates.trMonthly;
+  }
+  v.rateAsOf=rates.asOf||v.rateAsOf;
+ }
+}
+function savingAnnualRate(v){return v.rateType==='cdi'?((+v.cdiAnnual||0)*(+v.cdiPercent||0)/100):(+v.annualRate||0)}
 function savingsProjection(saving,date=today()){
- const r=savingAnnualRate(saving)/100;if(r<=-1||!Number.isFinite(r))return {grossCents:saving.principalCents,interestCents:0};
+ parseDay(date);const start=saving.referenceDate;
+ const entries=(saving.entries||[]).filter(m=>m.date<=date).sort((a,b)=>a.date.localeCompare(b.date));
+ const principal=saving.principalCents+entries.reduce((sum,m)=>sum+m.amountCents,0);
+ if(date<start)return {grossCents:saving.principalCents,interestCents:0,principalCents:saving.principalCents,needsRate:false};
+ if(date===start)return {grossCents:principal,interestCents:0,principalCents:principal,needsRate:false};
  const days=(a,b)=>Math.max(0,(parseDay(b)-parseDay(a))/86400000);
- const compound=(v,start)=>v*Math.pow(1+r,days(start,date)/365);
- let gross=compound(saving.principalCents,saving.referenceDate);
- for(const m of saving.entries||[])if(m.date<=date)gross+=compound(m.amountCents,m.date);
- const principal=saving.principalCents+(saving.entries||[]).filter(m=>m.date<=date).reduce((sum,m)=>sum+m.amountCents,0);
- return {grossCents:Math.round(gross),interestCents:Math.round(gross)-principal,principalCents:principal};
+ const needsRate=(saving.rateType==='cdi'&&(!saving.cdiAnnual||!saving.cdiPercent))||(saving.rateType==='poupanca'&&(!saving.selicAnnual))||(saving.rateType==='annual'&&saving.productId&&saving.productId!=='personalizado'&&!saving.annualRate);
+ if(needsRate)return {grossCents:principal,interestCents:0,principalCents:principal,needsRate:true};
+ let gross=saving.principalCents;
+ if(saving.rateType==='cdi'){
+  // CDI diario estimado con tasa anual actual, calendario de 252 días hábiles.
+  // El cálculo no reconstruye tasas pasadas ni impuestos; el valor es una proyección.
+  const dbase=Math.pow(1+saving.cdiAnnual/100,1/252)-1;
+  const cap=saving.capCents>0?saving.capCents:0;
+  let cursor=parseDay(start),idx=0;
+  const finish=parseDay(date),holidays=new Map();
+  while(cursor<finish){cursor=addDays(cursor,1);const dt=localDate(cursor);
+   while(idx<entries.length&&entries[idx].date<=dt){gross+=entries[idx].amountCents;idx++}
+   const year=cursor.getFullYear();if(!holidays.has(year))holidays.set(year,brazilBankHolidays(year));
+   if(!isBusinessDay(cursor,holidays.get(year)))continue;
+   const lower=cap?Math.min(Math.max(gross,0),cap):Math.max(gross,0);
+   const excess=cap?Math.max(0,gross-cap):0;
+   gross+=lower*dbase*(saving.cdiPercent/100)+excess*dbase*(saving.excessPercent==null?0:Number(saving.excessPercent)/100);
+  }
+ }else if(saving.rateType==='poupanca'){
+  // Estimación: aplica el último valor público de TR y Selic en cada aniversario.
+  // Con retiros, la entidad puede aplicar el menor saldo del período.
+  const base=saving.selicAnnual>8.5?.005:Math.pow(1+saving.selicAnnual*0.7/100,1/12)-1;
+  const monthly=(1+base)*(1+(+saving.trMonthly||0)/100)-1;
+  const lots=[{amount:saving.principalCents,anchor:start,credited:0}];
+  // Cada depósito mantiene su día de aniversario. La TR futura es aproximada;
+  // para retiros se usa un cálculo FIFO de lotes que puede diferir del banco.
+  const run=(cutoff)=>{for(const lot of lots){if(lot.amount<=0)continue;
+    const a=parseDay(lot.anchor),b=parseDay(cutoff);if(b<=a)continue;
+    const anniversaryDay=a.getDate()>=29?1:a.getDate();
+    let ticks=0,anniv=new Date(a.getFullYear(),a.getMonth()+1,anniversaryDay,12);
+    while(anniv<=b&&ticks<1200){ticks++;const mo=anniv.getMonth(),yr=anniv.getFullYear();anniv=new Date(yr,mo+1,anniversaryDay,12)}
+    if(ticks>lot.credited){lot.amount*=Math.pow(1+monthly,ticks-lot.credited);lot.credited=ticks;}
+  }};
+  for(const e of entries){run(e.date);if(e.amountCents>=0)lots.push({amount:e.amountCents,anchor:e.date,credited:0});else {let toWithdraw=-e.amountCents;for(const lot of lots){const n=Math.min(lot.amount,toWithdraw);lot.amount-=n;toWithdraw-=n;if(toWithdraw<=0)break}}}
+  run(date);gross=lots.reduce((s,l)=>s+l.amount,0);
+ }else{
+  const r=savingAnnualRate(saving)/100;
+  if(r<=-1||!Number.isFinite(r))return {grossCents:principal,interestCents:0,principalCents:principal,needsRate:true};
+  const compound=(v,from)=>v*Math.pow(1+r,days(from,date)/365);
+  gross=compound(saving.principalCents,start);
+  for(const m of entries)gross+=compound(m.amountCents,m.date);
+ }
+ gross=Math.max(0,gross);
+ return {grossCents:Math.round(gross),interestCents:Math.round(gross)-principal,principalCents:principal,needsRate:false};
 }
 function savingDeposit(s,savingId,accountId,amount,date=today()){
  const saving=find(s.savings,savingId);const c=requireAmount(amount);find(s.accounts,accountId);
@@ -77,5 +192,5 @@ function savingDeposit(s,savingId,accountId,amount,date=today()){
 }
 function savingWithdrawal(s,savingId,accountId,amount,date=today()){const v=find(s.savings,savingId);find(s.accounts,accountId);const c=requireAmount(amount);if(c>savingsProjection(v,date).grossCents)throw Error('El retiro supera el ahorro estimado');const m=createMovement(s,{kind:'saving-withdrawal',amount,accountId,date,note:`Retiro del ahorro: ${v.name}`});v.entries.push({id:m.id,date,amountCents:-c});return m}
 function reconcileSaving(s,savingId,balance,date=today()){const v=find(s.savings,savingId);v.principalCents=cents(balance);v.referenceDate=date;v.entries=[];return v}
-return {state,cents,fromCents,localDate,today,period,createAccount,createCard,createMovement,accountBalance,cardUsed,cardAvailable,payCard,transfer,applyExpense,unlinkExpense,linkFixedSource,applyFixedDue,brazilBankHolidays,isBusinessDay,nthBusinessDay,lastBusinessDay,expectedWindow,createIncome,incomeReceived,confirmIncome,createSaving,savingAnnualRate,savingsProjection,savingDeposit,savingWithdrawal,reconcileSaving};
+return {state,cents,fromCents,localDate,today,period,createAccount,createCard,updateAccount,updateCard,updateIncome,updateSaving,applyMarketRates,createMovement,accountBalance,cardUsed,cardAvailable,payCard,transfer,applyExpense,unlinkExpense,linkFixedSource,applyFixedDue,brazilBankHolidays,isBusinessDay,nthBusinessDay,lastBusinessDay,expectedWindow,createIncome,incomeReceived,confirmIncome,createSaving,savingAnnualRate,savingsProjection,savingDeposit,savingWithdrawal,reconcileSaving};
 });
