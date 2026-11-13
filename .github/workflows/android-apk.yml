@@ -36,6 +36,9 @@ on:
       - 'smarty-wallet.css'
       - 'smarty-wallet.js'
       - 'smarty-wallet-tests.cjs'
+      - 'smarty-brand-assets.js'
+      - 'smarty-fixed-billing.js'
+      - 'smarty-fixed-billing-tests.cjs'
       - 'smarty-list-reminders.js'
       - 'smarty-settings-modern.js'
       - 'smarty-money-tests.cjs'
@@ -85,13 +88,14 @@ jobs:
           TZ=America/Sao_Paulo node smarty-money-tests.cjs
           TZ=America/Sao_Paulo node smarty-investment-tests.cjs
           TZ=America/Sao_Paulo node smarty-wallet-tests.cjs
+          TZ=America/Sao_Paulo node smarty-fixed-billing-tests.cjs
           node biometric-tests.cjs
           node updater-tests.cjs
           node backup-tests.cjs
           node quick-ota-tests.cjs
 
           cp index.html style.css bento-home.css bento-global.css smarty-daily-spending.css smarty-money.css smarty-wallet.css manifest.json logo.png www/ 2>/dev/null || true
-          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js smarty-daily-spending.js smarty-money-core.js smarty-investment-catalog.js smarty-money-ui.js smarty-wallet.js smarty-list-reminders.js smarty-settings-modern.js www/
+          cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js smarty-daily-spending.js smarty-money-core.js smarty-investment-catalog.js smarty-brand-assets.js smarty-money-ui.js smarty-wallet.js smarty-fixed-billing.js smarty-list-reminders.js smarty-settings-modern.js www/
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
           if [ -d "skins" ]; then cp -r skins www/; fi
           # Mantener localmente las funciones de promedios y topes; el diseño Bento vive en bento-home.*.
