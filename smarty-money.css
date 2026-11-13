@@ -7,6 +7,19 @@
 .slp-money-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
 .slp-action{border:1px solid rgba(90,135,122,.15);cursor:pointer;padding:8px 12px;font-size:12px;font-weight:750;border-radius:13px;font-family:inherit;transition:transform .14s ease,opacity .14s ease}
 .slp-action:active{transform:scale(.97)}.slp-quiet{background:var(--b-budget,#e3efe9);color:var(--b-ink,#163c33)}.slp-primary{background:var(--b-nav,#17463b);color:var(--b-nav-ink,#fff)}
+
+.slp-wallet-stack{display:flex;flex-direction:column;gap:0;margin:10px 0 2px}
+.slp-wallet-card{position:relative;overflow:hidden;border-radius:24px;padding:15px 16px 14px;margin:0;background:linear-gradient(135deg,var(--slp-card-a),var(--slp-card-b));color:var(--slp-card-ink);box-shadow:0 12px 28px rgba(22,45,38,.12)}
+.slp-wallet-card+.slp-wallet-card{margin-top:-18px}
+.slp-wallet-card::after{content:'';position:absolute;right:-24px;top:-18px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.10)}
+.slp-wallet-card-top,.slp-wallet-card-bottom{position:relative;z-index:1;display:flex;align-items:center;gap:10px}
+.slp-wallet-card-top{margin-bottom:18px}.slp-wallet-card-grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.slp-wallet-card-grow strong{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.slp-wallet-card-grow small{font-size:11px;opacity:.82}
+.slp-wallet-chip{font-size:10px;font-weight:800;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);white-space:nowrap}
+.slp-wallet-card .slp-bank-logo{background:rgba(255,255,255,.12);color:#fff}.slp-wallet-card .slp-bank-logo img{background:#fff}
+.slp-wallet-amount{position:relative;z-index:1;font-size:27px;line-height:1.05;font-weight:900;letter-spacing:-.03em;margin-bottom:14px}
+.slp-wallet-card-bottom{justify-content:space-between;align-items:flex-end;gap:12px}.slp-wallet-card-bottom small{font-size:10px;line-height:1.35;max-width:58%;opacity:.82}
+.slp-wallet-inline-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.slp-wallet-btn{background:rgba(255,255,255,.16)!important;color:#fff!important;border-color:rgba(255,255,255,.14)!important}
+@media(max-width:370px){.slp-wallet-card{padding:14px}.slp-wallet-amount{font-size:23px}.slp-wallet-card-bottom{align-items:stretch;flex-direction:column}.slp-wallet-card-bottom small{max-width:none}.slp-wallet-inline-actions{justify-content:flex-start}}
 .slp-money-heading{font-size:15px;margin:18px 2px 9px;color:var(--b-ink,#163c33);font-weight:800}
 .slp-money-tile{background:var(--b-chart,#fff);border:1px solid rgba(105,147,133,.1);border-radius:19px;padding:13px 14px;margin:9px 0;box-shadow:0 4px 17px rgba(19,66,52,.035)}
 .slp-money-tile p,.slp-money-help{font-size:12px;line-height:1.45;color:var(--b-muted,#73877f)}

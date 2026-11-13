@@ -14,6 +14,24 @@ const options=(elements,selected='',empty='Seleccionar...')=>`<option value="">$
 const sourceOptions=(selected='')=>`<option value="">${t('No asignar todavía','Não atribuir','Not assigned')}</option>`+s().accounts.map(x=>`<option value="account:${esc(x.id)}" ${selected===`account:${x.id}`?'selected':''}>${esc(x.name)}</option>`).join('')+s().cards.map(x=>`<option value="card:${esc(x.id)}" ${selected===`card:${x.id}`?'selected':''}>💳 ${esc(x.name)}</option>`).join('');
 const parseSource=v=>{const m=/^(account|card):(sm_[a-z0-9_]+)$/.exec(v||'');return m?{type:m[1],id:m[2]}:null};
 function logo(domain,name){const known=Object.values(brandDomains).includes(domain)&&domain;return `<span class="slp-bank-logo">${known?`<img loading="lazy" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64" alt="" onerror="this.remove()">`:''}<span>${esc((name||'?').slice(0,1).toUpperCase())}</span></span>`}
+const bankPalette={
+ 'nubank.com.br':['#7d3df2','#5f2bcc','#efe9ff','#ffffff'],
+ 'inter.co':['#ff7a1a','#d95d00','#fff1e7','#ffffff'],
+ 'itau.com.br':['#0f3460','#173b73','#e9f0ff','#ffffff'],
+ 'mercadopago.com.br':['#1f86ff','#0c6add','#e7f2ff','#ffffff'],
+ 'picpay.com':['#1ea672','#117f55','#e9faf3','#ffffff'],
+ 'bb.com.br':['#ffd34d','#c9a227','#fff7dc','#173c33'],
+ 'bradesco.com.br':['#d33b49','#b72737','#ffe9ec','#ffffff'],
+ 'santander.com.br':['#ea4335','#c53022','#ffebe8','#ffffff'],
+ 'caixa.gov.br':['#1570ef','#085bcc','#e8f1ff','#ffffff'],
+ 'c6bank.com.br':['#2c2f35','#181b20','#eff1f4','#ffffff']
+};
+function walletStyle(domain,type,name=''){let c=bankPalette[domain];
+ if(!c&&type==='cash')c=['#17463b','#13372f','#eaf5ef','#ffffff'];
+ if(!c&&/poupan|ahorro|saving|caix/i.test(name))c=['#227d65','#1a5f4d','#e8f7f2','#ffffff'];
+ if(!c)c=['#405a71','#314759','#eef3f8','#ffffff'];
+ return `--slp-card-a:${c[0]};--slp-card-b:${c[1]};--slp-card-soft:${c[2]};--slp-card-ink:${c[3]}`;
+}
 function save(){d().save();render();if(typeof UI!=='undefined')UI.renderBudgetChart?.();}
 function btn(text,action,cls='slp-quiet'){return `<button type="button" class="slp-action ${cls}" data-money-action="${esc(action)}">${esc(text)}</button>`}
 function box(html){return `<div class="slp-money-tile">${html}</div>`}
@@ -27,7 +45,12 @@ function renderAccounts(){const container=$('finance-content-accounts');if(!cont
 let html=`<div class="slp-money-hero">${label(t('Saldo en cuentas','Saldo em contas','Account balances'),money(balance))}${label(t('Deuda en tarjetas','Dívida nos cartões','Card debt'),money(cards))}</div><div class="slp-money-actions">${btn(t('+ Cuenta','+ Conta','+ Account'),'account')}${btn(t('+ Tarjeta','+ Cartão','+ Card'),'card')}${btn(t('+ Ingreso','+ Receita','+ Income'),'income')}${btn(t('Transferir','Transferir','Transfer'),'transfer')}</div>`;
 html+=`<h3 class="slp-money-heading">${t('Cuentas y efectivo','Contas e dinheiro','Accounts and cash')}</h3>`;
 if(!st.accounts.length)html+=box(`<p>${t('Añade una cuenta con su saldo inicial. No necesitamos conectarla al banco.','Adicione uma conta com o saldo inicial.','Add an account with its opening balance.')}</p>`);
-for(const a of st.accounts){html+=box(`<div class="slp-money-top">${logo(a.bankDomain,a.name)}<span class="slp-money-grow"><strong>${esc(a.name)}</strong><small>${esc(a.type==='cash'?t('Efectivo','Dinheiro','Cash'):t('Saldo manual','Saldo manual','Manual balance'))}</small></span><strong>${money(C.accountBalance(st,a.id))}</strong></div>${btn(t('Ajustar saldo','Ajustar saldo','Adjust balance'),'adjust:'+a.id)}`)}
+else{html+=`<div class="slp-wallet-stack">`;
+for(const a of st.accounts){
+ const bal=money(C.accountBalance(st,a.id));
+ const kind=a.type==='cash'?t('Efectivo','Dinheiro','Cash'):a.type==='wallet'?t('Billetera','Carteira','Wallet'):t('Cuenta','Conta','Account');
+ html+=`<section class="slp-wallet-card" style="${walletStyle(a.bankDomain,a.type,a.name)}"><div class="slp-wallet-card-top">${logo(a.bankDomain,a.name)}<div class="slp-wallet-card-grow"><strong>${esc(a.name)}</strong><small>${esc(kind)}</small></div><span class="slp-wallet-chip">${t('Disponible','Disponível','Available')}</span></div><div class="slp-wallet-amount">${bal}</div><div class="slp-wallet-card-bottom"><small>${t('Saldo local en SmartLifePro','Saldo local no SmartLifePro','Local balance in SmartLifePro')}</small><div class="slp-wallet-inline-actions">${btn(t('Ajustar saldo','Ajustar saldo','Adjust balance'),'adjust:'+a.id,'slp-wallet-btn')}</div></div></section>`}
+html+=`</div>`;}
 html+=`<h3 class="slp-money-heading">${t('Tarjetas de crédito','Cartões de crédito','Credit cards')}</h3>`;
 for(const c of st.cards){const used=C.cardUsed(st,c.id),avail=C.cardAvailable(st,c.id),pct=Math.min(100,Math.max(0,used/c.limitCents*100));html+=box(`<div class="slp-money-top">${logo(c.bankDomain,c.name)}<span class="slp-money-grow"><strong>${esc(c.name)}</strong><small>${t('Corte','Fechamento','Closing')} ${c.cutoffDay} · ${t('Vence','Vence','Due')} ${c.dueDay}</small></span></div><div class="slp-money-split">${label(t('Límite disponible','Limite disponível','Available limit'),money(avail))}${label(t('Utilizado','Utilizado','Used'),money(used))}</div><div class="slp-meter"><span style="width:${pct}%"></span></div>${btn(t('Pagar factura','Pagar fatura','Pay card'),'pay:'+c.id)}`)}
 html+=`<h3 class="slp-money-heading">${t('Ingresos esperados','Receitas previstas','Expected income')}</h3>`;
