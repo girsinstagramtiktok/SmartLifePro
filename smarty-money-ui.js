@@ -50,17 +50,29 @@ for(const key of ['accounts','savings','history','subs','installments']){
 }
 menu.classList.add('slp-finance-tabs');}
 function renderAccounts(){const container=$('finance-content-accounts');if(!container)return;const st=s(),balance=st.accounts.reduce((v,a)=>v+C.accountBalance(st,a.id),0),cards=st.cards.reduce((v,c)=>v+C.cardUsed(st,c.id),0);
-let html=`<div class="slp-money-hero">${label(t('Saldo en cuentas','Saldo em contas','Account balances'),money(balance))}${label(t('Deuda en tarjetas','Dívida nos cartões','Card debt'),money(cards))}</div><div class="slp-money-actions">${btn(t('+ Cuenta','+ Conta','+ Account'),'account')}${btn(t('+ Tarjeta','+ Cartão','+ Card'),'card')}${btn(t('+ Ingreso','+ Receita','+ Income'),'income')}${btn(t('Transferir','Transferir','Transfer'),'transfer')}</div>`;
+let html=`<div class="slp-money-hero">${label(t('Saldo en cuentas','Saldo em contas','Account balances'),money(balance))}${label(t('Deuda en tarjetas','Dívida nos cartões','Card debt'),money(cards))}</div><div class="slp-money-actions">${btn(t('+ Cuenta','+ Conta','+ Account'),'account')}${btn(t('+ Tarjeta','+ Cartão','+ Card'),'card')}${btn(t('Ingresos','Receitas','Income'),'incomes')}${btn(t('Transferir','Transferir','Transfer'),'transfer')}</div>`;
 html+=`<h3 class="slp-money-heading">${t('Cuentas y efectivo','Contas e dinheiro','Accounts and cash')}</h3>`;
 // Las tarjetas visuales quedan en un módulo independiente; la lógica sigue en SmartyMoneyCore.
 html+=window.SmartyWallet?.financeCards(st,'account')||box(`<p>${t('Añade una cuenta para verla aquí','Adicione uma conta','Add an account')}</p>`);
 html+=`<h3 class="slp-money-heading">${t('Tarjetas de crédito','Cartões de crédito','Credit cards')}</h3>`;
 html+=window.SmartyWallet?.financeCards(st,'card')||box(`<p>${t('Añade una tarjeta de crédito','Adicione um cartão de crédito','Add a credit card')}</p>`);
-html+=`<h3 class="slp-money-heading">${t('Ingresos esperados','Receitas previstas','Expected income')}</h3>`;
-if(!st.incomes.length)html+=box(`<p>${t('Añade ingresos recurrentes o puntuales con fecha estimada.','Adicione receitas recorrentes com data prevista.','Add recurring income with expected dates.')}</p>`);
-for(const i of st.incomes){const p=C.period(),received=C.incomeReceived(st,i.id,p);const win=C.expectedWindow(i,p,st.preferences.extraHolidays||[]),dates=win?win.start===win.end?win.end:`${win.start} – ${win.end}`:t('Variable','Variável','Variable');html+=box(`<div class="slp-money-top"><span class="slp-money-grow"><strong>${esc(i.name)}</strong><small>${esc(dates)} · ${received?t('Recibido','Recebido','Received'):t('Previsto, no sumado','Previsto, não somado','Expected, not credited')}</small></span><strong>${money(i.amountCents)}</strong></div>${received?'':btn(t('Confirmar ingreso','Confirmar receita','Confirm income'),'confirm:'+i.id)}`)}
-html+=btn(t('Añadir feriados locales','Adicionar feriados locais','Additional local holidays'),'holidays');
 container.innerHTML=html;
+}
+// Ingresos se administran en un panel propio; no ocupan espacio en Cuentas.
+function openIncomes(){
+ const st=s(),old=$('slp-money-dialog');old?.remove();
+ const wrap=document.createElement('div');wrap.id='slp-money-dialog';wrap.className='slp-dialog-backdrop';
+ let html=`<div class="slp-money-dialog slp-income-manager"><div class="slp-dialog-head"><h3>${t('Ingresos','Receitas','Income')}</h3><button type="button" class="slp-icon-close" data-income-close aria-label="Cerrar">×</button></div><p class="slp-money-help">${t('Los ingresos previstos no aumentan los saldos hasta confirmarlos.','Receitas previstas só aumentam o saldo após confirmação.','Expected income is not added until confirmed.')}</p>`;
+ if(!st.incomes.length)html+=`<p class="slp-money-help">${t('Aún no tienes ingresos registrados.','Você ainda não cadastrou receitas.','No income entries yet.')}</p>`;
+ for(const i of st.incomes){
+  const p=C.period(),received=C.incomeReceived(st,i.id,p);
+  const win=C.expectedWindow(i,p,st.preferences.extraHolidays||[]);
+  const dates=win?win.start===win.end?win.end:`${win.start} – ${win.end}`:t('Variable','Variável','Variable');
+  html+=`<div class="slp-income-item"><span class="slp-money-grow"><strong>${esc(i.name)}</strong><small>${esc(dates)} · ${received?t('Recibido','Recebido','Received'):t('Previsto','Previsto','Expected')}</small></span><strong>${money(i.amountCents)}</strong><div class="slp-income-item-actions">${btn(t('Editar','Editar','Edit'),'edit-income:'+i.id)}${received?'':btn(t('Confirmar','Confirmar','Confirm'),'confirm:'+i.id)}</div></div>`;
+ }
+ html+=`<div class="slp-money-actions">${btn(t('+ Nuevo ingreso','+ Nova receita','+ New income'),'income','slp-primary')}${btn(t('Calendario de días hábiles','Calendário de dias úteis','Business-day calendar'),'holidays')}</div></div>`;
+ wrap.innerHTML=html;document.body.appendChild(wrap);
+ wrap.addEventListener('click',e=>{if(e.target===wrap||e.target.closest('[data-income-close]'))wrap.remove()});
 }
 function renderSavings(){
  const container=$('finance-content-savings');if(!container)return;
@@ -194,7 +206,7 @@ function formSaving(savingId=''){
   updateVisibility();
  });
 }
-function handleAction(action){const [cmd,target]=action.split(':');const st=s();if(cmd==='account')return formAccount();if(cmd==='card')return formCard();if(cmd==='income')return formIncome();if(cmd==='saving')return formSaving();if(cmd==='edit-account')return formAccount(target);if(cmd==='edit-card')return formCard(target);if(cmd==='edit-income')return formIncome(target);if(cmd==='edit-saving')return formSaving(target);if(cmd==='rates')return refreshMarket(true);if(cmd==='transfer'){if(st.accounts.length<2)return alertUser(t('Añade dos cuentas','Adicione duas contas','Add two accounts'));return showForm(t('Transferencia entre cuentas','Transferência entre contas','Account transfer'),selectField(t('Desde','Origem','From'),'from',options(st.accounts))+selectField(t('Hacia','Destino','To'),'to',options(st.accounts))+field(t('Importe','Valor','Amount'),'amount','number','','min=0.01 step=0.01 required'),v=>C.transfer(st,v.from,v.to,v.amount))}
+function handleAction(action){const [cmd,target]=action.split(':');const st=s();if(cmd==='incomes')return openIncomes();if(cmd==='account')return formAccount();if(cmd==='card')return formCard();if(cmd==='income')return formIncome();if(cmd==='saving')return formSaving();if(cmd==='edit-account')return formAccount(target);if(cmd==='edit-card')return formCard(target);if(cmd==='edit-income')return formIncome(target);if(cmd==='edit-saving')return formSaving(target);if(cmd==='rates')return refreshMarket(true);if(cmd==='transfer'){if(st.accounts.length<2)return alertUser(t('Añade dos cuentas','Adicione duas contas','Add two accounts'));return showForm(t('Transferencia entre cuentas','Transferência entre contas','Account transfer'),selectField(t('Desde','Origem','From'),'from',options(st.accounts))+selectField(t('Hacia','Destino','To'),'to',options(st.accounts))+field(t('Importe','Valor','Amount'),'amount','number','','min=0.01 step=0.01 required'),v=>C.transfer(st,v.from,v.to,v.amount))}
 if(cmd==='adjust'){const a=st.accounts.find(x=>x.id===target);return showForm(t('Corregir saldo de cuenta','Corrigir saldo da conta','Reconcile account'),field(t('Saldo real que muestra el banco','Saldo real mostrado pelo banco','Actual bank balance'),'amount','number',C.fromCents(C.accountBalance(st,target)),'step=0.01 required'),v=>{const current=C.accountBalance(st,target),next=C.cents(v.amount),delta=next-current;if(delta!==0)C.createMovement(st,{kind:delta>0?'adjust-plus':'adjust-minus',amount:Math.abs(delta)/100,accountId:target,note:'Conciliación manual'});})}
 if(cmd==='holidays'){return showForm(t('Feriados bancarios adicionales','Feriados bancários adicionais','Additional banking holidays'),field(t('Fechas AAAA-MM-DD, separadas por coma','Datas AAAA-MM-DD, separadas por vírgulas','Dates YYYY-MM-DD, comma separated'),'dates','text',(st.preferences.extraHolidays||[]).join(', ')),v=>{const raw=v.dates.split(',').map(x=>x.trim()).filter(Boolean);if(!raw.every(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))throw Error(t('Usa fechas AAAA-MM-DD','Use datas AAAA-MM-DD','Use YYYY-MM-DD dates'));st.preferences.extraHolidays=[...new Set(raw)]})}
 if(cmd==='pay'){if(!st.accounts.length)return alertUser(t('Añade una cuenta','Adicione uma conta','Add an account'));return showForm(t('Pagar factura','Pagar fatura','Pay bill'),selectField(t('Desde cuenta','Da conta','From account'),'accountId',options(st.accounts))+field(t('Importe pagado','Valor pago','Amount paid'),'amount','number',C.fromCents(C.cardUsed(st,target)),'min=0.01 step=0.01 required'),v=>C.payCard(st,target,v.accountId,v.amount))}

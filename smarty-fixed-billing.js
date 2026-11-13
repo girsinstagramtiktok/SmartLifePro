@@ -4,7 +4,11 @@
 (function(root){'use strict';
 const $=id=>root.document.getElementById(id);
 const C=()=>root.SmartyMoneyCore;
-const ds=()=>root.Data;
+// Finance, Data, UI y Main son `const` globales del HTML: NO propiedades de window.
+const financeRef=()=>typeof Finance!=='undefined'?Finance:root.Finance;
+const ds=()=>typeof Data!=='undefined'?Data:root.Data;
+const uiRef=()=>typeof UI!=='undefined'?UI:root.UI;
+const mainRef=()=>typeof Main!=='undefined'?Main:root.Main;
 const current=()=>C().state(ds().store);
 const locale=()=>ds()?.store?.settings?.lang||'es';
 const tr=(es,pt,en)=>({es,pt,en})[locale()]||es;
@@ -43,7 +47,7 @@ function editSubscription(id){const sub=ds().store.subscriptions?.find(s=>String
 }
 function decorateList(){const list=$('subs-list');if(!list||!ds()?.store)return;
  const subs=[...(ds().store.subscriptions||[])];
- const sorter=root.Finance?.subscriptionSort||'date';
+ const sorter=financeRef()?.subscriptionSort||'date';
  subs.sort((a,b)=>sorter==='value'?(+a.cost||0)-(+b.cost||0):sorter==='name'?String(a.name).localeCompare(String(b.name),undefined,{sensitivity:'base'}):(+a.day||0)-(+b.day||0));
  const cards=[...list.querySelectorAll('.glass-card.item-row')];
  cards.forEach((row,i)=>{const sub=subs[i];if(!sub)return;
@@ -59,25 +63,29 @@ function decorateList(){const list=$('subs-list');if(!list||!ds()?.store)return;
  row.classList.add('slp-sub-row');
  });
 }
-function install(){if(!root.Finance||!ds()?.store||!$('modal-sub'))return;
- const fin=root.Finance;
+let installed=false;
+function install(){
+ if(installed)return true;
+ const fin=financeRef();
+ if(!fin||!$('modal-sub'))return false;
+ installed=true;
  const add=fin.addSubscription;
  fin.addSubscription=function(...args){activeEditId=null;const result=add.apply(this,args);formSource();const h=$('modal-sub')?.querySelector('h2');if(h)h.textContent=tr('Nuevo gasto fijo','Nova despesa fixa','New fixed expense');return result};
  const save=fin.saveSubscription;
  fin.saveSubscription=function(...args){
  const name=String($('sub-name')?.value||'').trim(),cost=Number($('sub-cost')?.value),day=Number($('sub-day')?.value);
- if(!name||!Number.isFinite(cost)||cost<=0||!Number.isInteger(day)||day<1||day>31){root.UI?.showSnackbar?.(tr('Revisa el nombre, importe y día de cobro (1–31)','Verifique nome, valor e dia (1–31)','Check name, amount and charge day (1–31)'));return}
+ if(!name||!Number.isFinite(cost)||cost<=0||!Number.isInteger(day)||day<1||day>31){uiRef()?.showSnackbar?.(tr('Revisa el nombre, importe y día de cobro (1–31)','Verifique nome, valor e dia (1–31)','Check name, amount and charge day (1–31)'));return}
  const source=$('slp-sub-source')?.value||'';
  if(activeEditId!==null){
    const sub=ds().store.subscriptions.find(x=>String(x.id)===String(activeEditId));if(!sub)return;
    sub.name=name;sub.cost=cost;sub.day=day;
-   try{commit(sub,source)}catch(e){root.UI?.showSnackbar?.(e.message);return}
-   activeEditId=null;root.Main?.closeModal?.('sub');fin.renderSubscriptions();root.UI?.renderBudgetChart?.();fin.renderHomeWidgets?.();return;
+   try{commit(sub,source)}catch(e){uiRef()?.showSnackbar?.(e.message);return}
+   activeEditId=null;mainRef()?.closeModal?.('sub');fin.renderSubscriptions();uiRef()?.renderBudgetChart?.();fin.renderHomeWidgets?.();return;
  }
  const ids=new Set((ds().store.subscriptions||[]).map(x=>String(x.id)));
  const result=save.apply(this,args);
  const sub=ds().store.subscriptions?.find(x=>!ids.has(String(x.id)));
- if(sub){try{commit(sub,source)}catch(e){root.UI?.showSnackbar?.(e.message)}}
+ if(sub){try{commit(sub,source)}catch(e){uiRef()?.showSnackbar?.(e.message)}}
  return result;
  };
  const render=fin.renderSubscriptions;
@@ -87,10 +95,12 @@ function install(){if(!root.Finance||!ds()?.store||!$('modal-sub'))return;
  root.document.addEventListener('click',event=>{const edit=event.target.closest('[data-slpsub-edit]');if(edit)editSubscription(edit.dataset.slpsubEdit)});
  root.document.addEventListener('change',event=>{const target=event.target.closest('[data-slpsub-source]');if(!target)return;
  const sub=ds().store.subscriptions?.find(x=>String(x.id)===target.dataset.slpsubSource);if(!sub)return;
- try{commit(sub,target.value);root.UI?.showSnackbar?.(tr('Origen de cobro actualizado','Origem de cobrança atualizada','Payment source updated'))}catch(e){root.UI?.showSnackbar?.(e.message)}
+ try{commit(sub,target.value);uiRef()?.showSnackbar?.(tr('Origen de cobro actualizado','Origem de cobrança atualizada','Payment source updated'))}catch(e){uiRef()?.showSnackbar?.(e.message)}
  });
  decorateList();
+ return true;
 }
 root.SmartyFixedBilling={install,editSubscription};
 if(root.document?.readyState==='loading')root.document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+root.addEventListener?.('load',install,{once:true});
 })(window);

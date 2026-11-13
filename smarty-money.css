@@ -166,3 +166,9 @@
 @media(max-width:355px){.slp-sub-config{align-items:stretch;flex-direction:column}.slp-sub-config button{align-self:flex-start}}
 
 .sba-logo img:not(.sba-ready){opacity:0}.sba-logo img.sba-ready{opacity:1}
+
+/* Panel propio de ingresos: separado de las tarjetas y sin sobrecargar Cuentas. */
+.slp-income-manager{max-height:min(85vh,780px)}
+.slp-income-item{display:flex;flex-wrap:wrap;gap:9px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(103,137,123,.16)}
+.slp-income-item>.slp-money-grow{min-width:110px}.slp-income-item>strong{font-size:13px;white-space:nowrap}
+.slp-income-item-actions{display:flex;gap:5px;flex-wrap:wrap;width:100%}.slp-income-item-actions .slp-action{padding:6px 10px}
