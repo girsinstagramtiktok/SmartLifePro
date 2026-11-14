@@ -1,0 +1,394 @@
+/* SmartLifePro • Professional polish 2026-11
+   Layered LAST; purely presentational. Preserves finance, store, OTA, native services
+   and user-selected Bento palette. Inspired by the relevant Modern Web Guidance
+   card, tabs, accordion, forms, accessibility and preference-aware UI guides. */
+
+:root, #app-root {
+  --sp-ink: var(--b-ink,#173d34);
+  --sp-muted: var(--b-muted,#70867b);
+  --sp-surface: var(--b-chart,#fffdf9);
+  --sp-surface-alt: var(--b-budget,#e4eee8);
+  --sp-accent: var(--b-nav,#17483a);
+  --sp-stroke: color-mix(in srgb,var(--sp-ink) 10%,transparent);
+  --sp-stroke-strong: color-mix(in srgb,var(--sp-ink) 16%,transparent);
+  --sp-shadow: 0 3px 8px rgba(16,50,37,.035),0 12px 29px rgba(16,50,37,.065);
+  --sp-shadow-large: 0 12px 25px rgba(12,41,29,.08),0 28px 60px rgba(12,41,29,.085);
+  --sp-ease: cubic-bezier(.2,.75,.2,1);
+  --sp-radius: 21px;
+  accent-color:var(--b-accent,#277a65);
+}
+
+/* Controls keep native event handlers and form semantics. */
+#app-root :is(button,input,textarea,select),
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) :is(button,input,textarea,select) {
+  font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+#app-root :is(button,select,input,textarea):focus-visible,
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) :is(button,select,input,textarea):focus-visible {
+  outline:2px solid var(--b-accent,#2d9077);
+  outline-offset:3px;
+}
+#app-root :is(button,[role=button]):disabled,
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) button:disabled {
+  cursor:not-allowed;opacity:.46;box-shadow:none!important;
+}
+
+/* ---------- Navigation & sectional hierarchy ---------- */
+#app-root > .view:not(.bento-home) .top-bar.glass-pill {
+  border:1px solid var(--sp-stroke)!important;
+  box-shadow:0 6px 23px rgba(18,49,38,.048)!important;
+  background:linear-gradient(135deg,var(--sp-surface),color-mix(in srgb,var(--sp-surface) 85%,var(--sp-surface-alt)))!important;
+  border-radius:23px!important;
+}
+#app-root > .view:not(.bento-home) .view-title {
+  font-weight:860!important;letter-spacing:-.8px!important;
+}
+#app-root > .view:not(.bento-home) .scroll-content {
+  scroll-padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));
+}
+#app-root .bottom-dock {
+  border:1px solid rgba(255,255,255,.13)!important;
+  box-shadow:0 11px 22px rgba(13,34,26,.13),0 25px 45px rgba(13,34,26,.08)!important;
+}
+#app-root .bottom-dock .dock-btn {
+  position:relative;
+  border-radius:14px!important;
+}
+#app-root .bottom-dock .dock-btn.active::before {
+  content:"";position:absolute;inset:0 16% auto;height:2px;
+  border-radius:999px;background:currentColor;opacity:.7;pointer-events:none;
+}
+#app-root .bottom-dock #dock-plus-btn {
+  box-shadow:0 3px 11px rgba(0,0,0,.12)!important;
+  border:1px solid rgba(255,255,255,.23)!important;
+}
+
+/* Finance has five navigational destinations, all visible without swipe. */
+#view-finance .slp-finance-tabs {
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;padding:7px!important;margin:6px 0 16px!important;
+  overflow:visible!important;background:color-mix(in srgb,var(--sp-surface-alt) 85%,var(--sp-surface))!important;
+  border-radius:20px!important;border:1px solid var(--sp-stroke)!important;
+}
+#view-finance .slp-finance-tabs .segment-btn {
+  display:flex!important;justify-content:center;align-items:center;
+  min-width:0!important;min-height:39px!important;padding:8px 5px!important;
+  font-size:11px!important;font-weight:760!important;white-space:normal!important;
+  line-height:1.2!important;border-radius:12px!important;
+}
+#view-finance .slp-finance-tabs .segment-btn.active {
+  box-shadow:0 3px 8px rgba(8,38,27,.15)!important;
+}
+
+/* ---------- Bento dashboard: retain EXACT grid and current data ---------- */
+#view-home.bento-home .bento-header-actions .bento-round-icon {
+  border:1px solid color-mix(in srgb,var(--b-ink) 8%,transparent);
+  box-shadow:0 2px 7px rgba(17,47,34,.035);
+}
+#view-home.bento-home .bento-tile {
+  isolation:isolate;
+  box-shadow:0 5px 12px rgba(14,45,32,.035),0 12px 26px rgba(14,45,32,.055);
+  border:1px solid rgba(255,255,255,.17);
+}
+#view-home.bento-home .bento-tile::before {
+  content:"";position:absolute;inset:0 0 auto;height:45%;
+  background:linear-gradient(to bottom,rgba(255,255,255,.095),transparent);
+  border-radius:inherit;pointer-events:none;z-index:0;
+}
+#view-home.bento-home .bento-tile :is(.bento-kicker,.bento-amount,.bento-helper,.bento-percent-number){position:relative;z-index:1}
+#view-home.bento-home .bento-budget-row {
+  border:1px solid var(--sp-stroke)!important;
+  box-shadow:0 3px 8px rgba(14,45,32,.035);
+}
+#view-home.bento-home .bento-wallet {
+  border:1px solid var(--sp-stroke);
+  box-shadow:var(--sp-shadow);
+}
+#view-home.bento-home .sw-home-card {
+  box-shadow:0 4px 11px rgba(10,35,28,.17),inset 0 1px 0 rgba(255,255,255,.19);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:18px;
+}
+#view-home.bento-home .sw-home-chip-row .sw-home-card-type {
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.15);
+}
+#view-home.bento-home .bento-category-pill {
+  border:1px solid color-mix(in srgb,var(--b-ink) 6%,transparent)!important;
+}
+#view-home.bento-home .bento-see-all {text-decoration:none;text-underline-offset:3px}
+
+/* ---------- Wallet & banking ---------- */
+#view-finance .slp-money-hero .slp-money-pair {
+  border:1px solid var(--sp-stroke);
+  box-shadow:0 4px 14px rgba(11,51,34,.045);
+  background:linear-gradient(155deg,var(--sp-surface),var(--sp-surface-alt));
+  border-radius:19px;
+}
+#view-finance .slp-money-hero .slp-money-pair strong {
+  font-variant-numeric:tabular-nums;letter-spacing:-.45px;
+}
+#view-finance .sw-finance-list{gap:12px;margin-top:10px}
+#view-finance .sw-finance-item{position:relative;isolation:isolate}
+#view-finance .sw-finance-card {
+  min-height:136px;border-radius:23px;
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 12px 24px rgba(10,41,29,.135),inset 0 1px 0 rgba(255,255,255,.19);
+}
+#view-finance .sw-finance-card::after {
+  right:-53px;bottom:-94px;border-width:25px;
+}
+#view-finance .sw-finance-top .sw-finance-title strong{font-size:15px;letter-spacing:-.25px}
+#view-finance .sw-finance-bottom strong {font-size:clamp(18px,5.8vw,24px);font-variant-numeric:tabular-nums;letter-spacing:-.65px}
+#view-finance .sw-finance-direct-edit {
+  position:relative;display:flex;width:max-content;align-items:center;justify-content:center;
+  min-height:38px;min-width:88px;margin:-12px 13px 0 auto;
+  padding:9px 14px!important;border-radius:13px;
+  background:var(--sp-surface)!important;color:var(--sp-ink)!important;
+  border:1px solid var(--sp-stroke-strong)!important;
+  box-shadow:0 5px 13px rgba(15,45,33,.09);
+  font-size:11px;font-weight:780;
+}
+.sw-detail-sheet {
+  background:var(--b-bg,#ecf4ed)!important;
+  border-radius:28px 28px 0 0!important;
+  box-shadow:var(--sp-shadow-large);
+  scrollbar-width:thin;
+  overscroll-behavior-y:contain;
+}
+.sw-detail-sheet::before,
+.slp-money-dialog::before {
+  content:"";position:sticky;display:block;width:40px;height:4px;
+  border-radius:8px;background:var(--sp-muted,#71877c);
+  opacity:.29;margin:-11px auto 14px;
+}
+.sw-detail-card{border:1px solid rgba(255,255,255,.19);box-shadow:0 9px 21px rgba(9,44,30,.13);border-radius:23px}
+.sw-detail-stats>div,.sw-detail-list,.sw-bank-product {
+  border:1px solid var(--sp-stroke)!important;
+  box-shadow:0 3px 9px rgba(13,48,33,.035);
+}
+.sw-detail-actions button{border:1px solid var(--sp-stroke-strong)!important;min-height:40px;border-radius:13px}
+.sw-movement strong {font-variant-numeric:tabular-nums}
+
+/* ---------- Savings / investments ---------- */
+#view-finance .slp-savings-summary {
+  border-radius:24px;
+  background:linear-gradient(124deg,var(--b-nav,#174a3e),color-mix(in srgb,var(--b-nav,#174a3e) 68%,#24475b));
+  box-shadow:0 14px 26px rgba(17,62,48,.12),inset 0 1px 0 rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.16);
+}
+#view-finance .slp-savings-total {font-variant-numeric:tabular-nums;letter-spacing:-1px}
+#view-finance .slp-savings-gain{
+  background:rgba(255,255,255,.07);border-radius:12px;padding:10px 12px;
+  border:1px solid rgba(255,255,255,.10);margin-top:13px;
+}
+#view-finance .slp-savings-tools{gap:8px}
+#view-finance .slp-savings-tools button {min-height:42px!important;border-radius:14px}
+#view-finance .slp-market-compact{
+  background:color-mix(in srgb,var(--sp-surface-alt) 75%,var(--sp-surface));
+  padding:11px 13px;border-radius:14px;line-height:1.55;
+  border:1px solid var(--sp-stroke);margin-bottom:10px;
+}
+#view-finance .slp-saving-product {
+  overflow:hidden;border:1px solid var(--sp-stroke)!important;
+  box-shadow:var(--sp-shadow)!important;border-radius:20px;
+  background:var(--sp-surface);margin:10px 0;
+}
+#view-finance .slp-saving-product summary {padding:14px 15px;cursor:pointer}
+#view-finance .slp-saving-product summary::-webkit-details-marker{display:none}
+#view-finance .slp-saving-product[open] {
+  border-color:color-mix(in srgb,var(--b-accent,#267d65) 25%,transparent)!important;
+}
+#view-finance .slp-saving-name strong{font-size:14px;font-weight:820}
+#view-finance .slp-saving-name small{font-size:10px;line-height:1.5}
+#view-finance .slp-saving-bottom strong {font-variant-numeric:tabular-nums}
+#view-finance .slp-saving-details {
+  padding:11px 13px 14px;border-top:1px solid var(--sp-stroke);
+  background:color-mix(in srgb,var(--sp-surface-alt) 28%,var(--sp-surface));
+}
+#view-finance .slp-saving-details .slp-action{min-height:38px;border-radius:12px}
+#view-finance .slp-savings-empty {border:1px dashed var(--sp-stroke-strong);box-shadow:var(--sp-shadow)}
+
+/* ---------- Fixed expenses and history ---------- */
+#view-finance #subs-list .glass-card.item-row {
+  border:1px solid var(--sp-stroke)!important;
+  background:var(--sp-surface)!important;
+  box-shadow:0 3px 9px rgba(12,46,30,.04)!important;
+  border-radius:20px!important;
+  padding:13px!important;
+}
+#view-finance .slp-sub-config {
+  border-top:1px solid var(--sp-stroke);
+  padding-top:11px;margin-top:12px;
+}
+#view-finance .slp-sub-config button {
+  border-radius:12px;min-height:39px!important;
+  border:1px solid var(--sp-stroke-strong)!important;
+  background:var(--sp-surface-alt);
+  font-size:12px;
+}
+#view-finance .slp-sub-inline-select {min-height:39px!important;max-width:100%;}
+#view-finance .subscription-sort-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--sp-surface);border:1px solid var(--sp-stroke);
+  border-radius:15px;padding:9px 12px;margin-bottom:12px;
+}
+#view-finance .subscription-sort-bar select{min-width:0;max-width:59%;margin:0}
+#view-finance #expenses-history-list :is(.glass-card,.history-item) {
+  box-shadow:0 3px 11px rgba(10,47,30,.045)!important;
+  border:1px solid var(--sp-stroke)!important;
+}
+
+/* ---------- Forms: readable, reassuring, responsive ---------- */
+#app-root :is(.setting-input,.setting-select,select,textarea,input[type=text],input[type=number],input[type=date]),
+.slp-dialog-backdrop :is(.slp-form-field input,.slp-form-field select),
+.modal-overlay :is(input,select,textarea) {
+  border:1px solid var(--sp-stroke-strong)!important;
+  background:color-mix(in srgb,var(--b-chart,#fff) 52%,var(--b-budget,#e4efe9))!important;
+  color:var(--b-ink,#173b33)!important;
+  border-radius:13px!important;
+  transition:border-color .17s ease,box-shadow .17s ease!important;
+}
+#app-root :is(.setting-input,.setting-select,select,textarea,input[type=text],input[type=number],input[type=date]):focus,
+.slp-dialog-backdrop :is(.slp-form-field input,.slp-form-field select):focus,
+.modal-overlay :is(input,select,textarea):focus {
+  border-color:var(--b-accent,#287e69)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--b-accent,#287e69) 13%,transparent)!important;
+}
+#app-root :is(.btn-full,.btn-update),
+.slp-dialog-backdrop .slp-primary {
+  border:1px solid color-mix(in srgb,var(--b-nav,#154637) 82%,white)!important;
+  border-radius:15px!important;
+  background:var(--b-nav,#154637)!important;
+  color:var(--b-nav-ink,#fff)!important;
+  font-weight:790!important;box-shadow:0 5px 12px rgba(7,49,29,.10)!important;
+}
+#app-root :is(.btn-data,.slp-action,.filter-chip,.chip,.text-btn-small),
+.slp-dialog-backdrop :is(.slp-action,.slp-icon-close) {
+  border-radius:13px!important;
+  font-weight:760;
+}
+.slp-money-dialog {
+  border-radius:27px 27px 0 0!important;
+  box-shadow:0 -12px 40px rgba(9,37,26,.14);
+  overscroll-behavior-y:contain;
+}
+.slp-money-dialog .slp-dialog-head h3{font-size:19px;letter-spacing:-.55px;font-weight:850}
+.slp-money-dialog .slp-dialog-fields{gap:12px}
+.slp-money-dialog .slp-form-field>span{font-weight:730}
+.slp-dialog-backdrop .slp-form-field input,
+.slp-dialog-backdrop .slp-form-field select{min-height:43px;padding:10px 12px;font-size:13px}
+.slp-dialog-backdrop .slp-dialog-actions button {min-height:42px;min-width:92px}
+.modal-overlay .settings-card:not(.full-width) {
+  border-radius:24px!important;
+  border:1px solid var(--sp-stroke)!important;
+  box-shadow:0 12px 39px rgba(10,38,30,.14)!important;
+}
+
+/* ---------- Compact, modern settings without hiding any option ---------- */
+#view-settings.slp-settings-modern .settings-card.full-width{
+  padding:0!important;background:transparent!important;
+}
+#view-settings.slp-settings-modern #settings-inject,
+#view-settings.slp-settings-modern #bento-theme-settings {min-width:0}
+#view-settings .slp-settings-group {
+  border:1px solid var(--sp-stroke)!important;
+  border-radius:19px!important;
+  background:var(--sp-surface)!important;
+  box-shadow:var(--sp-shadow)!important;
+  margin:9px 0!important;
+}
+#view-settings .slp-settings-group summary {
+  min-height:49px;box-sizing:border-box;
+  font-size:13px;font-weight:800;
+  letter-spacing:-.1px;padding:12px 14px!important;
+}
+#view-settings .slp-settings-group summary::before {
+  content:"";display:inline-grid;flex:0 0 29px;width:29px;height:29px;
+  border-radius:11px;
+  background:radial-gradient(circle at 55% 43%,var(--b-accent,#2c8973) 0 3px,transparent 3.5px),color-mix(in srgb,var(--sp-surface-alt) 75%,var(--sp-surface));
+  border:1px solid var(--sp-stroke);
+}
+#view-settings .slp-settings-group[open] summary::before {
+  background:radial-gradient(circle at 55% 43%,var(--b-nav,#1e5a48) 0 3px,transparent 3.5px),var(--sp-surface-alt);
+}
+#view-settings .slp-settings-group[open] summary {
+  border-bottom:1px solid var(--sp-stroke);
+}
+#view-settings .slp-settings-inside {padding:9px 13px 13px!important}
+#view-settings .slp-settings-inside .setting-item{
+  min-height:41px!important;padding:9px 3px!important;
+  font-size:12px!important;line-height:1.45;
+}
+#view-settings .slp-settings-inside .setting-group,
+#view-settings .slp-settings-inside .settings-card {box-shadow:none!important}
+#view-settings #bento-theme-settings {
+  border:1px solid var(--sp-stroke)!important;
+  border-radius:18px!important;
+  box-shadow:var(--sp-shadow)!important;
+}
+#view-settings .slp-favorites-head button,
+#view-settings .slp-favorite button,
+#view-settings .bento-preset {min-height:34px!important}
+
+/* ---------- Lists, shopping & compact history ---------- */
+#view-lists .scroll-content :is(.glass-card,.item-row),
+#view-history .scroll-content :is(.glass-card,.item-row),
+#view-shopping-detail :is(.glass-card,.shopping-item,.product-row) {
+  border:1px solid var(--sp-stroke)!important;
+  box-shadow:0 3px 12px rgba(16,48,30,.045)!important;
+}
+#app-root :is(.chip,.filter-chip){border:1px solid var(--sp-stroke);font-weight:740}
+#view-lists .top-bar .icon-btn,
+#view-history .top-bar .icon-btn {border-radius:13px!important;min-height:38px;min-width:38px}
+#view-shopping-detail :is(.shopping-import-btn,.slp-reminder-button) {
+  border:1px solid var(--sp-stroke-strong)!important;
+  box-shadow:0 3px 9px rgba(19,49,32,.055)!important;
+}
+.slp-reminder-button.is-active {box-shadow:0 0 0 3px color-mix(in srgb,var(--b-plus,#e7ff78) 35%,transparent)!important}
+
+/* ---------- Feedback & motion ---------- */
+@media (hover:hover) and (pointer:fine) {
+  #app-root :is(.bento-tile,.sw-home-card,.sw-finance-card,.slp-saving-product,.slp-settings-group,.glass-card.item-row):hover {
+    filter:brightness(1.018);
+  }
+  #app-root :is(.btn-full,.slp-action,.sw-finance-direct-edit,.bento-round-icon,.dock-main-btn):not(:disabled):hover {
+    filter:brightness(1.035);
+  }
+}
+@media (prefers-reduced-motion:no-preference) {
+  #app-root :is(.slp-action,.btn-full,.bento-round-icon,.sw-finance-direct-edit,.sw-finance-card,.sw-home-card,.slp-saving-product,.bento-tile) {
+    transition:transform .2s var(--sp-ease),box-shadow .24s var(--sp-ease),filter .2s ease;
+  }
+  #app-root :is(.slp-action,.btn-full,.bento-round-icon,.sw-finance-direct-edit,.sw-finance-card,.sw-home-card,.bento-tile):active {
+    transform:scale(.984);
+  }
+  #view-finance .slp-saving-product[open] .slp-saving-expander {
+    transform:rotate(180deg);transition:transform .2s ease;
+  }
+  #app-root > .view:not(.bento-home).active {animation:sp-enter .22s var(--sp-ease) both!important}
+  @keyframes sp-enter {from{opacity:.7;transform:translateY(4px)}to{opacity:1;transform:none}}
+}
+@media (prefers-reduced-motion:reduce) {
+  #app-root *,#app-root *::before,#app-root *::after,
+  .modal-overlay *, .slp-dialog-backdrop *, .sw-detail-backdrop * {
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important;
+  }
+}
+@media (pointer:coarse) {
+  #view-finance .slp-finance-tabs .segment-btn{min-height:42px!important}
+  #app-root .bottom-dock .dock-btn{min-height:42px!important}
+  #app-root :is(.btn-full,.btn-data,.slp-action,.setting-input,select,textarea){min-height:42px}
+  .slp-dialog-backdrop .slp-icon-close,.sw-detail-close{min-width:40px;min-height:40px}
+}
+@media (max-width:365px) {
+  #view-finance .slp-finance-tabs {gap:5px!important;padding:5px!important}
+  #view-finance .slp-finance-tabs .segment-btn {font-size:10px!important;padding:8px 2px!important}
+  #view-finance .sw-finance-card {padding:13px}
+  #view-finance .slp-money-hero .slp-money-pair{padding:11px}
+  #view-finance .slp-money-hero .slp-money-pair strong{font-size:15px}
+  #view-settings .slp-settings-group summary{font-size:12px}
+  .slp-money-dialog .slp-dialog-fields{grid-template-columns:1fr}
+}
