@@ -815,7 +815,7 @@ jobs:
 
           fs.writeFileSync("capacitor.config.json", JSON.stringify({
             appId: "com.smartlife.pro",
-            appName: "Smart Life Pro",
+            appName: "Smarty Finance",
             webDir: "www",
             plugins: { CapacitorUpdater: { autoUpdate: false } }
           }, null, 2));
@@ -829,6 +829,12 @@ jobs:
           npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2 @capacitor/local-notifications@6.1.0 @capacitor/preferences@6.0.2 @capacitor/camera@6.0.2 @capacitor/app@6.0.0 @capgo/capacitor-updater@lts-v6
           npx cap add android
           npx cap sync android
+          # Cambiar SOLO el nombre visible. No alterar appId, applicationId, firma ni datos.
+          APP_STRINGS="android/app/src/main/res/values/strings.xml"
+          test -f "$APP_STRINGS"
+          sed -i 's#<string name="app_name">[^<]*</string>#<string name="app_name">Smarty Finance</string>#' "$APP_STRINGS"
+          sed -i 's#<string name="title_activity_main">[^<]*</string>#<string name="title_activity_main">Smarty Finance</string>#' "$APP_STRINGS"
+          grep -Fq '<string name="app_name">Smarty Finance</string>' "$APP_STRINGS"
 
       - name: Configurar Android API 35 para Capacitor Updater
         shell: bash
@@ -1125,7 +1131,7 @@ jobs:
             "      runOnUiThread(() -> {",
             "        try {",
             "          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {",
-            "            new BiometricPrompt.Builder(MainActivity.this).setTitle(\"Desbloquear Smart Life Pro\").setSubtitle(\"Usa tu huella o rostro\").setNegativeButton(\"Usar PIN\", getMainExecutor(), (d, w) -> {}).build().authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {",
+            "            new BiometricPrompt.Builder(MainActivity.this).setTitle(\"Desbloquear Smarty Finance\").setSubtitle(\"Usa tu huella o rostro\").setNegativeButton(\"Usar PIN\", getMainExecutor(), (d, w) -> {}).build().authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {",
             "              @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult r) { getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(\"if(window.Main) Main.unlockApp();\", null)); }",
             "            });",
             "          }",
@@ -1244,9 +1250,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.SMARTY_VERSION_CODE }}
-          name: SmartLifePro v${{ env.SMARTY_VERSION_CODE }}
+          name: Smarty Finance v${{ env.SMARTY_VERSION_CODE }}
           body: |
-            Actualización de SmartLifePro Bento: mejoras biométricas V2 y actualizador nativo.
+            Actualización de Smarty Finance (misma aplicación y firma de SmartLifePro).
             Para instalar encima de la versión anterior es indispensable conservar la misma clave de firma.
           files: |
             SmartLifePro.apk
