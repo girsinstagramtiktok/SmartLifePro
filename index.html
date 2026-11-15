@@ -3,6 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Critical first-paint guard: never expose the stale/unhydrated home screen. -->
+    <style id="slp-critical-boot">
+      html:not(.slp-ui-ready) #app-root {visibility:hidden!important;opacity:0!important}
+      #slp-boot-splash{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#13352e;color:#e5f8ed;font:900 37px/1.05 system-ui,sans-serif;letter-spacing:-2px;-webkit-font-smoothing:antialiased;pointer-events:none}
+      #slp-boot-splash .slp-boot-dot{color:#e0fc82}
+      html.slp-ui-ready #slp-boot-splash{opacity:0;visibility:hidden;transition:opacity .3s ease,visibility 0s .3s}
+      @media(prefers-reduced-motion:reduce){html.slp-ui-ready #slp-boot-splash{transition:none}}
+    </style>
+    <!-- Failsafe is inline: if the optional motion file fails to load, the app still opens. -->
+    <script>setTimeout(function(){if(!document.documentElement.classList.contains('slp-ui-ready')){document.getElementById('smarty-prepaint')?.remove();document.documentElement.classList.add('slp-ui-ready');}},5200);</script>
     <meta name="theme-color" content="#f2f2f7">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,6 +31,8 @@
     <link rel="apple-touch-icon" href="logo.png">
 </head>
 <body>
+
+    <div id="slp-boot-splash" aria-label="Abriendo Smarty Finance"><span>smarty<span class="slp-boot-dot">.</span></span></div>
 
     <div id="bg-layer"></div>
 
@@ -531,6 +543,7 @@
     <script src="smarty-fixed-billing.js"></script>
     <script src="smarty-list-reminders.js"></script>
     <script src="smarty-settings-modern.js"></script>
+    <script src="smarty-pro-motion.js"></script>
     
     <script>
     let newWorker;

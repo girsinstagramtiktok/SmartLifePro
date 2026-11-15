@@ -392,3 +392,528 @@
   #view-settings .slp-settings-group summary{font-size:12px}
   .slp-money-dialog .slp-dialog-fields{grid-template-columns:1fr}
 }
+
+/* ================================================================
+   SMARTY ATELIER / Liquid Glass 2.0 · Android WebView safe layer
+   Strong visual refresh with retained existing Bento layout and themes.
+   No business logic, storage mutations, remote dependencies or new icons.
+   ================================================================ */
+:root,body,#app-root {
+  --slp-surface:var(--b-chart,#fffdfa);
+  --slp-paper:var(--b-balance,#fffefa);
+  --slp-ink:var(--b-ink,#163f35);
+  --slp-muted:var(--b-muted,#778f84);
+  --slp-edge:color-mix(in srgb,var(--b-ink,#163f35) 11%,transparent);
+  --slp-glass:color-mix(in srgb,var(--b-chart,#ffffff) 84%,transparent);
+  --slp-glass-thin:color-mix(in srgb,var(--b-chart,#ffffff) 66%,transparent);
+  --slp-ambient:color-mix(in srgb,var(--b-accent,#25a791) 11%,transparent);
+  --slp-lift:0 22px 40px -30px rgba(11,44,34,.43),0 8px 20px -12px rgba(8,45,32,.25),inset 0 1px 0 rgba(255,255,255,.36);
+  --slp-lift-strong:0 28px 45px -29px rgba(9,34,29,.53),0 10px 22px -13px rgba(13,39,32,.26),inset 0 1px 0 rgba(255,255,255,.42);
+  --slp-inset:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(33,65,46,.035);
+  --slp-spring:cubic-bezier(.17,.9,.24,1.1);
+  --slp-ease:cubic-bezier(.2,.7,.2,1);
+}
+/* Base themes are not overridden: honor every saved Bento color and font. */
+body{background:var(--b-bg,#e7f4ed)!important;}
+#app-root{
+  isolation:isolate;
+  background:radial-gradient(ellipse 76% 46% at 96% -4%,color-mix(in srgb,var(--b-accent,#25b7aa) 15%,transparent),transparent 76%),
+             radial-gradient(ellipse 66% 55% at -8% 102%,color-mix(in srgb,var(--b-percent,#6434d2) 7%,transparent),transparent 77%),
+             var(--b-bg,#e7f4ed);
+}
+#view-home.bento-home {
+  background:radial-gradient(ellipse 82% 34% at 98% -8%,color-mix(in srgb,var(--b-accent,#24b6a6) 14%,transparent),transparent 79%),
+             radial-gradient(ellipse 80% 48% at -11% 92%,color-mix(in srgb,var(--b-percent,#6f42d8) 8%,transparent),transparent 75%),
+             var(--b-bg)!important;
+}
+#app-root .view:not(.bento-home) {
+  background:radial-gradient(ellipse 76% 36% at 100% -9%,color-mix(in srgb,var(--b-accent,#24b6a6) 11%,transparent),transparent 80%),var(--b-bg,#e7f4ed)!important;
+}
+
+/* GLASS surfaces: restrained backdrop blur only on small UI regions. */
+#view-home.bento-home .bento-header{
+  isolation:isolate;
+}
+#view-home.bento-home .bento-header::after{
+  content:"";position:absolute;inset:0 7px 0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 62% 90% at 15% 0%,rgba(255,255,255,.19),transparent 100%);
+}
+#view-home.bento-home .bento-brand strong{
+  font-weight:950;letter-spacing:-1.5px;
+  text-shadow:0 1px 0 rgba(255,255,255,.17);
+}
+#view-home.bento-home .bento-brand-dot {
+  color:var(--b-accent)!important;
+  text-shadow:0 0 12px color-mix(in srgb,var(--b-accent) 40%,transparent);
+}
+#view-home.bento-home .bento-header-actions .bento-round-icon{
+  width:39px;height:39px;
+  border:1px solid rgba(255,255,255,.52)!important;
+  background:linear-gradient(145deg,rgba(255,255,255,.75),var(--slp-glass-thin))!important;
+  box-shadow:0 7px 14px -10px rgba(16,46,32,.4),inset 0 1px 1px rgba(255,255,255,.85)!important;
+  backdrop-filter:blur(8px) saturate(1.25);-webkit-backdrop-filter:blur(8px) saturate(1.25);
+  transform:translateZ(0);
+}
+#view-home.bento-home .bento-intro h1{letter-spacing:-1.5px;font-weight:900;}
+#view-home.bento-home .bento-intro p{letter-spacing:.02em;}
+#view-home.bento-home .bento-mascot{
+  border-radius:23px!important;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--b-daily) 65%,white),var(--b-daily))!important;
+  box-shadow:0 11px 23px -13px color-mix(in srgb,var(--b-daily) 65%,#814737),inset 0 1px 0 rgba(255,255,255,.7)!important;
+  border:1px solid rgba(255,255,255,.39)!important;
+}
+#view-home.bento-home .bento-mascot::after{
+  content:"";position:absolute;inset:-35% 48% 45% -28%;border-radius:50%;background:rgba(255,255,255,.21);pointer-events:none;
+}
+
+/* Financial hero: individual layers with glossy specular reflection. */
+#view-home.bento-home .bento-tile{
+  border-radius:25px!important;
+  border:1px solid rgba(255,255,255,.32)!important;
+  box-shadow:var(--slp-lift-strong)!important;
+  transform:translateZ(0);will-change:auto;
+  transition:transform 260ms var(--slp-spring),box-shadow 260ms var(--slp-ease),filter 260ms ease!important;
+}
+#view-home.bento-home .bento-tile::before {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 90% 80% at 2% -8%,rgba(255,255,255,.32),transparent 72%),
+             linear-gradient(132deg,rgba(255,255,255,.13),transparent 45%,rgba(255,255,255,.03) 82%);
+  border-radius:inherit;
+}
+#view-home.bento-home .bento-tile::after{
+  content:"";position:absolute;width:135px;height:135px;right:-75px;top:-93px;
+  border:23px solid rgba(255,255,255,.085);border-radius:50%;pointer-events:none;z-index:0;
+}
+#view-home.bento-home .bento-balance{
+  background:linear-gradient(149deg,color-mix(in srgb,var(--b-balance) 90%,white),var(--b-balance) 58%,color-mix(in srgb,var(--b-balance) 87%,var(--b-accent)))!important;
+  border-color:color-mix(in srgb,var(--b-ink) 7%,rgba(255,255,255,.55))!important;
+}
+#view-home.bento-home .bento-percent{
+  background:linear-gradient(141deg,color-mix(in srgb,var(--b-percent) 77%,white),var(--b-percent) 53%,color-mix(in srgb,var(--b-percent) 78%,#24085c))!important;
+}
+#view-home.bento-home .bento-percent::after {
+  top:auto;bottom:-54px;right:-97px;width:146px;height:146px;
+  border:23px solid rgba(255,255,255,.15);opacity:.87;
+}
+#view-home.bento-home .bento-spent{
+  background:linear-gradient(148deg,color-mix(in srgb,var(--b-spent) 88%,#6aa999),var(--b-spent) 59%,color-mix(in srgb,var(--b-spent) 87%,black))!important;
+}
+#view-home.bento-home .bento-daily{
+  background:linear-gradient(145deg,color-mix(in srgb,var(--b-daily) 76%,white),var(--b-daily) 63%,color-mix(in srgb,var(--b-daily) 81%,#e99c76))!important;
+}
+#view-home.bento-home .bento-kicker{letter-spacing:1.25px;font-size:9.1px;}
+#view-home.bento-home .bento-amount{letter-spacing:-1.1px;text-shadow:0 1px 0 rgba(255,255,255,.075)}
+#view-home.bento-home .bento-percent-number {text-shadow:0 3px 13px rgba(21,10,71,.15);font-weight:950;}
+#view-home.bento-home .bento-arrow{
+  background:var(--slp-glass-thin)!important;border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 4px 10px rgba(0,0,0,.055),inset 0 1px 0 rgba(255,255,255,.65);
+}
+#view-home.bento-home .bento-budget-row{
+  background:linear-gradient(105deg,color-mix(in srgb,var(--b-budget) 83%,white),var(--b-budget))!important;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 4px 10px -9px rgba(17,56,36,.25)!important;
+  border:1px solid color-mix(in srgb,var(--b-ink) 8%,transparent)!important;
+  font-weight:630;
+}
+#view-home.bento-home .bento-budget-row strong{font-weight:890;letter-spacing:-.25px;}
+#view-home.bento-home .bento-chart,
+#view-home.bento-home .bento-wallet{
+  background:linear-gradient(147deg,color-mix(in srgb,var(--b-chart) 84%,white),var(--b-chart))!important;
+  border:1px solid rgba(255,255,255,.54)!important;
+  box-shadow:var(--slp-lift)!important;
+  border-radius:25px!important;
+  position:relative;isolation:isolate;
+}
+#view-home.bento-home :is(.bento-chart,.bento-wallet)::before{
+  content:"";position:absolute;inset:0 0 auto;height:42%;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:linear-gradient(180deg,rgba(255,255,255,.20),transparent);
+}
+#view-home.bento-home .bento-section-head h2{
+  font-weight:900;letter-spacing:-.65px;
+}
+#view-home.bento-home .bento-see-all{
+  font-size:9.5px;letter-spacing:.7px;font-weight:850;
+  text-decoration:none!important;
+}
+#view-home.bento-home .bento-period{
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:var(--slp-inset);
+  background:var(--slp-glass)!important;
+}
+#view-home.bento-home .bento-category-pill{
+  border:1px solid rgba(255,255,255,.46)!important;
+  box-shadow:0 5px 12px -12px rgba(12,42,34,.5),inset 0 1px 0 rgba(255,255,255,.42)!important;
+  border-radius:17px!important;
+}
+#view-home.bento-home .bento-category-pill strong{font-weight:900;}
+
+/* Brand cards: a bright specular highlight and illuminated logo. */
+#view-home.bento-home .sw-home-card,
+#view-finance .sw-finance-card,
+.sw-detail-card{
+  border:1px solid rgba(255,255,255,.27)!important;
+  box-shadow:0 18px 30px -19px rgba(8,30,26,.45),inset 0 1px 0 rgba(255,255,255,.27)!important;
+  overflow:hidden;isolation:isolate;
+}
+#view-home.bento-home .sw-home-card::before,
+#view-finance .sw-finance-card::before,
+.sw-detail-card::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(147deg,rgba(255,255,255,.27),rgba(255,255,255,.025) 44%,rgba(0,0,0,.08) 94%);
+}
+#view-home.bento-home .sw-home-card > *,
+#view-finance .sw-finance-card > *,
+.sw-detail-card > *{z-index:1;position:relative}
+#view-home.bento-home .sw-home-card {border-radius:19px!important;}
+#view-home.bento-home .sw-home-card::after,
+#view-finance .sw-finance-card::after{
+  border-color:rgba(255,255,255,.13)!important;
+}
+#view-home.bento-home .sw-home-card-type,
+#view-finance .sw-finance-title small {
+  background:rgba(255,255,255,.12)!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  border-radius:999px!important;
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+}
+#view-home.bento-home .sw-home-card-type{padding:3px 6px!important;}
+#view-home.bento-home .sw-banklogo.sba-logo,
+#view-finance .sw-banklogo.sba-logo {
+  background:rgba(255,255,255,.18)!important;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+/* Floating dock: frosted graphite/chrome, softly glowing selected action. */
+#app-root .bottom-dock,
+#app-root:has(#view-home.active.bento-home) .bottom-dock{
+  border-radius:27px!important;
+  border:1px solid rgba(255,255,255,.19)!important;
+  background:linear-gradient(142deg,color-mix(in srgb,var(--b-nav,#173f37) 88%,white),color-mix(in srgb,var(--b-nav,#173f37) 92%,transparent))!important;
+  box-shadow:0 13px 32px -12px rgba(7,34,27,.43),inset 0 1px 0 rgba(255,255,255,.24)!important;
+  backdrop-filter:blur(20px) saturate(1.5)!important;-webkit-backdrop-filter:blur(20px) saturate(1.5)!important;
+  overflow:visible!important;
+}
+#app-root:has(#view-home.active.bento-home) .dock-btn{border-radius:15px!important;}
+#app-root:has(#view-home.active.bento-home) .dock-btn.active:not(.dock-main-btn){
+  background:rgba(255,255,255,.125)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11)!important;
+}
+#app-root .dock-main-btn,
+#app-root:has(#view-home.active.bento-home) .dock-main-btn {
+  background:linear-gradient(148deg,color-mix(in srgb,var(--b-plus,#dfff74) 75%,white),var(--b-plus,#dfff74) 62%,color-mix(in srgb,var(--b-plus,#dfff74) 88%,#749f28))!important;
+  border:1px solid rgba(255,255,255,.48)!important;
+  box-shadow:0 7px 14px -10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.68)!important;
+  border-radius:18px!important;
+}
+#app-root .bottom-dock .dock-btn :is(svg,.bento-nav-label){position:relative;z-index:1;}
+
+/* All screens: consistent hierarchy, shadows and elegant glass panels. */
+#app-root .view:not(.bento-home) .top-bar.glass-pill {
+  background:linear-gradient(150deg,color-mix(in srgb,var(--b-chart,#fffdfa) 85%,white),var(--slp-glass))!important;
+  border:1px solid rgba(255,255,255,.6)!important;
+  border-radius:25px!important;
+  box-shadow:var(--slp-lift)!important;
+  backdrop-filter:blur(13px) saturate(1.18);-webkit-backdrop-filter:blur(13px) saturate(1.18);
+}
+#app-root .view:not(.bento-home) .view-title{
+  font-weight:900!important;letter-spacing:-.8px!important;
+}
+#app-root .view:not(.bento-home) :is(.glass-card,.settings-card,.chart-container,.history-card,.list-card),
+#view-settings .slp-settings-group,
+#view-finance .slp-money-tile {
+  border:1px solid var(--slp-edge)!important;
+  background:linear-gradient(154deg,color-mix(in srgb,var(--b-chart,#fffdfa) 95%,white),var(--b-chart,#fffdfa))!important;
+  border-radius:22px!important;
+  box-shadow:var(--slp-lift)!important;
+}
+#app-root .view:not(.bento-home) .glass-card.item-row{
+  background:linear-gradient(150deg,color-mix(in srgb,var(--b-chart,#fffdfa) 89%,white),var(--b-chart,#fffdfa))!important;
+  border-radius:19px!important;
+}
+#view-finance .slp-money-hero .slp-money-pair{
+  border:1px solid rgba(255,255,255,.45)!important;
+  background:linear-gradient(140deg,color-mix(in srgb,var(--b-chart,#fffdfa) 80%,white),var(--b-budget,#d9eae0))!important;
+  border-radius:22px!important;
+  box-shadow:var(--slp-lift)!important;
+  overflow:hidden;position:relative;
+}
+#view-finance .slp-money-hero .slp-money-pair::after{
+  content:"";position:absolute;pointer-events:none;right:-38px;top:-44px;width:100px;height:100px;
+  border-radius:50%;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.2);
+}
+#view-finance .slp-money-hero .slp-money-pair strong{font-weight:900;font-variant-numeric:tabular-nums;}
+#view-finance .slp-money-heading{font-size:16px;font-weight:900;letter-spacing:-.45px;}
+#view-finance .sw-finance-card{border-radius:25px!important;}
+#view-finance .sw-finance-direct-edit{
+  border:1px solid rgba(255,255,255,.55)!important;
+  box-shadow:0 8px 15px -10px rgba(8,34,27,.42),inset 0 1px 0 rgba(255,255,255,.64)!important;
+  background:linear-gradient(148deg,color-mix(in srgb,var(--b-chart,#fffdfa) 84%,white),var(--b-chart,#fffdfa))!important;
+}
+#view-finance .slp-savings-summary {
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--b-nav,#17483a) 78%,#69b59a),var(--b-nav,#17483a) 61%,color-mix(in srgb,var(--b-nav,#17483a) 79%,#122b52))!important;
+  box-shadow:0 23px 38px -25px rgba(8,40,37,.55),inset 0 1px 0 rgba(255,255,255,.17)!important;
+  border:1px solid rgba(255,255,255,.21)!important;
+  border-radius:27px!important;
+}
+#view-finance .slp-savings-summary::after{
+  content:"";position:absolute;top:-90px;right:-130px;width:290px;height:290px;pointer-events:none;
+  border-radius:50%;border:49px solid rgba(255,255,255,.07);
+}
+#view-finance .slp-saving-product{
+  border-radius:23px!important;overflow:hidden;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--b-chart,#fffdfa) 91%,white),var(--b-chart,#fffdfa))!important;
+  box-shadow:var(--slp-lift)!important;
+}
+#view-finance .slp-saving-product[open]{box-shadow:var(--slp-lift-strong)!important;}
+#view-finance .slp-savings-tools button{
+  border-radius:16px!important;
+}
+#view-finance .slp-market-compact{border-radius:16px!important;}
+#view-finance .slp-finance-tabs {
+  background:linear-gradient(145deg,color-mix(in srgb,var(--b-budget,#e3eee9) 84%,white),var(--b-budget,#e3eee9))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 7px 15px -13px rgba(8,45,31,.35)!important;
+  border:1px solid var(--slp-edge)!important;
+  border-radius:22px!important;
+}
+#view-finance .slp-finance-tabs .segment-btn{
+  border-radius:14px!important;min-height:42px!important;font-weight:810!important;
+}
+#view-finance .slp-finance-tabs .segment-btn.active{
+  background:linear-gradient(148deg,color-mix(in srgb,var(--b-nav,#173f37) 87%,white),var(--b-nav,#173f37))!important;
+  box-shadow:0 9px 16px -11px rgba(10,41,36,.55),inset 0 1px 0 rgba(255,255,255,.19)!important;
+}
+#view-finance #subs-list .glass-card.item-row {
+  border:1px solid var(--slp-edge)!important;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--b-chart,#fffdfa) 90%,white),var(--b-chart,#fffdfa))!important;
+  border-radius:22px!important;
+  box-shadow:var(--slp-lift)!important;
+}
+#view-finance #subs-list .slp-sub-config{
+  border-top:1px solid var(--slp-edge)!important;
+}
+#view-finance #subs-list .slp-sub-config button{
+  background:linear-gradient(136deg,color-mix(in srgb,var(--b-budget,#e0eee2) 75%,white),var(--b-budget,#e0eee2))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.56)!important;
+}
+
+/* Settings: modern expandable preference groups with visual depth. */
+#view-settings .slp-settings-group{
+  background:linear-gradient(153deg,color-mix(in srgb,var(--b-chart,#fffdfa) 94%,white),var(--b-chart,#fffdfa))!important;
+  border:1px solid rgba(255,255,255,.51)!important;
+  box-shadow:var(--slp-lift)!important;
+  border-radius:23px!important;overflow:hidden;
+}
+#view-settings .slp-settings-group[open]{
+  box-shadow:var(--slp-lift-strong)!important;
+  border-color:color-mix(in srgb,var(--b-accent,#25b6a6) 22%,rgba(255,255,255,.45))!important;
+}
+#view-settings .slp-settings-group > summary{
+  min-height:51px;padding:14px 16px!important;font-weight:850!important;letter-spacing:-.3px;
+  background:linear-gradient(116deg,rgba(255,255,255,.12),transparent) !important;
+}
+#view-settings .slp-settings-group[open] > summary{
+  background:linear-gradient(125deg,color-mix(in srgb,var(--b-budget,#d9eae0) 22%,transparent),transparent)!important;
+}
+#view-settings #bento-theme-settings {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 9px 22px -15px rgba(10,34,28,.28)!important;
+  border-radius:21px!important;
+  border:1px solid var(--slp-edge)!important;
+}
+#view-settings .bento-preset,
+#view-settings .bento-reset {
+  border-radius:14px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.44)!important;
+}
+#view-settings .bento-preset[aria-pressed="true"]{
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--b-accent,#28b49f) 17%,transparent)!important;
+}
+
+/* Buttons/forms/panels: tactile but native and fast. */
+#app-root :is(.btn-full,.slp-action,.btn-data,.slp-primary,.btn-primary,.bento-preset,.btn-save),
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) :is(.btn-full,.slp-action,.btn-save,.btn-primary){
+  border-radius:15px!important;
+  box-shadow:0 8px 18px -15px rgba(10,38,30,.55),inset 0 1px 0 rgba(255,255,255,.32);
+  transition:transform 230ms var(--slp-spring),box-shadow 230ms var(--slp-ease),background-color 230ms ease,filter 230ms ease!important;
+}
+#app-root :is(.btn-full,.slp-action,.btn-data,.slp-primary,.btn-primary):active,
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) :is(.btn-full,.slp-action,.btn-save,.btn-primary):active{
+  transform:translateY(1px) scale(.978)!important;filter:brightness(.98)!important;
+}
+#app-root :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea),
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea){
+  border-radius:14px!important;
+  border:1px solid var(--slp-edge)!important;
+  box-shadow:inset 0 2px 6px -5px rgba(5,25,18,.2),0 1px 0 rgba(255,255,255,.18)!important;
+  background-color:color-mix(in srgb,var(--b-budget,#e2eee6) 66%,var(--b-chart,#fffdfa))!important;
+  accent-color:var(--b-accent,#25b49b);
+}
+#app-root :is(input,select,textarea):focus,
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) :is(input,select,textarea):focus{
+  border-color:color-mix(in srgb,var(--b-accent,#25b49b) 62%,transparent)!important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--b-accent,#25b49b) 16%,transparent)!important;
+}
+#app-root :is(button,[role="button"]),
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) button{
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+#app-root :is(button,[role="button"]):focus-visible,
+:where(.modal-overlay,.slp-dialog-backdrop,.sw-detail-backdrop) button:focus-visible{
+  outline:2px solid var(--b-accent,#2da48b);outline-offset:3px;
+}
+@media (pointer:coarse){
+  #app-root :is(.icon-btn,.bento-round-icon,.sw-finance-direct-edit,.btn-full,.btn-data,.slp-action),
+  #view-settings .slp-settings-group>summary{min-height:42px;}
+}
+.slp-money-dialog,.sw-detail-sheet,.modal-content,.modal-box{
+  border:1px solid rgba(255,255,255,.37)!important;
+  box-shadow:0 -18px 45px -24px rgba(5,26,24,.34),inset 0 1px 0 rgba(255,255,255,.42)!important;
+}
+.slp-money-dialog,.sw-detail-sheet{border-radius:31px 31px 0 0!important;}
+.slp-dialog-backdrop,.sw-detail-backdrop{
+  background:rgba(6,24,24,.52)!important;
+  backdrop-filter:blur(7px) saturate(1.10);-webkit-backdrop-filter:blur(7px) saturate(1.10);
+}
+/* Do not use blur on full-screen modal overlays on low-power devices. */
+@media (max-width:360px){
+  #view-home.bento-home .bento-tile{border-radius:20px!important;}
+  #view-home.bento-home .bento-amount{letter-spacing:-1.4px;}
+  #app-root .bottom-dock{border-radius:23px!important;}
+  #view-finance .slp-finance-tabs{gap:5px!important;padding:6px!important;}
+  #view-finance .slp-finance-tabs .segment-btn{min-height:40px!important;}
+}
+
+/* Animate entry once per actual route, no 60fps infinite visual effects. */
+@keyframes slp-view-enter{
+  from{opacity:0;transform:translate3d(0,10px,0) scale(.993);filter:blur(2px)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+}
+@keyframes slp-stagger-up {
+  from{opacity:0;transform:translate3d(0,13px,0) scale(.982)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes slp-sheet-rise {
+  from{opacity:.72;transform:translate3d(0,28px,0) scale(.985)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes slp-dialog-pop {
+  from{opacity:.6;transform:translate3d(0,15px,0) scale(.97)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes slp-glass-flash {
+  from{opacity:0;transform:translate3d(-25%,0,0) rotate(20deg)}
+  to{opacity:.3;transform:translate3d(110%,0,0) rotate(20deg)}
+}
+html.slp-ui-ready #app-root .view.slp-route-enter:not(.bento-home){
+  animation:slp-view-enter 360ms var(--slp-ease) both!important;
+}
+html.slp-ui-ready #view-home.bento-home.slp-route-enter .bento-intro{
+  animation:slp-stagger-up 440ms var(--slp-spring) both;
+}
+html.slp-ui-ready #view-home.bento-home.slp-route-enter .bento-metrics {
+  animation:slp-stagger-up 470ms 45ms var(--slp-spring) both;
+}
+html.slp-ui-ready #view-home.bento-home.slp-route-enter .bento-wallet,
+html.slp-ui-ready #view-home.bento-home.slp-route-enter .bento-categories,
+html.slp-ui-ready #view-home.bento-home.slp-route-enter .bento-chart {
+  animation:slp-stagger-up 510ms 95ms var(--slp-spring) both;
+}
+.sw-detail-sheet{animation:slp-sheet-rise 340ms var(--slp-spring) both;}
+.slp-money-dialog{animation:slp-dialog-pop 260ms var(--slp-spring) both;}
+#app-root .view:not(.bento-home) .glass-card,
+#view-finance .slp-saving-product,
+#view-settings .slp-settings-group,
+#view-home.bento-home .bento-tile,
+#view-home.bento-home .sw-home-card{
+  transition:transform 260ms var(--slp-spring),box-shadow 260ms var(--slp-ease),border-color 250ms ease!important;
+}
+#app-root .view:not(.bento-home) .glass-card:active,
+#view-finance .slp-saving-product:active,
+#view-home.bento-home .bento-tile:active,
+#view-home.bento-home .sw-home-card:active{
+  transform:translate3d(0,1px,0) scale(.985)!important;
+  box-shadow:0 7px 17px -13px rgba(9,39,30,.4),inset 0 1px 0 rgba(255,255,255,.33)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  #view-home.bento-home .bento-tile:hover,
+  #view-home.bento-home .sw-home-card:hover,
+  #view-finance .sw-finance-card:hover,
+  #view-settings .slp-settings-group:hover{
+    transform:translate3d(0,-3px,0)!important;
+    box-shadow:var(--slp-lift-strong)!important;
+  }
+}
+/* True opt out for accessibility, including dialogs and boot splash. */
+@media(prefers-reduced-motion:reduce){
+  html.slp-ui-ready :is(.slp-route-enter,.bento-intro,.bento-metrics,.bento-wallet,.bento-categories,.bento-chart,.sw-detail-sheet,.slp-money-dialog){animation:none!important;}
+  #app-root *,#app-root *::before,#app-root *::after,
+  .slp-money-dialog,.sw-detail-sheet,#slp-boot-splash{transition-duration:.01ms!important;animation-duration:.01ms!important;}
+}
+
+/* Atelier signature: visible frosted-glass chrome and framed Bento metrics. */
+#view-home.bento-home .bento-header{
+  margin:6px 12px 4px!important;
+  padding:calc(8px + env(safe-area-inset-top)) 12px 7px!important;
+  min-height:51px!important;
+  border-radius:24px!important;
+  border:1px solid rgba(255,255,255,.52)!important;
+  background:linear-gradient(128deg,color-mix(in srgb,var(--b-chart,#fff) 78%,transparent),color-mix(in srgb,var(--b-budget,#edf3eb) 65%,transparent))!important;
+  box-shadow:0 14px 25px -24px rgba(12,50,37,.4),inset 0 1px 0 rgba(255,255,255,.78)!important;
+  backdrop-filter:blur(15px) saturate(1.3);-webkit-backdrop-filter:blur(15px) saturate(1.3);
+}
+#view-home.bento-home .bento-header-actions .bento-round-icon{
+  width:35px;height:35px;
+  background:linear-gradient(145deg,var(--slp-glass),var(--slp-glass-thin))!important;
+}
+#view-home.bento-home .bento-metrics{
+  border-radius:30px!important;
+  padding:5px!important;
+  border:1px solid rgba(255,255,255,.6)!important;
+  background:linear-gradient(125deg,color-mix(in srgb,var(--b-chart,#fff) 47%,transparent),color-mix(in srgb,var(--b-budget,#daeae0) 25%,transparent))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.71),0 7px 21px -18px rgba(9,45,37,.34)!important;
+  gap:7px!important;
+}
+#view-home.bento-home .bento-tile{
+  border-radius:25px!important;
+  box-shadow:0 14px 22px -18px rgba(7,34,28,.52),inset 0 1px 0 rgba(255,255,255,.38)!important;
+}
+#view-home.bento-home .bento-metrics .bento-tile:last-child {
+  box-shadow:0 14px 22px -18px rgba(7,34,28,.42),inset 0 1px 0 rgba(255,255,255,.50)!important;
+}
+#view-home.bento-home .bento-amount {font-size:clamp(20px,6.0vw,32px)}
+#view-home.bento-home .bento-main-amount {font-size:clamp(22px,6.6vw,35px)}
+#view-home.bento-home .bento-percent-number {font-size:clamp(47px,14.9vw,71px)}
+#view-home.bento-home .bento-category-pill:nth-child(1){background:linear-gradient(130deg,color-mix(in srgb,var(--b-cat-a) 65%,white),var(--b-cat-a))!important}
+#view-home.bento-home .bento-category-pill:nth-child(2){background:linear-gradient(130deg,color-mix(in srgb,var(--b-cat-b) 67%,white),var(--b-cat-b))!important}
+#view-home.bento-home .bento-category-pill:nth-child(3){background:linear-gradient(130deg,color-mix(in srgb,var(--b-cat-c) 62%,white),var(--b-cat-c))!important}
+#view-home.bento-home .bento-category-pill:nth-child(4){background:linear-gradient(130deg,color-mix(in srgb,var(--b-cat-d) 62%,white),var(--b-cat-d))!important}
+#view-home.bento-home .bento-category-pill strong{font-size:18px;}
+#app-root .bottom-dock #dock-plus-btn svg,
+#app-root:has(#view-home.active.bento-home) #dock-plus-btn svg {
+  stroke:var(--b-nav,#173f37)!important;
+}
+#app-root .bottom-dock #dock-plus-btn svg line,
+#app-root:has(#view-home.active.bento-home) #dock-plus-btn svg line{
+  stroke:var(--b-nav,#173f37)!important;
+}
+#app-root .bottom-dock #dock-plus-btn {
+  box-shadow:0 0 0 4px rgba(255,255,255,.07),0 8px 17px -9px rgba(6,21,15,.54),inset 0 1px 0 rgba(255,255,255,.68)!important;
+}
+@media(max-height:750px){
+  #view-home.bento-home .bento-header{margin:3px 10px 3px!important;padding:calc(5px + env(safe-area-inset-top)) 9px 6px!important;min-height:45px!important}
+  #view-home.bento-home .bento-metrics{padding:3px!important;gap:5px!important;border-radius:25px!important}
+  #view-home.bento-home .bento-metrics .bento-tile{border-radius:20px!important}
+}
+
+/* Liquid touch lens — follows the press coordinate, then settles away. */
+#view-home.bento-home .bento-tile::before,
+#view-home.bento-home .sw-home-card::before,
+#view-finance .sw-finance-card::before{
+  background:radial-gradient(ellipse 100% 85% at var(--slp-touch-x,5%) var(--slp-touch-y,0%),rgba(255,255,255,.33),transparent 72%),
+             linear-gradient(133deg,rgba(255,255,255,.16),transparent 48%,rgba(0,0,0,.025));
+  transition:filter 250ms ease-out,opacity 250ms ease-out!important;
+}
+#view-home.bento-home .bento-tile.slp-liquid-pressed::before,
+#view-home.bento-home .sw-home-card.slp-liquid-pressed::before,
+#view-finance .sw-finance-card.slp-liquid-pressed::before{
+  filter:brightness(1.32);opacity:1;
+}
