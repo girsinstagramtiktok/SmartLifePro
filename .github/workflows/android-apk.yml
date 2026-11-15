@@ -32,6 +32,8 @@ on:
       - 'smarty-daily-spending.js'
       - 'smarty-daily-spending.css'
       - 'smarty-pro-polish.css'
+      - 'smarty-pro-motion.js'
+      - 'smarty-pro-motion-tests.cjs'
       - 'smarty-money-*.js'
       - 'smarty-money.css'
       - 'smarty-investment-catalog.js'
@@ -93,13 +95,14 @@ jobs:
           TZ=America/Sao_Paulo node smarty-investment-tests.cjs
           TZ=America/Sao_Paulo node smarty-wallet-tests.cjs
           TZ=America/Sao_Paulo node smarty-fixed-billing-tests.cjs
+          node smarty-pro-motion-tests.cjs
           node biometric-tests.cjs
           node updater-tests.cjs
           node backup-tests.cjs
           node quick-ota-tests.cjs
 
           cp index.html style.css bento-home.css bento-global.css smarty-daily-spending.css smarty-money.css smarty-wallet.css manifest.json logo.png www/ 2>/dev/null || true
-          cp smarty-pro-polish.css www/
+          cp smarty-pro-polish.css smarty-pro-motion.js www/
           cp data.js ui.js assistant.js finance.js shopping.js main.js bento-home.js smarty-biometrics.js smarty-app-updater.js smarty-daily-backup.js bank-bridge.js camera-bridge.js smarty-bank-source.js smarty-daily-spending.js smarty-money-core.js smarty-investment-catalog.js smarty-brand-assets.js smarty-money-ui.js smarty-wallet.js smarty-fixed-billing.js smarty-list-reminders.js smarty-settings-modern.js www/
           node tools/prepare-brand-icons.cjs www
           cp idle.png happy.png worried.png alert.png thinking.png listening.png broke.png www/ 2>/dev/null || true
