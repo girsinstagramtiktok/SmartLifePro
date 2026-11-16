@@ -1,0 +1,102 @@
+name: Publish SmartLifePro release index
+
+on:
+  # Se ejecuta al subir este archivo por primera vez.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/smarty-release-index.yml'
+  # Se ejecuta tras cada compilación/publicación correcta de la app Android.
+  workflow_run:
+    workflows: ['Build Smarty Android APK']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: smarty-release-index-main
+  cancel-in-progress: false
+
+jobs:
+  publish-index:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Publish index of latest valid signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            gh api "repos/${GITHUB_REPOSITORY}/releases/latest" > "$RUNNER_TEMP/smarty-release.json"
+            node <<'NODE'
+          const fs = require('node:fs');
+          const release = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/smarty-release.json', 'utf8'));
+          const repo = process.env.GITHUB_REPOSITORY;
+          const tag = String(release.tag_name || '');
+          const matched = /^v(\d{5,12})$/.exec(tag);
+          if (!matched) throw new Error('Latest Release has an invalid version tag: ' + tag);
+          const versionCode = Number(matched[1]);
+          if (!Number.isSafeInteger(versionCode)) throw new Error('Version code is unsafe');
+          const asset = (release.assets || []).find(a => a.name === 'SmartLifePro.apk' && a.state === 'uploaded');
+          if (!asset) throw new Error('SmartLifePro.apk is missing from latest Release');
+          const url = `https://github.com/${repo}/releases/download/${tag}/SmartLifePro.apk`;
+          if (asset.browser_download_url !== url) throw new Error('Unexpected APK URL');
+          const digest = /^sha256:([a-f0-9]{64})$/i.exec(String(asset.digest || ''));
+          if (!digest) throw new Error('Latest Release has no SHA-256 digest');
+          const target = 'smarty-latest.json';
+          if (fs.existsSync(target)) {
+            try {
+              const previous = JSON.parse(fs.readFileSync(target, 'utf8'));
+              if (Number(previous.versionCode) > versionCode) {
+                console.log('Keeping newer indexed release:', previous.versionCode);
+                process.exit(0);
+              }
+            } catch (e) { console.log('Replacing invalid previous manifest:', e.message); }
+          }
+          const manifest = {
+            schema: 1,
+            repository: repo,
+            versionCode,
+            tag,
+            releaseName: String(release.name || tag),
+            apkUrl: url,
+            sha256: digest[1].toLowerCase(),
+            publishedAt: release.published_at || null
+          };
+          fs.writeFileSync(target, JSON.stringify(manifest, null, 2) + '\n');
+          console.log('Indexed', tag, 'SHA-256', manifest.sha256);
+          NODE
+            git add smarty-latest.json
+            if git diff --cached --quiet; then
+              echo 'Public index is already up to date.'
+              exit 0
+            fi
+            git commit -m 'chore: update public SmartLifePro release index [skip ci]'
+            if git push origin HEAD:main; then
+              echo 'Public index successfully published.'
+              exit 0
+            fi
+            echo "Concurrent push detected: retry $attempt/3" >&2
+            sleep "$attempt"
+          done
+          echo 'Unable to publish release index after 3 attempts.' >&2
+          exit 1
