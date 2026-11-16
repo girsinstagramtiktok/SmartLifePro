@@ -1538,3 +1538,539 @@ Rules:
     }
 
 };
+
+/* ============================================================
+ * SmartLifePro — tickets verificables, historial consistente y foto local.
+ * Se instala DESPUÉS de los complementos que GitHub Actions inyecta al APK.
+ * No toca presupuestos, cobros recurrentes ni movimientos ya existentes.
+ * ============================================================ */
+(function(root) {
+  'use strict';
+  if (!root || !root.document) return;
+  const DB_NAME = 'smartlifepro_receipt_images_v1';
+  const STORE_NAME = 'photos';
+  const pending = new Map();
+  let recentScan = null;
+  const $ = id => root.document.getElementById(id);
+  const lang = () => (typeof Data !== 'undefined' && Data.store?.settings?.lang) || 'es';
+  const tr = (es, pt, en) => ({ es, pt, en })[lang()] || es;
+  const notify = message => { if (typeof UI !== 'undefined') UI.showSnackbar?.(message); };
+  const money = n => typeof UI !== 'undefined' && UI.formatMoney ? UI.formatMoney(n) : `R$ ${Number(n).toFixed(2)}`;
+  const cents = n => Math.round((Number(n) + Number.EPSILON) * 100);
+  const rounded = n => cents(n) / 100;
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[ch]);
+
+  function numeric(value, fallback = NaN) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+    if (value === undefined || value === null || value === '') return fallback;
+    let s = String(value).trim().replace(/(?:R\$|\s|kg|unid\.?|unidades?)/gi, '').replace(/[^0-9,.\-]/g, '');
+    if (!s) return fallback;
+    if (s.includes(',') && s.includes('.')) {
+      s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    } else if (s.includes(',')) s = s.replace(',', '.');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  function qtyValue(qty) {
+    // Cadena histórica "600g" NO se multiplica: los registros antiguos ya
+    // guardaban el importe de esa pieza. Solo interpretar cantidades explícitas.
+    if (qty === '' || qty === null || qty === undefined) return 1;
+    const s = String(qty).trim().toLowerCase().replace(',', '.');
+    const match = /^x?\s*(\d+(?:\.\d+)?)$/.exec(s);
+    const n = match ? Number(match[1]) : 1;
+    return Number.isFinite(n) && n > 0 && n <= 10000 ? n : 1;
+  }
+  function quantityFromAI(raw, unitType) {
+    let q = numeric(raw, 1);
+    const s = String(raw ?? '').toLowerCase();
+    const unit = String(unitType || '').toLowerCase();
+    if (/\b(?:ml|litro|litros|l)\b/.test(unit) || /\d\s*(?:ml|litros?|l)\b/.test(s)) q = 1;
+    else if (/\b(?:g|grama|gramas)\b/.test(unit) || /\d\s*g\b/.test(s)) {
+      if (q > 2 && q <= 10000) q /= 1000;
+    }
+    return Number.isFinite(q) && q > 0 && q <= 10000 ? q : 1;
+  }
+  function lineSubtotal(item) { return rounded((numeric(item?.price, 0) || 0) * qtyValue(item?.qty)); }
+  function itemsSubtotal(items) { return rounded((items || []).filter(x => x.checked).reduce((sum, item) => sum + lineSubtotal(item), 0)); }
+  function listById(id) { return typeof Data === 'undefined' ? null : Data.store?.lists?.find(l => String(l.id) === String(id)); }
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      if (!root.indexedDB) return reject(Error('IndexedDB no disponible'));
+      const req = root.indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(STORE_NAME)) req.result.createObjectStore(STORE_NAME, { keyPath: 'id' }); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || Error('Almacenamiento de imágenes no disponible'));
+    });
+  }
+  async function photoAction(action, id, value) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, action === 'get' || action === 'all' ? 'readonly' : 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = action === 'get' ? store.get(String(id)) : action === 'all' ? store.getAll() : action === 'delete' ? store.delete(String(id)) : store.put({ id: String(id), data: value, at: Date.now() });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || Error('No se pudo acceder a la foto'));
+      tx.oncomplete = () => db.close();
+      tx.onabort = () => { db.close(); reject(tx.error || Error('No se pudo guardar la foto')); };
+    });
+  }
+  const getPhoto = id => photoAction('get', id);
+  const allPhotos = () => photoAction('all');
+  const removePhoto = id => photoAction('delete', id);
+
+  async function photoFromFile(file) {
+    if (!file) throw Error('No hay fotografía');
+    if (typeof Finance === 'undefined' || !Finance.compressImage) throw Error('Compresor de imágenes no disponible');
+    // JPEG legible; si el ticket es largo se reduce progresivamente.
+    let result = '';
+    for (const [width, quality] of [[1500,.72],[1350,.65],[1200,.60],[1050,.55],[950,.52]]) {
+      result = await Finance.compressImage(file, width, quality);
+      if (result.length <= 380000) break;
+    }
+    if (!/^data:image\/jpeg;base64,/i.test(result)) throw Error('La imagen no pudo comprimirse como JPEG');
+    return result;
+  }
+  async function attachPhoto(listId, data) {
+    if (!data || !listById(listId)) return false;
+    await photoAction('put', listId, data);
+    const list = listById(listId);
+    if (list) {
+      list.smReceiptPhoto = { attached: true, format:'jpeg', at: Date.now() };
+      Data.save(); // Solo metadata, no base64 en localStorage.
+    }
+    return true;
+  }
+  async function attachFromGallery(listId, file) {
+    try {
+      const data = await photoFromFile(file);
+      await attachPhoto(listId, data);
+      notify(tr('Foto comprimida y guardada con la compra.', 'Foto comprimida e salva com a compra.', 'Compressed receipt photo saved.'));
+      addDetailWidgets(listId);
+    } catch (err) { notify('No se pudo guardar la foto: ' + err.message); }
+  }
+  function scanWarnings(item, knownPrices) {
+    const flags=[];
+    const p=numeric(item.price,0);
+    if (!(p>0)) flags.push('Precio no identificado');
+    if (p>1500) flags.push('Precio excepcionalmente alto');
+    const key=typeof Shopping !== 'undefined' && Shopping.normalize ? Shopping.normalize(item.name) : String(item.name).toLowerCase();
+    const old=numeric(knownPrices?.[key],0);
+    if (p>0 && old>0 && (p>old*3 || p<old*.33)) flags.push('Precio muy distinto al registrado antes');
+    if (/\b\d+[,.]\d+\s*kg\b/i.test(item.name) && qtyValue(item.qty)>2) flags.push('Revisar cantidad: producto pesado');
+    return flags;
+  }
+  function normalizeAIItem(raw, index, knownPrices) {
+    const name=String(raw?.name||raw?.productName||`Producto ${index+1}`).replace(/[<>\"']/g, '').trim().slice(0,110) || `Producto ${index+1}`;
+    const unit=String(raw?.unitType||raw?.unit||'un').trim().toLowerCase();
+    let quantity=quantityFromAI(raw?.quantity??raw?.qty??1, unit);
+    const unitPrice=numeric(raw?.unitPrice??raw?.price, NaN);
+    const line=numeric(raw?.lineTotal??raw?.subtotal, NaN);
+    let price=Number.isFinite(unitPrice)&&unitPrice>0?unitPrice:(Number.isFinite(line)&&line>0?line/quantity:0);
+    if (price<0 || !Number.isFinite(price)) price=0;
+    // Las cantidades de artículos envasados se refieren a unidades compradas,
+    // no a litros/ml del tamaño del envase que figura en el nombre.
+    if (/\b(?:l|ml|litros?|litres?)\b/.test(unit)) quantity=1;
+    const qty=Math.abs(quantity-1)<0.00001?'':String(Number(quantity.toFixed(5)));
+    const output={name:name.charAt(0).toUpperCase()+name.slice(1),qty,checked:true,price:Number(price.toFixed(4))};
+    output.smUnit=/\b(?:kg|kilo|kilogramo)\b/.test(unit)?'kg':'un';
+    if (Number.isFinite(line)&&line>=0) output.smReadLineTotal=rounded(line);
+    if (raw?.packageSize) output.smPackageSize=String(raw.packageSize).slice(0,30);
+    output.smWarnings=scanWarnings(output, knownPrices);
+    if (Number.isFinite(line)&&line>=0&&Math.abs(lineSubtotal(output)-rounded(line))>0.03)
+      output.smWarnings.push('Subtotal leído diferente de cantidad × precio');
+    return output;
+  }
+  function scanMetadata(parsed) {
+    return {schema:2, at:Date.now(), receiptTotal:parsed.receiptTotal,
+      productsTotal:itemsSubtotal(parsed.items), discount:parsed.discount,
+      warningCount:parsed.items.reduce((n,i)=>n+(i.smWarnings?.length||0),0)};
+  }
+  function injectStyle() {
+    if ($('slp-receipt-styles')) return;
+    const node=root.document.createElement('style');node.id='slp-receipt-styles';
+    node.textContent=`
+      .slp-receipt-box{padding:12px 14px;margin:9px 0 12px;background:var(--input-bg,rgba(130,145,140,.10));border:1px solid var(--glass-border,rgba(125,145,130,.2));border-radius:15px;color:var(--text-color);font-size:12px;line-height:1.55}
+      .slp-receipt-box strong{font-weight:850}
+      .slp-receipt-box .slp-receipt-row{display:flex;gap:12px;align-items:baseline;justify-content:space-between}
+      .slp-receipt-box .slp-receipt-row>b{font-variant-numeric:tabular-nums;white-space:nowrap}
+      .slp-receipt-diff{color:var(--danger,#b45309)}
+      .slp-receipt-small{font-size:11px;opacity:.8;line-height:1.4}
+      .slp-receipt-note{font-size:11px;opacity:.75;display:block;margin-top:4px}
+      .slp-receipt-line{font-size:11px;font-weight:750;margin-top:6px;text-align:right;color:var(--text-sec)}
+      .slp-receipt-quantity{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;color:var(--text-sec);justify-content:flex-end}
+      .slp-receipt-quantity input{box-sizing:border-box;width:75px;min-height:32px;padding:5px 7px;border:1px solid var(--glass-border,#ccc);border-radius:9px;background:var(--card-bg,#fff);color:var(--text-color);font-size:12px;font-weight:800;text-align:right}
+      .slp-receipt-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+      .slp-receipt-actions button,.slp-receipt-actions label{display:inline-flex;align-items:center;justify-content:center;flex:1;min-width:110px;padding:11px 12px;border-radius:12px;background:var(--input-bg,rgba(120,120,120,.12));color:var(--text-color);font-size:12px;font-weight:750;cursor:pointer;border:1px solid var(--glass-border,rgba(120,120,120,.2))}
+      .slp-receipt-actions button:disabled{opacity:.5;cursor:default}
+      #slp-receipt-photo-dialog{border:0;padding:0;background:var(--card-bg,var(--bg-color,#fff));color:var(--text-color);border-radius:20px;width:min(96vw,680px);max-height:94dvh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+      #slp-receipt-photo-dialog::backdrop{background:rgba(5,13,17,.82)}
+      #slp-receipt-photo-dialog img{display:block;width:100%;height:auto;max-height:none;object-fit:contain;background:#fff}
+      #slp-receipt-photo-dialog .slp-receipt-photo-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;position:sticky;top:0;background:var(--card-bg,var(--bg-color,#fff));z-index:2}
+      #slp-receipt-photo-dialog button{border:0;border-radius:10px;min-height:40px;min-width:42px;color:var(--text-color);background:var(--input-bg,#eee);font-size:17px}
+      #slp-receipt-photo-dialog:modal{overscroll-behavior:contain}
+      #slp-receipt-photo-dialog::backdrop{overscroll-behavior:contain}
+      #slp-receipt-paid-input{width:105px;max-width:45%;padding:8px;border:1px solid var(--glass-border,#ccc);border-radius:10px;background:var(--card-bg,#fff);color:var(--text-color);font-weight:800;text-align:right}
+      #slp-receipt-backup{margin:12px 0}
+      @media(prefers-reduced-motion:no-preference){.slp-receipt-actions button:active{transform:scale(.98)}#slp-receipt-photo-dialog{animation:slp-ticket-in .16s ease-out}@keyframes slp-ticket-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}}
+    `;
+    root.document.head.appendChild(node);
+  }
+
+  async function showPhoto(id) {
+    try {
+      const rec=await getPhoto(id);
+      if (!rec?.data) { notify(tr('No hay foto guardada para esta compra.','Não há foto para esta compra.','No saved receipt photo.'));return; }
+      $('slp-receipt-photo-dialog')?.remove();
+      const dlg=root.document.createElement('dialog');dlg.id='slp-receipt-photo-dialog';
+      dlg.innerHTML=`<div class="slp-receipt-photo-head"><b>${escapeHtml(tr('Foto del ticket','Foto do cupom','Receipt photo'))}</b><button type="button" aria-label="Cerrar">×</button></div><img alt="Foto del comprobante de compra">`;
+      dlg.querySelector('img').src=rec.data;
+      dlg.querySelector('button').onclick=()=>dlg.close();
+      dlg.addEventListener('close',()=>dlg.remove(),{once:true});root.document.body.appendChild(dlg);
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open','');
+    } catch (err) { notify('No se pudo abrir la foto: '+err.message); }
+  }
+  async function addDetailWidgets(listId) {
+    const list=listById(listId), container=$('detail-items-list');if (!list || !container || String(Shopping.currentDetailListId)!==String(listId))return;
+    const parent=container.parentElement;
+    let actions=$('slp-receipt-photo-actions');
+    if (!actions) {
+      actions=root.document.createElement('div');actions.id='slp-receipt-photo-actions';actions.className='slp-receipt-actions';
+      parent.insertBefore(actions,container);
+    }
+    actions.replaceChildren();
+    const button=root.document.createElement('button');button.type='button';button.textContent=tr('Ver ticket','Ver cupom','View receipt');button.onclick=()=>showPhoto(listId);button.disabled=true;actions.appendChild(button);
+    const label=root.document.createElement('label');label.textContent=tr('Adjuntar foto','Anexar foto','Attach photo');
+    const file=root.document.createElement('input');file.type='file';file.accept='image/*';file.hidden=true;
+    file.onchange=()=>{const selected=file.files?.[0];if(selected)attachFromGallery(listId,selected);file.value='';};
+    label.appendChild(file);actions.appendChild(label);
+    try { const rec=await getPhoto(listId);if(!actions.isConnected || String(Shopping.currentDetailListId)!==String(listId))return;
+      button.disabled=!rec?.data;
+      label.firstChild.textContent=rec?.data?tr('Cambiar foto','Trocar foto','Replace photo'):tr('Adjuntar foto','Anexar foto','Attach photo');
+    } catch { button.disabled=true; }
+  }
+
+  function addQuantityInput(priceInput,item,onChange) {
+    const row=priceInput.closest('.receipt-row');if(!row)return;
+    let label=row.querySelector('.slp-receipt-quantity');
+    if(!label){
+      label=root.document.createElement('label');label.className='slp-receipt-quantity';
+      const title=root.document.createElement('span');label.appendChild(title);
+      const field=root.document.createElement('input');field.type='number';field.step='any';field.min='0.0001';field.max='10000';field.inputMode='decimal';
+      label.appendChild(field);row.appendChild(label);
+      field.addEventListener('input',()=>{
+        const q=numeric(field.value,NaN);
+        if(Number.isFinite(q)&&q>0&&q<=10000){priceInput.dataset.qty=String(q);onChange();}
+      });
+    }
+    label.querySelector('span').textContent=item?.smUnit==='kg'?'Peso (kg)':'Cantidad';
+    const field=label.querySelector('input');
+    if(root.document.activeElement!==field)field.value=String(qtyValue(item?.qty));
+  }
+  function detailSummary() {
+    const list=listById(Shopping.currentDetailListId), node=$('detail-total-val');
+    if (!list || !node)return;
+    const inputRows=[...root.document.querySelectorAll('#detail-items-list .detail-input')];
+    const sum=rounded(inputRows.reduce((acc,el)=>acc + rounded(numeric(el.value,0)*qtyValue(el.dataset.qty)),0));
+    const paidInput=$('slp-receipt-paid-input');
+    const paid=paidInput?numeric(paidInput.value,Number(list.total)):Number(list.total)||0;
+    node.textContent=money(paid);
+    const diff=rounded(paid-sum);
+    const host=$('slp-receipt-detail-summary');if(!host)return;
+    host.innerHTML=`<div class="slp-receipt-row"><span>${escapeHtml(tr('Suma de productos','Soma dos produtos','Items subtotal'))}</span><b>${money(sum)}</b></div>
+      <div class="slp-receipt-row ${Math.abs(diff)>0.019?'slp-receipt-diff':''}"><span>${escapeHtml(tr('Diferencia / descuentos / lectura','Diferença / descontos / leitura','Difference / discounts / recognition'))}</span><b>${diff>=0?'+':''}${money(diff)}</b></div>
+      <span class="slp-receipt-small">${escapeHtml(Math.abs(diff)>0.019?tr('El total pagado se conserva; revisa productos, pesos y descuentos antes de corregir.','O total pago é preservado; confira itens, pesos e descontos.','Paid total is preserved; verify items, weights and discounts.'):tr('Los importes coinciden.','Os valores conferem.','Totals match.'))}</span>`;
+    for (const el of inputRows) {
+      const row=el.closest('.receipt-row');if(!row)continue;
+      let subtotal=row.querySelector('.slp-receipt-line');if(!subtotal){subtotal=root.document.createElement('div');subtotal.className='slp-receipt-line';row.appendChild(subtotal);}
+      const q=qtyValue(el.dataset.qty);
+      const itemIndex=Number(el.dataset.slpIndex);
+      const item=Number.isInteger(itemIndex)?list.items[itemIndex]:null;
+      const unit=item?.smUnit==='kg'?'kg':'ud';
+      subtotal.textContent=`${q!==1?q+' × ':''}${money(numeric(el.value,0))}/${unit} = ${money(rounded(numeric(el.value,0)*q))}`;
+      if(item?.smWarnings?.length){subtotal.title=item.smWarnings.join(' · ');subtotal.textContent+=' · ⚠ '+item.smWarnings[0];}
+    }
+    // El botón Guardar permanece disponible para correcciones aunque no cambie total pagado.
+  }
+  function insertDetailSummary(listId) {
+    const list=listById(listId),container=$('detail-items-list');if(!list || !container)return;
+    const inputs=[...root.document.querySelectorAll('#detail-items-list .detail-input')];
+    const checked=list.items.map((item,index)=>({item,index})).filter(v=>v.item.checked);
+    inputs.forEach((el,k)=>{
+      const ref=checked[k];if(!ref)return;
+      el.dataset.slpIndex=String(ref.index);el.dataset.slpOriginalQty=String(ref.item.qty ?? '');
+      el.step='any';el.min='0';
+      addQuantityInput(el,ref.item,detailSummary);
+    });
+    const totalBlock=$('detail-total-val')?.closest('.receipt-total');if(!totalBlock)return;
+    let host=$('slp-receipt-detail-summary');if(!host){host=root.document.createElement('div');host.id='slp-receipt-detail-summary';host.className='slp-receipt-box';totalBlock.insertAdjacentElement('beforebegin',host);}
+    let paidBox=$('slp-receipt-paid-box');if(!paidBox){paidBox=root.document.createElement('div');paidBox.id='slp-receipt-paid-box';paidBox.className='slp-receipt-box';host.insertAdjacentElement('afterend',paidBox);}
+    paidBox.innerHTML=`<div class="slp-receipt-row"><label for="slp-receipt-paid-input">${escapeHtml(tr('Total pagado (editable)','Total pago (editável)','Paid total (editable)'))}</label><input id="slp-receipt-paid-input" type="number" min="0" step="0.01" inputmode="decimal" value="${Number(list.total)||0}"></div><div class="slp-receipt-small">${escapeHtml(tr('Solo cambia si corriges explícitamente el importe pagado.','Só muda se você corrigir o valor pago.','Only changes if you explicitly edit the paid total.'))}</div>`;
+    paidBox.querySelector('input').addEventListener('input',detailSummary);
+    inputs.forEach(el=>el.addEventListener('input',detailSummary));
+    detailSummary();
+    addDetailWidgets(listId);
+  }
+  function finishSummary() {
+    const list=listById(Data.store.currentId), cont=$('modal-finish-list');if(!list || !cont)return;
+    const inputs=[...root.document.querySelectorAll('#finish-items-list .receipt-input')];
+    const sum=rounded(inputs.reduce((v,i)=>v+rounded(numeric(i.value,0)*qtyValue(i.dataset.qty)),0));
+    const pInput=$('finish-manual-total');const manual=numeric(pInput?.value,NaN);
+    const paid=Number.isFinite(manual)&&manual>=0?manual:sum;
+    const diff=rounded(paid-sum);
+    let host=$('slp-receipt-finish-summary');if(!host){host=root.document.createElement('div');host.id='slp-receipt-finish-summary';host.className='slp-receipt-box';const target=$('finish-total-val')?.closest('.receipt-total');target?.insertAdjacentElement('beforebegin',host);}
+    if(host)host.innerHTML=`<div class="slp-receipt-row"><span>${escapeHtml(tr('Productos','Produtos','Items'))}</span><b>${money(sum)}</b></div><div class="slp-receipt-row ${Math.abs(diff)>0.019?'slp-receipt-diff':''}"><span>${escapeHtml(tr('Diferencia con total pagado','Diferença do total pago','Difference to paid total'))}</span><b>${diff>=0?'+':''}${money(diff)}</b></div>${Math.abs(diff)>0.019?`<div class="slp-receipt-small">${escapeHtml(tr('Comprueba precios, cantidades, descuentos y total antes de guardar.','Confira preços, quantidades, descontos e total.','Review prices, quantities, discounts and paid total before saving.'))}</div>`:''}`;
+    const checked=list.items.map((item,index)=>({item,index})).filter(x=>x.item.checked);
+    inputs.forEach((el,k)=>{
+      el.step='any';el.min='0';const ref=checked[k];if(!ref)return;
+      el.dataset.slpIndex=String(ref.index);
+      addQuantityInput(el,ref.item,()=>Shopping.updateFinishTotal());
+      let line=el.closest('.receipt-row')?.querySelector('.slp-receipt-line');
+      if(!line&&el.closest('.receipt-row')){line=root.document.createElement('div');line.className='slp-receipt-line';el.closest('.receipt-row').appendChild(line);}
+      if(line){const q=qtyValue(el.dataset.qty), unit=ref.item.smUnit==='kg'?'kg':'ud';line.textContent=`${q!==1?q+' × ':''}${money(numeric(el.value,0))}/${unit} = ${money(rounded(numeric(el.value,0)*q))}`;if(ref.item.smWarnings?.length)line.textContent+=' ⚠ Revisar';}
+    });
+  }
+  function refreshWalletMovement(listId,newTotal) {
+    const movements=Data.store?.smartyMoney?.movements;
+    if(!Array.isArray(movements))return true;
+    const links=movements.filter(x=>String(x.sourceId)===`list-${listId}`);
+    if(links.length>1) { notify('Hay más de un movimiento asociado: no se modifica el total.');return false; }
+    if(links.length===1)links[0].amountCents=cents(newTotal);
+    return true;
+  }
+  function maybeStoreRecentPhoto(listId) {
+    const image=pending.get(String(listId));
+    if (!image)return;
+    pending.delete(String(listId));
+    attachPhoto(listId,image).catch(err=>notify('Compra guardada, pero la foto no: '+err.message));
+  }
+
+  async function exportPhotos() {
+    try {
+      const allowed=new Set((Data.store.lists||[]).map(l=>String(l.id)));
+      const photos=(await allPhotos()).filter(x=>allowed.has(String(x.id)) && /^data:image\/jpeg;base64,/.test(x.data||''));
+      if(!photos.length){notify('No hay fotos de tickets para exportar.');return;}
+      const contents=JSON.stringify({kind:'SmartLifeProReceiptPhotos',version:1,createdAt:new Date().toISOString(),photos});
+      const name=`SmartLifePro_Tickets_${new Date().toISOString().slice(0,10)}.json`;
+      if(root.SmartyAndroid?.saveBackupFile){root.SmartyAndroid.saveBackupFile(contents,name);return;}
+      const file=new Blob([contents],{type:'application/json'});const url=URL.createObjectURL(file);
+      const a=root.document.createElement('a');a.href=url;a.download=name;root.document.body.appendChild(a);a.click();a.remove();root.setTimeout(()=>URL.revokeObjectURL(url),30000);
+    } catch(err){notify('No se pudieron exportar los tickets: '+err.message);}
+  }
+  async function importPhotos(file) {
+    if(!file)return;
+    try {
+      const parsed=JSON.parse(await file.text());
+      if(parsed.kind!=='SmartLifeProReceiptPhotos'||!Array.isArray(parsed.photos))throw Error('Archivo de fotos de tickets inválido');
+      const ids=new Set((Data.store.lists||[]).map(l=>String(l.id)));
+      let count=0;
+      for (const item of parsed.photos) {
+        if(!ids.has(String(item.id))||!/^data:image\/jpeg;base64,/.test(item.data||''))continue;
+        await photoAction('put',String(item.id),item.data);
+        const list=listById(item.id);if(list)list.smReceiptPhoto={attached:true,format:'jpeg',at:item.at||Date.now()};
+        count++;
+      }
+      Data.save();notify(`${count} fotos restauradas. Las compras y saldos no cambiaron.`);
+      addDetailWidgets(Shopping.currentDetailListId);
+    } catch(err){notify('No se pudieron restaurar las fotos: '+err.message);}
+  }
+  function installBackupSettings() {
+    const host=$('settings-inject');if(!host||$('slp-receipt-backup'))return;
+    const section=root.document.createElement('section');section.id='slp-receipt-backup';
+    section.innerHTML=`<div class="section-label">${escapeHtml(tr('Fotos de tickets','Fotos dos cupons','Receipt photos'))}</div>
+      <div class="glass-card" style="padding:14px"><div class="slp-receipt-small">${escapeHtml(tr('Las fotos se guardan comprimidas en este dispositivo. El respaldo diario JSON actual NO las incluye: respáldalas por separado antes de cambiar de teléfono o reinstalar.','As fotos ficam neste aparelho e NÃO entram no backup diário JSON. Exporte-as antes de trocar o celular.','Photos remain on this device and are NOT in the daily JSON backup. Export them before reinstalling.'))}</div><div class="slp-receipt-actions"><button type="button" id="slp-export-receipts">${escapeHtml(tr('Respaldar fotos','Exportar fotos','Export photos'))}</button><label>${escapeHtml(tr('Restaurar fotos','Importar fotos','Import photos'))}<input type="file" id="slp-import-receipts" accept="application/json,.json" hidden></label></div></div>`;
+    host.appendChild(section);
+    $('slp-export-receipts').onclick=exportPhotos;
+    $('slp-import-receipts').onchange=e=>{const file=e.target.files?.[0];if(file)importPhotos(file);e.target.value='';};
+  }
+
+  function install() {
+    if(typeof Shopping==='undefined'||typeof Data==='undefined'||typeof Finance==='undefined'||!root.document.body || Shopping.__slpReceiptV2)return;
+    Shopping.__slpReceiptV2=true;injectStyle();
+    Shopping.parseQtyValue=qtyValue;
+    Shopping.receiptItemsSubtotal=itemsSubtotal;
+    Shopping.receiptSavePhoto=attachFromGallery;
+
+    const originalExtract=Shopping.extractFullReceiptWithAI;
+    if(typeof originalExtract==='function') {
+      Shopping.extractFullReceiptWithAI=async function(file) {
+        if(typeof GroqAI==='undefined'||!GroqAI.getApiKey?.())throw Error('Falta configurar Groq');
+        const photo=await photoFromFile(file);
+        // Imagen de lectura más nítida que la copia local.
+        const high=await Finance.compressImage(file,1800,.82);
+        const prompt=`Analiza el recibo de supermercado de Brasil (R$). Devuelve SOLO JSON válido:
+        {"storeName":"","receiptTotal":0,"discountTotal":0,"items":[{"name":"","quantity":1,"unitType":"un","unitPrice":0,"lineTotal":0,"packageSize":""}]}.
+        REGLAS CRÍTICAS:
+        - receiptTotal es el TOTAL FINAL EFECTIVAMENTE PAGADO (después de descuentos), no subtotal.
+        - Copia cada renglón comprado una vez; si aparece el mismo producto dos veces conserva dos renglones.
+        - quantity es NÚMERO DE ARTÍCULOS o PESO EN KG, no capacidad de la botella/envase.
+        - unitType debe ser "kg" para producto pesado; "un" para unidad; NUNCA uses "L", "ml" o gramos como cantidad comprada. Si pone "Refrigerante 1,5L" y se compró una botella, quantity=1, packageSize="1,5L".
+        - En productos a granel con 0,772 kg, quantity=0.772, unitType="kg", unitPrice=valor por kg y lineTotal=importe cobrado por esa pieza.
+        - unitPrice y lineTotal deben salir del comprobante, no inventarse. No uses el total de la fila como precio unitario si quantity es distinto de 1.
+        - Si una cantidad o precio es ilegible, omite o pon 0. Usa punto decimal en los NÚMEROS JSON. No redondees precios kg a enteros.
+        - No metas descuentos, redondeos o recargos como artículos: indica descuentos en discountTotal.
+        - No inventes productos ni descuentos.`;
+        // En tickets largos se necesitan más tokens que en un OCR de un solo producto.
+        // Se usa el mismo cliente Groq de la app, sin cambiar sus ajustes globales.
+        const response=await GroqAI.request({model:GroqAI.visionModel,
+          messages:[{role:'user',content:[{type:'text',text:prompt},
+            {type:'image_url',image_url:{url:'data:image/jpeg;base64,'+high.split(',')[1]}}]}],
+          response_format:{type:'json_object'},temperature:0.1,reasoning_effort:'none',
+          max_completion_tokens:4200,stream:false},{timeoutMs:60000});
+        const res=GroqAI.parseJSON(GroqAI.extractText(response));
+        if(!Array.isArray(res?.items)||!res.items.length)throw Error('No se pudieron leer productos. Repite la foto con buena luz.');
+        const knownPrices=Data.store.prices||{};
+        const cleanItems=res.items.slice(0,160).map((x,i)=>normalizeAIItem(x,i,knownPrices));
+        const discount=Math.max(0,numeric(res.discountTotal??res.discount,0));
+        const receiptTotal=Math.max(0,numeric(res.receiptTotal,0));
+        const parsed={storeName:String(res.storeName||'').trim().slice(0,40),receiptTotal,discount,items:cleanItems};
+        recentScan={items:cleanItems,photo,meta:scanMetadata(parsed),at:Date.now()};
+        return parsed;
+      };
+    }
+
+    const originalHandle=Shopping.handleReceiptPhoto;
+    if(typeof originalHandle==='function') Shopping.handleReceiptPhoto=async function(input) {
+      const id=String(Data.store.currentId||'');recentScan=null;
+      const result=await originalHandle.call(this,input);
+      const list=listById(id);
+      if (list && recentScan && list.items===recentScan.items) {
+        list.smReceipt=recentScan.meta;pending.set(id,recentScan.photo);Data.save();finishSummary();
+        try { await attachPhoto(id,recentScan.photo); } catch(e) { notify('Foto pendiente de guardar: '+e.message); }
+      }
+      return result;
+    };
+
+    const originalCreate=Shopping.createCompletedListFromReceipt;
+    if(typeof originalCreate==='function') Shopping.createCompletedListFromReceipt=async function(input) {
+      const before=new Set(Data.store.lists.map(x=>String(x.id)));recentScan=null;
+      const output=await originalCreate.call(this,input);
+      const list=Data.store.lists.find(x=>!before.has(String(x.id)));
+      if(list && recentScan && list.items===recentScan.items){
+        list.smReceipt=recentScan.meta;pending.set(String(list.id),recentScan.photo);Data.save();
+        try { await attachPhoto(String(list.id),recentScan.photo); } catch(e) { notify('Foto pendiente de guardar: '+e.message); }
+      }
+      return output;
+    };
+
+    // Sustitución en historial: explícita, conservando la fotografía y sincronizando
+    // únicamente el movimiento que pertenece a ESTA compra (si existe).
+    if(typeof Shopping.replaceCompletedListWithPhoto==='function') Shopping.replaceCompletedListWithPhoto=async function(input) {
+      const file=input?.files?.[0],id=String(this.currentDetailListId||'');
+      if(!file||!id)return;
+      if(input.value!==undefined)input.value='';
+      try {
+        recentScan=null;notify('Analizando ticket para corregir el historial...');
+        const parsed=await this.extractFullReceiptWithAI(file),list=listById(id);
+        if(!list||!recentScan)return;
+        const sum=itemsSubtotal(parsed.items);
+        const paid=parsed.receiptTotal>0?rounded(parsed.receiptTotal):sum;
+        const diff=rounded(paid-sum);
+        const detail=`${parsed.items.length} productos; pagado ${money(paid)}; suma de productos ${money(sum)}; diferencia ${money(diff)}.`;
+        if(!root.confirm(`${detail}\n\n¿Reemplazar los productos y el total pagado de esta compra? Se actualizará también su movimiento de tarjeta asociado, si existe.`))return;
+        if(!refreshWalletMovement(id,paid))return;
+        list.items=parsed.items;list.total=paid;list.smReceipt=recentScan.meta;
+        Data.save();
+        try{await attachPhoto(id,recentScan.photo);}catch(err){notify('Lista corregida, pero no pudo guardarse la foto.');}
+        this.openHistoryDetail(id);
+        if(typeof UI!=='undefined')UI.renderBudgetChart?.();
+        if(typeof Finance!=='undefined')Finance.renderHomeWidgets?.();
+        notify('Ticket reemplazado y totales conciliados. Revisa las advertencias si hay diferencias.');
+      }catch(err){notify('No se pudo leer el ticket: '+err.message);}
+    };
+
+    const originalRenderFinish=Shopping.renderFinishItems;
+    Shopping.renderFinishItems=function(...args){const out=originalRenderFinish.apply(this,args);finishSummary();return out;};
+    const originalUpdateFinish=Shopping.updateFinishTotal;
+    Shopping.updateFinishTotal=function(...args){const out=originalUpdateFinish.apply(this,args);finishSummary();return out;};
+
+    const originalConfirm=Shopping.confirmFinish;
+    Shopping.confirmFinish=function(...args) {
+      const id=String(Data.store.currentId||''),list=listById(id);if(!list)return;
+      const inputs=[...root.document.querySelectorAll('#finish-items-list .receipt-input')];
+      const checked=list.items.filter(x=>x.checked);
+      const newPrices=inputs.map(input=>numeric(input.value,0));
+      if(newPrices.some(v=>!Number.isFinite(v)||v<0)){notify('Revisa los precios; no se permiten valores negativos.');return;}
+      const sum=rounded(inputs.reduce((v,i)=>v+rounded(numeric(i.value,0)*qtyValue(i.dataset.qty)),0));
+      const manual=numeric($('finish-manual-total')?.value,NaN);
+      const paid=Number.isFinite(manual)?manual:sum;
+      const diff=rounded(paid-sum);
+      if(Math.abs(diff)>0.019 && !root.confirm(`El total pagado (${money(paid)}) difiere de los productos (${money(sum)}) en ${money(diff)}.\n\nComprueba pesos, descuentos y precios. ¿Guardar igualmente el importe pagado?`))return;
+      const priceBefore=list.smReceipt?{...Data.store.prices}:null;
+      const result=originalConfirm.apply(this,args);
+      if(list.status==='completed') {
+        // El renderizador anterior utiliza .find(name), que falla con nombres repetidos.
+        for(let i=0;i<checked.length;i++) {
+          checked[i].price=Number((newPrices[i]||0).toFixed(4));
+          const qty=qtyValue(inputs[i].dataset.qty);
+          checked[i].qty=qty===1?'':String(qty);
+        }
+        if(priceBefore){
+          Data.store.prices=priceBefore;
+          // La lectura de IA por sí sola NUNCA actualiza el catálogo.
+          // Tampoco se vuelcan automáticamente precios marcados como sospechosos.
+          checked.forEach(item=>{
+            if(item.smWarnings?.length || !(item.price>0) || item.price>1500)return;
+            Data.store.prices[this.normalize(item.name)]=item.price;
+          });
+        }
+        if(list.smReceipt)list.smReceipt={...list.smReceipt,productsTotal:itemsSubtotal(list.items),confirmedAt:Date.now()};
+        Data.save();maybeStoreRecentPhoto(id);
+      }
+      return result;
+    };
+
+    const originalOpenDetail=Shopping.openHistoryDetail;
+    Shopping.openHistoryDetail=function(id,...args){
+      const ret=originalOpenDetail.call(this,id,...args);
+      insertDetailSummary(id);
+      return ret;
+    };
+    Shopping.updateDetailTotal=function(){detailSummary();};
+    Shopping.checkDetailChanges=function(){detailSummary();};
+    Shopping.updateHistoryList=function(){
+      const list=listById(this.currentDetailListId);if(!list)return;
+      const checked=list.items.map((item,index)=>({item,index})).filter(x=>x.item.checked);
+      const inputs=[...root.document.querySelectorAll('#detail-items-list .detail-input')];
+      if(inputs.length!==checked.length){notify('La lista cambió. Ábrela nuevamente antes de guardar.');return;}
+      const prices=inputs.map(x=>numeric(x.value,NaN));
+      if(prices.some(x=>!Number.isFinite(x)||x<0)){notify('Hay precios incorrectos.');return;}
+      const paidField=$('slp-receipt-paid-input');
+      const oldTotal=Number(list.total)||0;
+      const paid=paidField?numeric(paidField.value,NaN):oldTotal;
+      if(!Number.isFinite(paid)||paid<0){notify('Introduce un total pagado válido.');return;}
+      if(Math.abs(oldTotal-paid)>0.005){
+        if(!root.confirm(`Cambiar el total pagado de ${money(oldTotal)} a ${money(paid)}?\nSe corregirá también el movimiento de la tarjeta asociado a esta compra, si existe.`))return;
+        if(!refreshWalletMovement(list.id,paid))return;
+        list.total=rounded(paid);
+      }
+      checked.forEach(({item},i)=>{
+        item.price=Number(prices[i].toFixed(4));
+        const oldQty=qtyValue(item.qty), newQty=qtyValue(inputs[i].dataset.qty);
+        if(Math.abs(oldQty-newQty)>0.000001)item.qty=newQty===1?'':String(newQty);
+      });
+      if(list.smReceipt)list.smReceipt={...list.smReceipt,productsTotal:itemsSubtotal(list.items),manualEditedAt:Date.now()};
+      Data.save();
+      this.closeDetailModal();
+      const box=$('history-box');if(box&&typeof this.renderHistoryLists==='function')this.renderHistoryLists(box);
+      UI.renderBudgetChart?.();Finance.renderHomeWidgets?.();
+      notify('Productos guardados. Se conserva el total pagado salvo corrección explícita.');
+    };
+
+    const originalDelete=Shopping.deleteHistoryList;
+    if(typeof originalDelete==='function') Shopping.deleteHistoryList=async function(...args){
+      const id=String(this.currentDetailListId||''),before=!!listById(id);
+      const ret=await originalDelete.apply(this,args);
+      if(before&&!listById(id)){pending.delete(id);removePhoto(id).catch(()=>{});}
+      return ret;
+    };
+
+    const originalSettings=typeof UI!=='undefined'&&UI.renderSettingsView;
+    if(typeof originalSettings==='function')UI.renderSettingsView=function(...args){const out=originalSettings.apply(this,args);installBackupSettings();return out;};
+    installBackupSettings();
+    root.SmartyReceiptUpgrade={numeric,qtyValue,itemsSubtotal,normalizeAIItem,scanMetadata,exportPhotos,importPhotos,getPhoto,attachPhoto,showPhoto,install};
+  }
+  const start=()=>root.setTimeout(install,0);
+  if(root.document.readyState==='complete')start();
+  else root.addEventListener('load',start,{once:true});
+})(typeof window==='undefined'?null:window);
