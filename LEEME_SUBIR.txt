@@ -1,0 +1,46 @@
+SmartLifePro - Correción del comprobador de actualizaciones (2026-11-15)
+Repositorio: girsinstagramtiktok/SmartLifePro
+
+CONTENIDO:
+1) .github/workflows/smarty-release-index.yml   -> NUEVO, subir a esta carpeta exacta
+2) smarty-app-updater.js                         -> REEMPLAZAR en la raíz
+3) updater-tests.cjs                             -> REEMPLAZAR en la raíz
+4) smarty-latest.json                            -> NUEVO en la raíz
+
+ORDEN RECOMENDADO AL SUBIR POR LA INTERFAZ WEB DE GITHUB:
+
+PASO 1: Abre la carpeta .github/workflows del repositorio y sube
+        smarty-release-index.yml allí. No reemplaces android-apk.yml.
+
+PASO 2: En la RAÍZ del repositorio, sube/reemplaza JUNTOS
+        smarty-app-updater.js, updater-tests.cjs y smarty-latest.json.
+        En GitHub se confirmará un commit con estos tres archivos.
+
+PASO 3: Espera a que el workflow "Build Smarty Android APK" finalice
+        y publique un Release nuevo. El workflow adicional
+        "Publish SmartLifePro release index" renovará automáticamente
+        smarty-latest.json cuando termine una compilación exitosa.
+
+PASO 4: MUY IMPORTANTE: la aplicación que está instalada en el teléfono
+        todavía contiene el actualizador anterior. Instala UNA VEZ
+        manualmente el APK nuevo desde el nuevo GitHub Release.
+        Después podrás usar la búsqueda de actualizaciones corregida.
+        NO desinstales la app para hacerlo.
+
+NO MODIFICAR: shopping.js, .github/workflows/android-apk.yml,
+             tools/SmartyUpdateBridge.java.txt, firma del APK,
+             datos y copias de seguridad.
+
+COMPROBADO:
+- Repositorio visible como PUBLIC.
+- Release v114801 público y con SmartLifePro.apk + digest SHA-256.
+- node updater-tests.cjs: OK (simulaciones locales).
+- Nuevo YAML: sintaxis comprobada localmente.
+
+PENDIENTE DE COMPROBACIÓN EN GITHUB:
+- Ejecución real del nuevo workflow (se comprueba después de subirlo).
+- Compilación Android del repositorio con estos archivos.
+
+NOTA: "HTTP 403" no demuestra que un repositorio sea privado; puede
+      significar que se alcanzó el límite de peticiones de la API.
+      El índice raw evita depender exclusivamente de esa API.
