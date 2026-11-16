@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "repository": "girsinstagramtiktok/SmartLifePro",
-  "versionCode": 115001,
-  "tag": "v115001",
-  "releaseName": "Smarty Finance v115001",
-  "apkUrl": "https://github.com/girsinstagramtiktok/SmartLifePro/releases/download/v115001/SmartLifePro.apk",
-  "sha256": "18361503e225962ad455f2ad8b78734d3e36ddf1e6f6ea67f3c129885516fc2c",
-  "publishedAt": "2026-11-16T01:28:48Z"
+  "versionCode": 115201,
+  "tag": "v115201",
+  "releaseName": "Smarty Finance v115201",
+  "apkUrl": "https://github.com/girsinstagramtiktok/SmartLifePro/releases/download/v115201/SmartLifePro.apk",
+  "sha256": "c1327310af8096dc0c4a884061cc12b146e8529d0d67ab3142df4eeac1916cec",
+  "publishedAt": "2026-11-16T20:52:49Z"
 }
