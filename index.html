@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="smarty-wallet.css">
     <link rel="stylesheet" href="smarty-daily-spending.css">
     <link rel="stylesheet" href="smarty-pro-polish.css">
+    <link rel="stylesheet" href="smarty-home-refresh.css">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="logo.png">
 </head>
@@ -40,71 +41,108 @@
         
         <!-- Bento Home: pantalla base, sin dependencia de parches visuales OTA. -->
         <div id="view-home" class="view active bento-home">
-            <header class="home-header bento-header">
-                <div class="bento-brand" aria-label="Smarty Finance">
-                    <strong>smarty<span class="bento-brand-dot">.</span></strong>
-                    <span>Smarty Finance</span>
-                </div>
+
+            <header class="home-header bento-header slp-ref-header">
+                <button type="button" class="bento-round-icon slp-ref-menu" onclick="SmartyHomeRefresh.openGuide()" aria-label="Abrir guía de uso" title="Guía de la app">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <div class="bento-brand" aria-label="Smarty Finance"><strong>smarty<span class="bento-brand-dot">.</span></strong><span>SmartLifePro</span></div>
                 <div class="bento-header-actions">
-                    <button class="bento-round-icon" onclick="Main.openProfile()" aria-label="Abrir perfil">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+                    <button type="button" class="bento-round-icon slp-ref-alert" onclick="SmartyHomeRefresh.openAlerts()" aria-label="Configurar alertas" title="Configurar alertas">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
                     </button>
-                    <button class="bento-round-icon" onclick="Main.router('settings')" aria-label="Abrir menú de ajustes">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    <button type="button" class="bento-mascot" onclick="Assistant.openSmartyChat()" aria-label="Abrir Smarty">
+                        <img src="idle.png" id="mascot-img" alt="Smarty" onerror="this.style.display='none'">
+                        <span id="mascot-bubble" class="bento-sr-only">Hola</span><span id="xp-fill" class="bento-sr-only" aria-hidden="true"></span>
                     </button>
                 </div>
             </header>
-            <div class="bento-content">
-                <section class="bento-intro" aria-label="Resumen del mes">
+            <div class="bento-content slp-ref-content">
+
+                <!-- Vista Bento anterior. Conserva el mismo presupuesto, banco y categorías. -->
+                <section class="bento-intro slp-classic-only" aria-label="Resumen mensual Bento">
                     <div class="bento-intro-text">
                         <h1 data-bento-t="headline">Tu mes, de<br>un vistazo.</h1>
-                        <p><span id="home-month-title">Noviembre de 2026</span> <span aria-hidden="true">·</span> <span id="home-budget-health">Todo en orden</span></p>
+                        <p><span id="classic-home-month-title"></span> <span aria-hidden="true">·</span> <span id="classic-home-budget-health"></span></p>
                     </div>
-                    <button class="bento-mascot" onclick="Assistant.openSmartyChat()" aria-label="Abrir Smarty">
-                        <img src="idle.png" id="mascot-img" alt="Smarty" onerror="this.style.display='none'">
-                        <span id="mascot-bubble" class="bento-sr-only">Hola</span>
-                        <span id="xp-fill" class="bento-sr-only" aria-hidden="true"></span>
-                    </button>
+                    <span class="slp-classic-mini-mark" aria-hidden="true">smarty.</span>
                 </section>
-                <section class="bento-metrics" aria-label="Indicadores financieros">
+                <section class="bento-metrics slp-classic-only" aria-label="Indicadores financieros Bento">
                     <button class="bento-tile bento-balance" onclick="Finance.openHomeMovements('expense')">
                         <span class="bento-kicker" data-bento-t="remaining">Te queda por gastar</span>
-                        <strong id="budget-remaining" class="bento-amount bento-main-amount">R$0,00</strong>
+                        <strong id="classic-budget-remaining" class="bento-amount bento-main-amount">R$0,00</strong>
                         <span class="bento-helper" data-bento-t="available">Tu dinero disponible este mes</span>
                         <span class="bento-arrow" aria-hidden="true">↗</span>
                     </button>
                     <button class="bento-tile bento-percent" onclick="Finance.openHomeMovements('expense')">
                         <span class="bento-kicker" data-bento-t="budget">Presupuesto</span>
-                        <strong id="home-budget-percent" class="bento-percent-number">0%</strong>
+                        <strong id="classic-home-budget-percent" class="bento-percent-number">0%</strong>
                         <span class="bento-helper" data-bento-t="used">utilizado hasta hoy</span>
                     </button>
                     <button class="bento-tile bento-spent" onclick="Finance.openHomeMovements('expense')">
                         <span class="bento-kicker" data-bento-t="spentMonth">Gastaste este mes</span>
-                        <strong id="budget-spent" class="bento-amount">R$0</strong>
-                        <span class="bento-helper"><span data-bento-t="today">Hoy</span>: <span id="bento-spent-today">R$0</span></span>
+                        <strong id="classic-budget-spent" class="bento-amount">R$0</strong>
+                        <span class="bento-helper"><span data-bento-t="today">Hoy</span>: <span id="classic-bento-spent-today">R$0</span></span>
                         <span class="bento-small-arrow" aria-hidden="true">↗</span>
                     </button>
                     <button class="bento-tile bento-daily" onclick="Finance.openBudgetModal()">
                         <span class="bento-kicker" data-bento-t="daily">Puedes gastar por día</span>
-                        <strong id="bento-daily-amount" class="bento-amount">R$0,00</strong>
-                        <span class="bento-helper"><span id="bento-days">0</span> <span data-bento-t="days">días restantes</span></span>
+                        <strong id="classic-bento-daily-amount" class="bento-amount">R$0,00</strong>
+                        <span class="bento-helper"><span id="classic-bento-days">0</span> <span data-bento-t="days">días restantes</span></span>
                     </button>
                 </section>
-                <button class="bento-budget-row" onclick="Finance.openBudgetModal()">
+                <button class="bento-budget-row slp-classic-only" onclick="Finance.openBudgetModal()">
                     <span data-bento-t="totalBudget">Presupuesto total</span>
-                    <strong><span id="budget-limit">R$0,00</span><span aria-hidden="true"> ↗</span></strong>
+                    <strong><span id="classic-budget-limit">R$0,00</span><span aria-hidden="true"> ↗</span></strong>
                 </button>
+
+                <section class="slp-ref-hero slp-circular-only" aria-label="Progreso del presupuesto mensual">
+                    <svg class="slp-ref-arc" viewBox="0 0 320 70" role="img" aria-label="Progreso circular del presupuesto">
+                        <defs><path id="slp-ref-arc-path" d="M 32,67 C 73,-18 247,-18 288,67"/></defs>
+                        <text class="slp-ref-arc-text"><textPath href="#slp-ref-arc-path" startOffset="50%" text-anchor="middle">Progreso del presupuesto</textPath></text>
+                    </svg>
+                    <button type="button" class="slp-ref-ring" onclick="Finance.openBudgetModal()" aria-label="Ver o modificar presupuesto">
+                        <svg class="slp-ref-ring-svg" viewBox="0 0 240 240" aria-hidden="true">
+                            <circle class="slp-ref-ring-track" cx="120" cy="120" r="104"/>
+                            <circle id="slp-ref-ring-fill" class="slp-ref-ring-fill" cx="120" cy="120" r="104"/>
+                        </svg>
+                        <span class="slp-ref-ring-center">
+                            <strong id="home-budget-percent" class="slp-ref-percent">0%</strong>
+                            <span class="slp-ref-percent-caption">del presupuesto gastado</span>
+                            <span class="slp-ref-remaining-caption">Restante para gastar</span>
+                            <strong id="budget-remaining" class="slp-ref-remaining">R$0,00</strong>
+                        </span>
+                    </button>
+                    <button type="button" class="slp-ref-total" onclick="Finance.openBudgetModal()">
+                        <span class="slp-ref-total-caption">Presupuesto total</span><strong id="budget-limit">R$0,00</strong>
+                        <span aria-hidden="true">↗</span>
+                    </button>
+                    <div class="slp-ref-month"><span id="home-month-title"></span><span aria-hidden="true"> · </span><span id="home-budget-health"></span></div>
+                </section>
+                <section class="slp-ref-stats slp-circular-only" aria-label="Gasto mensual y presupuesto diario">
+                    <button type="button" class="slp-ref-stat slp-ref-stat-spent" onclick="Finance.openHomeMovements('expense')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 5 13h7l-1 9 8-12h-7l1-8z"/></svg>
+                        <span class="slp-ref-stat-label">Has gastado</span>
+                        <strong id="budget-spent">R$0</strong>
+                    </button>
+                    <button type="button" class="slp-ref-stat slp-ref-stat-daily" onclick="Finance.openBudgetModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v7l4 2"/></svg>
+                        <span class="slp-ref-stat-label">Puedes gastar por día</span>
+                        <strong id="bento-daily-amount">R$0,00</strong>
+                    </button>
+                </section>
+                <div class="bento-sr-only" aria-hidden="true">Hoy: <span id="bento-spent-today"></span> · <span id="bento-days"></span> días restantes</div>
                 <section class="bento-wallet" aria-label="Acceso a cuentas y tarjetas">
                     <header class="bento-section-head">
-                        <h2 id="bento-wallet-title">Mis tarjetas</h2>
+                        <h2 id="bento-wallet-title">Mis bancos y tarjetas</h2>
                         <button type="button" class="bento-see-all" id="bento-wallet-see-all" data-sw-all>Ver todas ↗</button>
                     </header>
                     <div class="bento-wallet-items" id="bento-wallet-items" role="group" aria-label="Cuentas y tarjetas disponibles"></div>
                 </section>
                 <section class="bento-categories" aria-label="Categorías principales">
                     <header class="bento-section-head">
-                        <h2 data-bento-t="categories">Top categorías</h2>
-                        <button onclick="Finance.openHomeCategory()" class="bento-see-all"><span data-bento-t="seeAll">Ver todas</span> ↗</button>
+                        <h2 data-bento-t="categories">Principales categorías</h2>
+                        <button type="button" onclick="Finance.openHomeCategory()" class="bento-see-all"><span data-bento-t="seeAll">Ver todas</span> ↗</button>
                     </header>
                     <div id="bento-category-pills" class="bento-category-grid"></div>
                 </section>
@@ -187,6 +225,7 @@
             </div>
             <div class="scroll-content">
                 <div class="settings-card full-width">
+                    <div id="slp-home-design-settings"></div>
                     <div id="settings-inject"></div>
                     <div id="bento-theme-settings"></div>
                 </div>
@@ -198,10 +237,10 @@
         </div>
 
             <div class="bottom-dock">
-            <button onclick="Main.router('home')" class="dock-btn active" id="nav-home">
+            <button onclick="Main.router('home')" class="dock-btn active" id="nav-home" aria-label="Inicio" title="Inicio">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             </button>
-            <button onclick="Main.router('lists')" class="dock-btn" id="nav-lists">
+            <button onclick="Main.router('lists')" class="dock-btn" id="nav-lists" aria-label="Listas" title="Listas">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             </button>
             
@@ -210,10 +249,10 @@
 </button>
 
             
-            <button onclick="Main.router('finance')" class="dock-btn" id="nav-finance">
+            <button onclick="Main.router('finance')" class="dock-btn" id="nav-finance" aria-label="Finanzas" title="Finanzas">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </button>
-            <button onclick="Main.router('settings')" class="dock-btn" id="nav-settings">
+            <button onclick="Main.router('settings')" class="dock-btn" id="nav-settings" aria-label="Ajustes" title="Ajustes">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
         </div>
@@ -544,6 +583,7 @@
     <script src="smarty-list-reminders.js"></script>
     <script src="smarty-settings-modern.js"></script>
     <script src="smarty-pro-motion.js"></script>
+    <script src="smarty-home-refresh.js"></script>
     
     <script>
     let newWorker;

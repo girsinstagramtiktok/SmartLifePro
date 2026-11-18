@@ -16,7 +16,7 @@
     night:{...defaults,bg:'#121d21',ink:'#e8f8f1',muted:'#9eafa9',balance:'#2c3635',percent:'#6c46db',spent:'#1f5047',daily:'#ebbaa1',budget:'#2e5149',chart:'#253534',catA:'#335b4d',catB:'#4c456c',catC:'#665140',catD:'#6c444d',nav:'#0b1518',plus:'#d9f479',accent:'#65d0bd'}
   };
   const labels={
-    es:{headline:'Tu mes, de<br>un vistazo.',remaining:'Te queda por gastar',available:'Tu dinero disponible este mes',budget:'Presupuesto',used:'utilizado hasta hoy',spentMonth:'Gastaste este mes',today:'Hoy',daily:'Puedes gastar por día',days:'días restantes',totalBudget:'Presupuesto total',chartTitle:'Así va tu gasto',month:'Mes',week:'Semana',real:'Gasto real',ideal:'Ritmo ideal',categories:'Top categorías',seeAll:'Ver todas',ok:'Todo en orden',warning:'Vas cerca del límite',over:'Presupuesto excedido',empty:'Define tu presupuesto',fijos:'Fijos',market:'Supermercado',home:'Hogar',dining:'Delivery / salidas',title:'Personaliza los colores de Inicio',hint:'La distribución Bento siempre será la misma. Cambia los colores cuando quieras.',reset:'Restaurar colores de la imagen',mint:'Original menta',stone:'Gris y azul',violet:'Violeta',night:'Oscuro',colors:{bg:'Fondo',ink:'Texto',balance:'Disponible',percent:'Porcentaje',spent:'Gastado',daily:'Por día',budget:'Presupuesto total',chart:'Fondo de tarjetas',nav:'Barra inferior',plus:'Botón +',accent:'Línea del gráfico',catA:'Categoría 1',catB:'Categoría 2',catC:'Categoría 3',catD:'Categoría 4'}},
+    es:{headline:'Tu mes, de<br>un vistazo.',remaining:'Te queda por gastar',available:'Tu dinero disponible este mes',budget:'Presupuesto',used:'utilizado hasta hoy',spentMonth:'Gastaste este mes',today:'Hoy',daily:'Puedes gastar por día',days:'días restantes',totalBudget:'Presupuesto total',chartTitle:'Así va tu gasto',month:'Mes',week:'Semana',real:'Gasto real',ideal:'Ritmo ideal',categories:'Principales categorías',seeAll:'Ver todas',ok:'Todo en orden',warning:'Vas cerca del límite',over:'Presupuesto excedido',empty:'Define tu presupuesto',fijos:'Fijos',market:'Supermercado',home:'Hogar',dining:'Delivery / salidas',title:'Personaliza los colores de Inicio',hint:'La distribución Bento siempre será la misma. Cambia los colores cuando quieras.',reset:'Restaurar colores de la imagen',mint:'Original menta',stone:'Gris y azul',violet:'Violeta',night:'Oscuro',colors:{bg:'Fondo',ink:'Texto',balance:'Disponible',percent:'Porcentaje',spent:'Gastado',daily:'Por día',budget:'Presupuesto total',chart:'Fondo de tarjetas',nav:'Barra inferior',plus:'Botón +',accent:'Línea del gráfico',catA:'Categoría 1',catB:'Categoría 2',catC:'Categoría 3',catD:'Categoría 4'}},
     pt:{headline:'Seu mês, em<br>um olhar.',remaining:'Restante para gastar',available:'Seu dinheiro disponível neste mês',budget:'Orçamento',used:'utilizado até hoje',spentMonth:'Você gastou neste mês',today:'Hoje',daily:'Pode gastar por dia',days:'dias restantes',totalBudget:'Orçamento total',chartTitle:'Como vão seus gastos',month:'Mês',week:'Semana',real:'Gasto real',ideal:'Ritmo ideal',categories:'Principais categorias',seeAll:'Ver todas',ok:'Tudo em ordem',warning:'Perto do limite',over:'Orçamento excedido',empty:'Defina seu orçamento',fijos:'Fixos',market:'Supermercado',home:'Casa',dining:'Delivery / saídas',title:'Personalizar as cores do Início',hint:'O layout Bento permanece igual. Mude as cores quando quiser.',reset:'Restaurar as cores da imagem',mint:'Menta original',stone:'Cinza e azul',violet:'Violeta',night:'Escuro',colors:{bg:'Fundo',ink:'Texto',balance:'Disponível',percent:'Porcentagem',spent:'Gasto',daily:'Por dia',budget:'Orçamento total',chart:'Fondo de tarjetas',nav:'Barra inferior',plus:'Botão +',accent:'Linha do gráfico',catA:'Categoria 1',catB:'Categoria 2',catC:'Categoria 3',catD:'Categoria 4'}},
     en:{headline:'Your month,<br>at a glance.',remaining:'Left to spend',available:'Your available money this month',budget:'Budget',used:'used so far',spentMonth:'You spent this month',today:'Today',daily:'You can spend per day',days:'days left',totalBudget:'Total budget',chartTitle:'Your spending trend',month:'Month',week:'Week',real:'Actual spent',ideal:'Ideal pace',categories:'Top categories',seeAll:'See all',ok:'All on track',warning:'Nearing the limit',over:'Over budget',empty:'Set a budget',fijos:'Fixed',market:'Groceries',home:'Home',dining:'Delivery / outings',title:'Personalize Home colors',hint:'The Bento layout remains unchanged. Change colors whenever you like.',reset:'Restore original image colors',mint:'Original mint',stone:'Gray and blue',violet:'Violet',night:'Dark',colors:{bg:'Background',ink:'Text',balance:'Available',percent:'Percentage',spent:'Spent',daily:'Per day',budget:'Total budget',chart:'Card background',nav:'Bottom navigation',plus:'Plus button',accent:'Chart line',catA:'Category 1',catB:'Category 2',catC:'Category 3',catD:'Category 4'}}
   };
@@ -94,7 +94,7 @@
   }
   function translate(){
     const dict=words();
-    for(const [id,text] of Object.entries({home:{es:'Inicio',pt:'Início',en:'Home'},lists:{es:'Actividad',pt:'Atividade',en:'Activity'},finance:{es:'Finanzas',pt:'Finanças',en:'Finance'},settings:{es:'Ajustes',pt:'Ajustes',en:'Settings'}})){const el=$('nav-'+id)?.querySelector('.bento-nav-label');if(el)el.textContent=text[lang()];}document.querySelectorAll('#view-home [data-bento-t]').forEach(el=>{
+    for(const [id,text] of Object.entries({home:{es:'Inicio',pt:'Início',en:'Home'},lists:{es:'Listas',pt:'Listas',en:'Lists'},finance:{es:'Finanzas',pt:'Finanças',en:'Finance'},settings:{es:'Ajustes',pt:'Ajustes',en:'Settings'}})){const el=$('nav-'+id)?.querySelector('.bento-nav-label');if(el)el.textContent=text[lang()];}document.querySelectorAll('#view-home [data-bento-t]').forEach(el=>{
       const k=el.dataset.bentoT;if(dict[k])el.innerHTML=dict[k];
     });
   }
@@ -146,12 +146,12 @@
   }
   function render(){
     if(!data()?.store||!$('view-home'))return;
-    applyColors();translate();
+    applyColors();translate();window.SmartyHomeRefresh?.applyDesign?.();window.SmartyHomeRefresh?.renderDesignSetting?.();
     const s=stats(),budget=number(data().store.budget?.limit),spent=number(Finance.calculateMonthlySpent()),rem=budget-spent;
     const percent=budget>0?Math.round(100*spent/budget):0;
     const left=s.days-s.today+1;
     const num=(id,str)=>{const el=$(id);if(el)el.textContent=str;};
-    num('budget-remaining',money(rem));num('budget-spent',money(spent,0));
+    num('budget-remaining',money(Math.abs(rem)));num('budget-spent',money(spent,0));
     num('budget-limit',money(budget));num('home-budget-percent',budget>0?`${percent}%`:'—');
     num('bento-spent-today',money(s.spentToday,0));num('bento-days',String(left));
     num('bento-daily-amount',budget>0?money(Math.max(0,rem)/left):'—');
@@ -159,7 +159,19 @@
     const month=new Intl.DateTimeFormat(dateLocale,{month:'long',year:'numeric'}).format(s.now);
     num('home-month-title',month.charAt(0).toLocaleUpperCase(dateLocale)+month.slice(1));
     num('home-budget-health',budget<=0?words().empty:spent>budget?words().over:percent>=85?words().warning:words().ok);
+    for(const [source,target] of [
+      ['budget-remaining','classic-budget-remaining'],
+      ['budget-spent','classic-budget-spent'],
+      ['budget-limit','classic-budget-limit'],
+      ['home-budget-percent','classic-home-budget-percent'],
+      ['bento-spent-today','classic-bento-spent-today'],
+      ['bento-days','classic-bento-days'],
+      ['bento-daily-amount','classic-bento-daily-amount'],
+      ['home-month-title','classic-home-month-title'],
+      ['home-budget-health','classic-home-budget-health']
+    ]){const src=$(source),dst=$(target);if(src&&dst)dst.textContent=src.textContent;}
     drawChart(s,spent,budget);topCategories(s);
+    window.SmartyHomeRefresh?.renderProgress?.(percent,budget,rem);
   }
   function renderThemeSettings(){
     const el=$('bento-theme-settings');if(!el)return;
