@@ -211,3 +211,99 @@
 @media(prefers-reduced-motion:reduce){
  #view-home.bento-home .slp-ref-ring-fill{transition:none!important}
 }
+
+
+/* Selector de Inicio: el Bento anterior es el predeterminado para usuarios existentes. */
+#view-home.bento-home:not(.slp-home-circular) .slp-circular-only,
+#view-home.bento-home.slp-home-classic .slp-circular-only{display:none!important}
+#view-home.bento-home.slp-home-circular .slp-classic-only{display:none!important}
+#view-home.bento-home.slp-home-classic .slp-ref-content{
+  gap:9px!important;display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto auto auto auto auto!important;
+  align-content:start!important;overflow-y:auto!important;
+}
+#view-home.bento-home.slp-home-classic .bento-intro{
+  display:flex!important;max-height:none;min-height:75px;padding:0 2px!important;
+}
+#view-home.bento-home.slp-home-classic .bento-intro h1{
+  font-size:clamp(27px,7.6vw,35px);margin:0 0 7px;
+}
+#view-home.bento-home.slp-home-classic .slp-classic-mini-mark{
+  width:62px;height:62px;flex:0 0 62px;border-radius:22px;
+  background:var(--b-daily);color:var(--b-spent);display:grid;place-items:center;
+  font-size:13px;font-weight:900;letter-spacing:-.6px;box-shadow:0 5px 17px rgba(15,60,45,.05);
+}
+#view-home.bento-home.slp-home-classic .bento-metrics{
+  width:100%;min-width:0;height:clamp(218px,33vh,288px);
+  min-height:218px;display:grid!important;
+  grid-template-columns:1.09fr .89fr;grid-template-rows:1.16fr .84fr;gap:9px;
+}
+#view-home.bento-home.slp-home-classic .bento-tile{padding:12px 13px;min-width:0;min-height:0}
+#view-home.bento-home.slp-home-classic .bento-main-amount{font-size:clamp(21px,6.4vw,34px)}
+#view-home.bento-home.slp-home-classic .bento-amount{font-size:clamp(19px,5.8vw,30px)}
+#view-home.bento-home.slp-home-classic .bento-percent-number{font-size:clamp(42px,13vw,66px)}
+#view-home.bento-home.slp-home-classic .bento-budget-row{min-height:33px;padding:7px 13px}
+#view-home.bento-home.slp-home-classic .bento-wallet{
+  padding:10px 12px!important;background:var(--b-chart)!important;
+  border-radius:22px!important;gap:8px;overflow:hidden!important;
+}
+#view-home.bento-home.slp-home-classic .bento-wallet-items{
+  min-height:106px!important;padding:2px 0 4px!important;
+}
+#view-home.bento-home.slp-home-classic .sw-home-card{
+  min-height:100px!important;height:auto!important;
+  flex:0 0 62%!important;width:62%!important;min-width:170px!important;
+  max-width:210px!important;border-radius:18px!important;padding:11px 12px!important;
+}
+#view-home.bento-home.slp-home-classic .sw-home-totals{
+  gap:3px!important;
+}
+#view-home.bento-home.slp-home-classic .sw-home-totals small{font-size:9px}
+#view-home.bento-home.slp-home-classic .sw-home-totals strong{font-size:clamp(12px,3.8vw,16px)}
+#view-home.bento-home.slp-home-classic .bento-categories{padding-top:5px!important}
+#view-home.bento-home.slp-home-classic .bento-category-pill{min-height:52px!important}
+#slp-home-design-settings{margin:0 0 17px}
+#slp-home-design-settings .slp-design-setting{
+  border:1px solid var(--glass-border,rgba(60,100,80,.12));
+  background:var(--glass-bg,#fff);color:var(--text-color,#173c33);
+  padding:16px 13px;border-radius:19px;
+}
+#slp-home-design-settings h3{margin:0 0 6px;font-size:16px;font-weight:800;line-height:1.25}
+#slp-home-design-settings p{margin:0 0 13px;font-size:11px;line-height:1.5;color:var(--text-sec,#6b8177)}
+#slp-home-design-settings .slp-design-options{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:10px;align-items:stretch;
+}
+#slp-home-design-settings .slp-design-options button{
+  display:flex;flex-direction:column;align-items:center;gap:9px;justify-content:flex-start;
+  padding:11px 7px;border-radius:16px;
+  background:var(--input-bg,#e7eee9);color:var(--text-color,#163e36);
+  border:2px solid transparent;font:inherit;cursor:pointer;min-width:0;
+}
+#slp-home-design-settings .slp-design-options button[aria-pressed=true]{
+  border-color:var(--primary,#32a66b);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--primary,#32a66b) 13%,transparent);
+}
+#slp-home-design-settings .slp-design-options strong{font-size:11px;text-align:center;line-height:1.3}
+#slp-home-design-settings .slp-design-preview{
+  height:63px;width:min(100%,104px);display:grid;gap:4px;
+  border-radius:12px;background:linear-gradient(140deg,#dcefe5,#f3f9ef);
+  padding:9px;box-shadow:inset 0 0 0 1px #cce0d4;
+}
+#slp-home-design-settings .slp-design-preview-bento{
+  grid-template-columns:1.08fr .92fr;grid-template-rows:1fr .8fr;
+}
+#slp-home-design-settings .slp-design-preview-bento i{border-radius:7px;background:#fff;}
+#slp-home-design-settings .slp-design-preview-bento i:nth-child(2){background:#7545cb}
+#slp-home-design-settings .slp-design-preview-bento i:nth-child(3){background:#184f44}
+#slp-home-design-settings .slp-design-preview-bento i:nth-child(4){background:#f5c6af}
+#slp-home-design-settings .slp-design-preview-circle{display:grid;place-items:center}
+#slp-home-design-settings .slp-design-preview-circle i{
+  display:block;width:49px;height:49px;border:7px solid #3eaf65;
+  border-left-color:#cde5d5;border-radius:50%;
+  background:#f6fcf7;box-shadow:0 0 0 2px white;
+}
+@media(max-height:690px){
+ #view-home.bento-home.slp-home-classic .bento-metrics{height:225px}
+}
