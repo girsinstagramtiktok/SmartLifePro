@@ -71,15 +71,27 @@
     if(all)all.textContent=tx('Ver todas ↗','Ver todos ↗','View all ↗');
     const groups=homeItems(st);
     if(!groups.length){host.innerHTML=`<button type="button" class="sw-home-empty" data-sw-all>${tx('Añade una cuenta o tarjeta para verla aquí','Adicione uma conta ou cartão para ver aqui','Add an account or card to see it here')} <span aria-hidden="true">＋</span></button>`;return;}
+
     host.innerHTML=groups.map(g=>{
-      const b=g.brand,account=g.items.some(i=>i.type==='account'),credit=g.items.some(i=>i.type==='card');
+      const b=g.brand;
+      const accounts=g.items.filter(i=>i.type==='account');
+      const cards=g.items.filter(i=>i.type==='card');
+      const account=accounts.length>0,credit=cards.length>0;
       const badges=[account?tx('Cuenta','Conta','Account'):null,credit?tx('Crédito','Crédito','Credit'):null].filter(Boolean);
-      const selector=g.key.startsWith('bank:')?`data-sw-bank="${esc(b.id)}"`:`data-sw-open="${g.items[0].type}:${esc(g.items[0].entry.id)}"`;
+      const selector=g.key.startsWith('bank:')?'data-sw-bank="'+esc(b.id)+'"':'data-sw-open="'+g.items[0].type+':'+esc(g.items[0].entry.id)+'"';
       const name=g.key.startsWith('bank:')?b.name:g.items[0].entry.name;
-      return `<button type="button" class="sw-home-card" ${selector} style="${style(b)}" aria-label="${esc(name)} · ${badges.join(' + ')}. ${tx('Abrir detalles','Abrir detalhes','Open details')}">
-       <span class="sw-home-card-top">${logo(b)}<span class="sw-home-chip-row">${badges.map(label=>`<span class="sw-home-card-type">${label}</span>`).join('')}</span></span>
-       <span class="sw-home-card-bottom"><strong>${esc(name)}</strong><span aria-hidden="true">↗</span></span>
-      </button>`;
+      const accountCents=accounts.reduce((total,i)=>total+C().accountBalance(st,i.entry.id),0);
+      const creditCents=cards.reduce((total,i)=>total+C().cardAvailable(st,i.entry.id),0);
+      const rows=[
+        account?'<span><small>'+tx('Saldo en cuenta','Saldo em conta','Account balance')+'</small><strong>'+money(accountCents)+'</strong></span>':'',
+        credit?'<span><small>'+tx('Crédito disponible','Crédito disponível','Available credit')+'</small><strong>'+money(creditCents)+'</strong></span>':''
+      ].join('');
+      const chips=badges.map(label=>'<span class="sw-home-card-type">'+label+'</span>').join('');
+      return '<button type="button" class="sw-home-card" '+selector+' style="'+style(b)+'" aria-label="'+esc(name)+'. '+badges.join(' + ')+'. '+tx('Ver detalles','Ver detalhes','View details')+'">'+
+        '<span class="sw-home-card-top">'+logo(b)+'<span class="sw-home-chip-row">'+chips+'</span></span>'+
+        '<span class="sw-home-card-name">'+esc(name)+'</span>'+
+        '<span class="sw-home-totals">'+rows+'</span>'+
+       '</button>';
     }).join('');
   }
   function openBank(bankId){
