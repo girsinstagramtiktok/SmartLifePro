@@ -307,3 +307,135 @@
 @media(max-height:690px){
  #view-home.bento-home.slp-home-classic .bento-metrics{height:225px}
 }
+
+
+/* Compactación aprobada de Inicio: anillo sin título, cifras siempre dentro y perfil funcional. */
+#view-home.bento-home .slp-ref-header{
+  gap:7px!important;min-height:60px!important;
+}
+#view-home.bento-home .slp-ref-header .bento-header-actions{gap:5px!important}
+#view-home.bento-home .slp-ref-header .bento-brand>span{display:none!important}
+#view-home.bento-home .slp-ref-header .bento-brand strong{font-size:19px}
+#view-home.bento-home .slp-ref-header .bento-round-icon{
+  width:39px!important;height:39px!important;flex:0 0 39px!important;padding:9px!important;
+}
+#view-home.bento-home .slp-ref-header .bento-round-icon svg{width:20px!important;height:20px!important}
+#view-home.bento-home .slp-ref-header .bento-mascot{
+  border-radius:50%!important;width:45px!important;height:45px!important;flex:0 0 45px!important;
+  padding:0!important;overflow:hidden!important;
+}
+#view-home.bento-home .slp-ref-header .bento-mascot img{height:99px!important}
+#view-home.bento-home .slp-ref-content{gap:10px!important;padding-top:3px!important}
+#view-home.bento-home.slp-home-circular .slp-ref-hero{padding-top:6px!important}
+#view-home.bento-home.slp-home-circular .slp-ref-ring{
+  width:min(53vw,207px)!important;max-width:207px!important;
+  margin:3px auto 0!important;min-width:174px;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-ring-center{
+  inset:25px!important;gap:1px!important;min-width:0;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-percent{
+  font-size:clamp(33px,10vw,47px)!important;
+  letter-spacing:-1.3px!important;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-percent-caption{
+  font-size:clamp(9px,2.6vw,11px)!important;line-height:1.15!important;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-remaining-caption{
+  margin-top:9px!important;font-size:clamp(9px,2.7vw,11px)!important;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-remaining{
+  font-size:clamp(15px,4.9vw,22px)!important;letter-spacing:-.5px!important;
+  max-width:100%;white-space:normal!important;overflow-wrap:anywhere;
+  line-height:1.12!important;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-total{margin-top:10px!important;padding:7px 12px!important}
+#view-home.bento-home.slp-home-circular .slp-ref-month{margin-top:4px!important}
+#view-home.bento-home.slp-home-circular .slp-ref-stats{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-stat{
+  width:100%;min-height:91px!important;max-height:108px;
+  aspect-ratio:1.75;gap:3px!important;padding:9px 10px!important;
+  border-radius:47% 47% 44% 44% / 40% 40% 42% 42%!important;
+  box-sizing:border-box;overflow:hidden;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-stat svg{
+  width:19px!important;height:19px!important;flex-shrink:0;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-stat-label{
+  font-size:clamp(9px,2.65vw,12px)!important;line-height:1.2!important;
+}
+#view-home.bento-home.slp-home-circular .slp-ref-stat strong{
+  font-size:clamp(17px,4.8vw,24px)!important;letter-spacing:-.5px!important;
+  line-height:1.1!important;max-width:100%;white-space:normal!important;
+  overflow-wrap:anywhere;text-align:center;
+}
+#view-home.bento-home.slp-home-circular .bento-wallet{padding-top:0!important}
+#view-home.bento-home.slp-home-circular .bento-wallet-items{
+  min-height:123px!important;gap:9px!important;padding:2px 3px 5px!important;
+}
+#view-home.bento-home.slp-home-circular .sw-home-card{
+  min-width:155px!important;max-width:181px!important;
+  flex:0 0 62%!important;width:62%!important;height:auto!important;
+  min-height:120px!important;max-height:145px!important;
+  padding:10px 11px!important;border-radius:23px!important;gap:4px!important;
+}
+#view-home.bento-home.slp-home-circular .sw-home-card .sw-banklogo{
+  width:28px;height:28px;flex-basis:28px;border-radius:9px;
+}
+#view-home.bento-home.slp-home-circular .sw-home-card-name{font-size:11px}
+#view-home.bento-home.slp-home-circular .sw-home-chip-row .sw-home-card-type{
+  font-size:8px!important;padding:2px 4px!important;
+}
+#view-home.bento-home.slp-home-circular .sw-home-totals{gap:4px!important}
+#view-home.bento-home.slp-home-circular .sw-home-totals small{font-size:9px}
+#view-home.bento-home.slp-home-circular .sw-home-totals strong{
+  font-size:clamp(10px,3.3vw,14px)!important;
+  white-space:normal!important;overflow-wrap:anywhere;line-height:1.1;
+}
+#view-home.bento-home.slp-home-classic .slp-classic-mini-mark{
+  border:1px solid rgba(255,255,255,.65);display:flex;flex-direction:column;gap:2px;
+  align-items:center;justify-content:center;cursor:pointer;font-family:inherit;
+  font-weight:800;box-sizing:border-box;
+}
+#view-home.bento-home.slp-home-classic .slp-classic-mini-mark svg{
+  width:21px;height:21px;stroke:var(--b-ink);
+}
+#view-home.bento-home.slp-home-classic .slp-classic-mini-mark span{font-size:10px}
+#view-home.bento-home.slp-home-classic .bento-metrics{
+  height:clamp(200px,28vh,255px)!important;min-height:200px!important;
+}
+#view-home.bento-home.slp-home-classic .sw-home-card{
+  min-height:104px!important;max-height:138px!important;
+  flex-basis:58%!important;width:58%!important;min-width:158px!important;
+}
+#view-home.bento-home.slp-home-classic .sw-home-totals strong{
+  white-space:normal!important;overflow-wrap:anywhere;
+}
+#view-home.bento-home .slp-profile-shortcut{
+  width:100%;min-height:55px;display:flex;gap:11px;align-items:center;
+  padding:9px 12px;margin:2px 0 0;border:1px solid rgba(255,255,255,.67);
+  border-radius:19px;background:color-mix(in srgb,var(--b-chart) 77%,var(--b-budget));
+  color:var(--b-ink);font-family:inherit;text-align:left;cursor:pointer;
+  box-shadow:0 5px 15px rgba(14,65,45,.05);flex:0 0 auto!important;
+}
+#view-home.bento-home .slp-profile-symbol{
+  width:35px;height:35px;display:grid;place-items:center;flex:0 0 35px;
+  border-radius:13px;background:color-mix(in srgb,var(--b-percent) 15%,var(--b-chart));
+  color:var(--b-ink);font-size:18px;
+}
+#view-home.bento-home .slp-profile-shortcut-copy{
+  display:flex;flex:1;flex-direction:column;gap:3px;min-width:0;
+}
+#view-home.bento-home .slp-profile-shortcut-copy strong{font-size:12px;font-weight:800}
+#view-home.bento-home .slp-profile-shortcut-copy small{font-size:10px;color:var(--b-muted)}
+#view-home.bento-home .slp-profile-arrow{font-size:24px;line-height:1;opacity:.75}
+#view-home.bento-home.slp-home-circular .bento-categories{min-height:132px!important}
+@media(max-width:355px){
+ #view-home.bento-home.slp-home-circular .slp-ref-ring{width:174px!important}
+ #view-home.bento-home.slp-home-circular .slp-ref-stat{min-height:88px!important;padding:7px 6px!important}
+ #view-home.bento-home.slp-home-circular .slp-ref-stat strong{font-size:16px!important}
+ #view-home.bento-home.slp-home-circular .sw-home-card{min-width:149px!important}
+ #view-home.bento-home .slp-ref-header .bento-brand strong{font-size:16px}
+}

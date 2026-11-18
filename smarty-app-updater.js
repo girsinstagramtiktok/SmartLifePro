@@ -1,7 +1,6 @@
-/* SmartLifePro: comprueba las actualizaciones y descarga APK firmado/verificado.
- * Consulta primero el índice público generado por GitHub Actions (sin límites de API),
- * y usa GitHub Releases como respaldo. Mantiene la instalación manual desde
- * Descargas/SmartLifePro, sin abrir el instalador desde WebView.
+/* SmartLifePro: descarga APK firmado/verificado y abre el instalador nativo.
+ * Conserva el APK en Descargas/SmartLifePro para instalación manual de respaldo.
+ * Consulta primero el índice GitHub público y después Releases.
  */
 (function () {
   'use strict';
@@ -10,6 +9,7 @@
   let downloading = false;
   let checking = false;
   let lastMessage = '';
+  let savedApk = null;
 
   const dict = {
     es: {
@@ -20,8 +20,12 @@
       notConfigured: 'No está configurado el repositorio.',
       downloading: 'Descargando APK…',
       saved: 'APK verificado y guardado en:',
-      next: 'Abre Mis archivos → Almacenamiento interno → Descargas → SmartLifePro y toca el APK para instalarlo.',
-      download: 'Descargar APK a Descargas',
+      next: 'Pulsa Instalar actualización para abrir el instalador de Android. Si no aparece, el APK sigue disponible en Descargas/SmartLifePro.',
+      download: 'Descargar actualización',
+      install: 'Instalar actualización',
+      installer: 'Instalador de Android abierto. Confirma la actualización.',
+      permission: 'Autoriza la instalación desde SmartLifePro en Android, vuelve a la app y pulsa Instalar actualización.',
+      installError: 'No se pudo abrir el instalador. Prueba el botón Instalar actualización o utiliza el APK guardado en Descargas/SmartLifePro.',
       error: 'Error:'
     },
     pt: {
@@ -32,8 +36,12 @@
       notConfigured: 'Repositório não configurado.',
       downloading: 'Baixando APK…',
       saved: 'APK verificado e salvo em:',
-      next: 'Abra Meus Arquivos → Armazenamento interno → Downloads → SmartLifePro e toque no APK para instalar.',
-      download: 'Salvar APK em Downloads',
+      next: 'Toque em Instalar atualização para abrir o instalador do Android. O APK continua em Downloads/SmartLifePro como alternativa.',
+      download: 'Baixar atualização',
+      install: 'Instalar atualização',
+      installer: 'Instalador do Android aberto. Confirme a atualização.',
+      permission: 'Autorize instalações pelo SmartLifePro no Android, volte e toque em Instalar atualização.',
+      installError: 'Não foi possível abrir o instalador. Tente o botão Instalar atualização ou o APK salvo em Downloads/SmartLifePro.',
       error: 'Erro:'
     },
     en: {
@@ -44,8 +52,12 @@
       notConfigured: 'Repository not configured.',
       downloading: 'Downloading APK…',
       saved: 'Verified APK saved to:',
-      next: 'Open My Files → Internal storage → Downloads → SmartLifePro, then tap the APK.',
-      download: 'Save APK to Downloads',
+      next: 'Tap Install update to open the Android installer. A backup copy stays in Downloads/SmartLifePro.',
+      download: 'Download update',
+      install: 'Install update',
+      installer: 'Android installer opened. Confirm the update.',
+      permission: 'Allow installs from SmartLifePro in Android settings, return and tap Install update.',
+      installError: 'Could not open the installer. Retry Install update or use the APK in Downloads/SmartLifePro.',
       error: 'Error:'
     }
   };
@@ -79,8 +91,20 @@
     button.disabled = downloading || checking;
     button.hidden = !candidate;
     button.onclick = downloadNow;
-    // Eliminar controles anteriores de instalación automática.
-    document.getElementById('smarty-update-install')?.remove();
+    let installer = document.getElementById('smarty-update-install');
+    if (savedApk && typeof api()?.installSaved === 'function') {
+      if (!installer) {
+        installer = document.createElement('button');
+        installer.id = 'smarty-update-install';
+        installer.className = 'btn-full';
+        installer.style.cssText = 'margin:8px 0;padding:11px;font-size:13px';
+        el.insertAdjacentElement('afterend', installer);
+      }
+      installer.textContent = t().install;
+      installer.hidden = false;
+      installer.disabled = downloading || checking;
+      installer.onclick = installNow;
+    } else if (installer) installer.remove();
     document.getElementById('smarty-update-diagnostics')?.remove();
   }
   function repo() {
@@ -191,6 +215,11 @@
     }
   }
 
+  function installNow() {
+    if (!savedApk || typeof api()?.installSaved !== 'function') return;
+    try { api().installSaved(); }
+    catch (error) { status(t().installError + ' ' + String(error?.message || error)); controls(); }
+  }
   function downloadNow() {
     if (!candidate || downloading || checking) return;
     downloading = true;
@@ -209,7 +238,17 @@
     downloading = false;
     if (kind === 'saved') {
       candidate = null;
-      status(t().saved + ' ' + String(value) + '\n' + t().next);
+      savedApk = String(value);
+      status(t().saved + ' ' + savedApk + '\n' + t().next);
+      controls();
+      installNow(); // Descarga iniciada por el usuario: abre el instalador nativo.
+      return;
+    } else if (kind === 'installer') {
+      status(t().installer);
+    } else if (kind === 'permission') {
+      status(t().permission);
+    } else if (kind === 'install-error') {
+      status(t().installError + '\n' + String(value));
     } else status(t().error + ' ' + String(value));
     controls();
   }

@@ -793,7 +793,7 @@ const Assistant = {
             this.updateHomeXP(); 
             this.checkDailyStreak();
             const img = document.getElementById('mascot-img');
-            if(img) img.onclick = () => this.giveTip();
+            if(img) img.onclick = null; // El contenedor abre Perfil (skins, logros y misiones).
         }, 1000);
     },
 
@@ -933,7 +933,7 @@ const Assistant = {
             img.src = path + 'idle.png';
             img.style.animation = "floatMascot 5s ease-in-out infinite";
         }
-        img.onclick = () => this.giveTip();
+        img.onclick = null; // El contenedor principal gestiona la pulsación.
     },
 
     // --- RENDERIZADO DEL PERFIL (CORREGIDO Y TRADUCIDO) ---

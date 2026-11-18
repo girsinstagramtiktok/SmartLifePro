@@ -1,4 +1,4 @@
-# SmartLifePro — APK en Descargas y copia diaria en carpeta elegida
+# SmartLifePro — Instalación desde la app, APK en Descargas y copia diaria
 
 Este paquete **incremental** contiene únicamente los archivos nuevos o modificados respecto a la versión SmartLifePro Bento + Huella V3 + Instalador V4 + Ajustes actualizados. No incluye contraseñas, certificados ni `SmartyRelease.jks`.
 
@@ -10,10 +10,13 @@ Este paquete **incremental** contiene únicamente los archivos nuevos o modifica
 
 ## 2. Actualizaciones siguientes
 1. Publica otra compilación (debe tener un `versionCode` superior).
-2. Dentro de SmartLifePro: **Ajustes → Buscar actualizaciones del APK → Descargar APK a Descargas**.
-3. La app comprueba HTTPS, SHA-256, el identificador, el número de versión y la firma instalada. Cuando termine mostrará la ubicación `Descargas/SmartLifePro/SmartLifePro_v<versión>.apk`.
-4. Abre **Mis archivos → Almacenamiento interno → Download (o Descargas) → SmartLifePro** y toca el APK. Confirma la actualización normal de Android.
-5. No se intenta abrir el instalador directamente desde la WebView. El nuevo método para guardar en Descargas funciona en Android 10 (API 29) y posterior.
+2. En SmartLifePro, ve a **Ajustes → Buscar actualizaciones del APK → Descargar actualización**.
+3. La aplicación verifica la descarga por HTTPS, SHA-256, identificador, versión y firma. Guarda una copia en `Descargas/SmartLifePro/SmartLifePro_v<versión>.apk`.
+4. Al terminar, **abre el instalador nativo de Android** con el APK verificado. Acepta la instalación cuando Android la solicite; no es una instalación silenciosa.
+5. En el primer uso, Android puede mostrar **Permitir instalar aplicaciones de esta fuente**. Autoriza específicamente SmartLifePro, regresa a la aplicación y pulsa **Instalar actualización** para reintentar.
+6. Si Android no abre el instalador, el archivo permanece en **Mis archivos → Almacenamiento interno → Download/Descargas → SmartLifePro** para instalación manual.
+7. **Importante para migrar desde una versión anterior:** es necesario instalar una primera vez el APK que ya incluya el puente nativo nuevo. En la versión anterior no existe el método para abrir el instalador; puede requerir esta actualización manual inicial.
+8. Guardar APK en Descargas mediante MediaStore requiere Android 10 (API 29) o posterior en esta implementación. Nunca se omite la comprobación de firma ni el consentimiento de Android.
 
 ## 3. Copia diaria en carpeta elegida
 1. Ve a **Ajustes → Copias diarias con fecha → Elegir carpeta**.
