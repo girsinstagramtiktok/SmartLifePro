@@ -155,11 +155,54 @@
       }
     }));
   }
+  const DESIGN_KEY='homeDesign';
+  function selectedDesign(){
+    return D()?.store?.settings?.[DESIGN_KEY]==='circular'?'circular':'classic';
+  }
+  function renderDesignSetting(){
+    const host=$('slp-home-design-settings');
+    if(!host||!D()?.store)return;
+    const value=selectedDesign();
+    const title=t('Diseño de la pantalla principal','Design da tela inicial','Home screen design');
+    const classic=t('Bento anterior','Bento anterior','Previous Bento');
+    const circular=t('Circular nuevo','Circular novo','New circular');
+    const desc=t('Cambia el diseño cuando quieras. Los datos, las alertas, la guía y los botones son los mismos en ambas vistas.',
+      'Altere o visual quando quiser. Dados, alertas, guia e botões permanecem iguais.',
+      'Switch layouts anytime. Your data, alerts, guide and navigation stay the same.');
+    host.innerHTML='<section class="slp-design-setting"><h3>'+title+'</h3><p>'+desc+'</p>'+
+      '<div class="slp-design-options" role="group" aria-label="'+title+'">'+
+      '<button type="button" data-home-design="classic" aria-pressed="'+(value==='classic')+'">'+
+        '<span class="slp-design-preview slp-design-preview-bento" aria-hidden="true"><i></i><i></i><i></i><i></i></span><strong>'+classic+'</strong></button>'+
+      '<button type="button" data-home-design="circular" aria-pressed="'+(value==='circular')+'">'+
+        '<span class="slp-design-preview slp-design-preview-circle" aria-hidden="true"><i></i></span><strong>'+circular+'</strong></button>'+
+      '</div></section>';
+    host.querySelectorAll('[data-home-design]').forEach(button=>button.addEventListener('click',()=>setDesign(button.dataset.homeDesign)));
+  }
+  function setDesign(value){
+    if(value!=='classic'&&value!=='circular')return;
+    const data=D();
+    if(!data?.store)return;
+    data.store.settings=data.store.settings||{};
+    data.store.settings[DESIGN_KEY]=value;
+    data.save();
+    applyDesign();
+    if(root.SmartyBentoHome?.render)root.SmartyBentoHome.render();
+    if(root.SmartyWallet?.renderHome)root.SmartyWallet.renderHome();
+    renderDesignSetting();
+  }
+  function applyDesign(){
+    const home=$('view-home');
+    if(!home)return;
+    home.classList.toggle('slp-home-classic',selectedDesign()==='classic');
+    home.classList.toggle('slp-home-circular',selectedDesign()==='circular');
+  }
   function init(){
+    applyDesign();
+    renderDesignSetting();
     translate();
     if(typeof SmartyBentoHome!=='undefined')SmartyBentoHome.render?.();
     root.addEventListener('focus',()=>{if(typeof SmartyBentoHome!=='undefined')SmartyBentoHome.render?.();});
   }
-  root.SmartyHomeRefresh={openGuide,openAlerts,renderProgress,translate};
+  root.SmartyHomeRefresh={openGuide,openAlerts,renderProgress,translate,selectedDesign,setDesign,applyDesign,renderDesignSetting};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })(window);
