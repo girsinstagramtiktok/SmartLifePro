@@ -124,7 +124,7 @@
 }
 #view-home.bento-home .sw-home-card-bottom strong{max-width:100%}
 #view-home.bento-home .sw-home-totals{display:grid;grid-template-columns:1fr;gap:7px;z-index:1;margin-top:auto}
-#view-home.bento-home .sw-home-totals>span{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+#view-home.bento-home .sw-home-totals>span{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
 #view-home.bento-home .sw-home-totals small{font-size:10px;font-weight:600;opacity:.88;white-space:nowrap}
 #view-home.bento-home .sw-home-totals strong{
   font-size:clamp(12px,3.8vw,17px);font-weight:850;letter-spacing:-.25px;
