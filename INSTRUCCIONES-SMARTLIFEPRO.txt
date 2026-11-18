@@ -1,0 +1,49 @@
+SmartLifePro — corrección de Inicio / Bento / modo oscuro / Ajustes / rotación
+18 de noviembre de 2026
+Repositorio comprobado: girsinstagramtiktok/SmartLifePro
+
+REEMPLAZA ESTOS DOS ARCHIVOS COMPLETOS EN GITHUB:
+
+1) smarty-pro-motion.js
+   Ruta en el repositorio: /smarty-pro-motion.js
+   Conserva las mejoras previas de los campos decimales y los tickets.
+
+2) patch-release-signing.cjs
+   Ruta en el repositorio: /tools/patch-release-signing.cjs
+   Conserva la firma estable y el versionCode, y fija android:screenOrientation="portrait"
+   en la MainActivity del AndroidManifest generado durante el build.
+
+QUÉ CAMBIA
+- Elimina la tarjeta redundante de misiones/skins/logros de Inicio: se sigue accediendo
+  mediante el avatar de Smarty de la cabecera.
+- Mantiene el botón independiente de chat de Smarty.
+- Reduce el círculo presupuestario y convierte los dos indicadores en círculos.
+- Ajusta la distribución circular y Bento para que tarjetas, cuentas y categorías
+  no queden ocultas detrás de la navegación inferior en pantallas móviles habituales.
+- Corrige colores de fondo, tarjetas, navegación y controles en modo oscuro general.
+- Reestiliza Ajustes con tarjetas tipo iOS, botones y selectores más consistentes.
+- Impide la rotación horizontal de la MainActivity del próximo APK Android.
+
+QUÉ NO CAMBIA
+- No modifica shopping.js, la información financiera, el guardado de tickets,
+  los avisos, el chat, las skins ni los backups.
+- No cambia las credenciales de firma ni el identificador Android.
+- No requiere un nuevo workflow: android-apk.yml ya incluye y ejecuta ambos archivos.
+
+AL SUBIRLOS
+Sube ambos a main conservando sus rutas y ejecuta Build Smarty Android APK
+si la compilación no se inicia automáticamente. Instala la nueva versión del APK
+con el mismo flujo manual de siempre, sin desinstalar ni borrar datos.
+
+PRUEBAS REALIZADAS
+- Sintaxis JavaScript de ambos archivos: OK.
+- CSS añadido: parseado sin errores.
+- Prueba de presentación móvil simulada a 360 px de ancho, alturas 620/700/768,
+  vistas clásica y circular en temas claro y oscuro: categoría completa sobre dock.
+- Cambio de modo claro ↔ oscuro: actualizado en la vista y la barra del sistema: OK.
+- Prueba nativa sintética del parche Android: bloquea portrait, conserva firma,
+  versionCode y admite ejecución repetida: OK.
+
+LIMITACIÓN
+No se ha compilado ni instalado el APK real en un teléfono. La verificación
+final de la interfaz y de la orientación debe hacerse con GitHub Actions y el APK.
