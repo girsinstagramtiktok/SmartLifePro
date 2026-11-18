@@ -58,7 +58,45 @@
                 </div>
             </header>
             <div class="bento-content slp-ref-content">
-                <section class="slp-ref-hero" aria-label="Progreso del presupuesto mensual">
+
+                <!-- Vista Bento anterior. Conserva el mismo presupuesto, banco y categorías. -->
+                <section class="bento-intro slp-classic-only" aria-label="Resumen mensual Bento">
+                    <div class="bento-intro-text">
+                        <h1 data-bento-t="headline">Tu mes, de<br>un vistazo.</h1>
+                        <p><span id="classic-home-month-title"></span> <span aria-hidden="true">·</span> <span id="classic-home-budget-health"></span></p>
+                    </div>
+                    <span class="slp-classic-mini-mark" aria-hidden="true">smarty.</span>
+                </section>
+                <section class="bento-metrics slp-classic-only" aria-label="Indicadores financieros Bento">
+                    <button class="bento-tile bento-balance" onclick="Finance.openHomeMovements('expense')">
+                        <span class="bento-kicker" data-bento-t="remaining">Te queda por gastar</span>
+                        <strong id="classic-budget-remaining" class="bento-amount bento-main-amount">R$0,00</strong>
+                        <span class="bento-helper" data-bento-t="available">Tu dinero disponible este mes</span>
+                        <span class="bento-arrow" aria-hidden="true">↗</span>
+                    </button>
+                    <button class="bento-tile bento-percent" onclick="Finance.openHomeMovements('expense')">
+                        <span class="bento-kicker" data-bento-t="budget">Presupuesto</span>
+                        <strong id="classic-home-budget-percent" class="bento-percent-number">0%</strong>
+                        <span class="bento-helper" data-bento-t="used">utilizado hasta hoy</span>
+                    </button>
+                    <button class="bento-tile bento-spent" onclick="Finance.openHomeMovements('expense')">
+                        <span class="bento-kicker" data-bento-t="spentMonth">Gastaste este mes</span>
+                        <strong id="classic-budget-spent" class="bento-amount">R$0</strong>
+                        <span class="bento-helper"><span data-bento-t="today">Hoy</span>: <span id="classic-bento-spent-today">R$0</span></span>
+                        <span class="bento-small-arrow" aria-hidden="true">↗</span>
+                    </button>
+                    <button class="bento-tile bento-daily" onclick="Finance.openBudgetModal()">
+                        <span class="bento-kicker" data-bento-t="daily">Puedes gastar por día</span>
+                        <strong id="classic-bento-daily-amount" class="bento-amount">R$0,00</strong>
+                        <span class="bento-helper"><span id="classic-bento-days">0</span> <span data-bento-t="days">días restantes</span></span>
+                    </button>
+                </section>
+                <button class="bento-budget-row slp-classic-only" onclick="Finance.openBudgetModal()">
+                    <span data-bento-t="totalBudget">Presupuesto total</span>
+                    <strong><span id="classic-budget-limit">R$0,00</span><span aria-hidden="true"> ↗</span></strong>
+                </button>
+
+                <section class="slp-ref-hero slp-circular-only" aria-label="Progreso del presupuesto mensual">
                     <svg class="slp-ref-arc" viewBox="0 0 320 70" role="img" aria-label="Progreso circular del presupuesto">
                         <defs><path id="slp-ref-arc-path" d="M 32,67 C 73,-18 247,-18 288,67"/></defs>
                         <text class="slp-ref-arc-text"><textPath href="#slp-ref-arc-path" startOffset="50%" text-anchor="middle">Progreso del presupuesto</textPath></text>
@@ -81,7 +119,7 @@
                     </button>
                     <div class="slp-ref-month"><span id="home-month-title"></span><span aria-hidden="true"> · </span><span id="home-budget-health"></span></div>
                 </section>
-                <section class="slp-ref-stats" aria-label="Gasto mensual y presupuesto diario">
+                <section class="slp-ref-stats slp-circular-only" aria-label="Gasto mensual y presupuesto diario">
                     <button type="button" class="slp-ref-stat slp-ref-stat-spent" onclick="Finance.openHomeMovements('expense')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 5 13h7l-1 9 8-12h-7l1-8z"/></svg>
                         <span class="slp-ref-stat-label">Has gastado</span>
@@ -187,6 +225,7 @@
             </div>
             <div class="scroll-content">
                 <div class="settings-card full-width">
+                    <div id="slp-home-design-settings"></div>
                     <div id="settings-inject"></div>
                     <div id="bento-theme-settings"></div>
                 </div>
