@@ -1191,6 +1191,11 @@ jobs:
           if (!manifest.includes("QUERY_ALL_PACKAGES")) {
               manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.QUERY_ALL_PACKAGES\" />\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n    <uses-permission android:name=\"android.permission.MODIFY_AUDIO_SETTINGS\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.USE_BIOMETRIC\" />\n    <uses-permission android:name=\"android.permission.USE_FINGERPRINT\" />\n    <application");
           }
+          // Android 8+: permitir solicitar la instalación con confirmación del usuario.
+          // Independiente del bloque QUERY_ALL_PACKAGES: no saltar si ya hay permisos.
+          if (!manifest.includes("android.permission.REQUEST_INSTALL_PACKAGES")) {
+              manifest = manifest.replace("<application", "<uses-permission android:name=\\"android.permission.REQUEST_INSTALL_PACKAGES\\" />\\n    <application");
+          }
           if (!manifest.includes("SmartyNotificationService")) {
               const svcs = [
                 "<service android:name=\".SmartyNotificationService\" android:label=\"Smarty Lector Bancario\" android:exported=\"true\" android:permission=\"android.permission.BIND_NOTIFICATION_LISTENER_SERVICE\"><intent-filter><action android:name=\"android.service.notification.NotificationListenerService\" /></intent-filter></service>",
