@@ -1194,7 +1194,7 @@ jobs:
           // Android 8+: permitir solicitar la instalación con confirmación del usuario.
           // Independiente del bloque QUERY_ALL_PACKAGES: no saltar si ya hay permisos.
           if (!manifest.includes("android.permission.REQUEST_INSTALL_PACKAGES")) {
-              manifest = manifest.replace("<application", "<uses-permission android:name=\\"android.permission.REQUEST_INSTALL_PACKAGES\\" />\\n    <application");
+              manifest = manifest.replace("<application", "<uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />\n    <application");
           }
           if (!manifest.includes("SmartyNotificationService")) {
               const svcs = [
