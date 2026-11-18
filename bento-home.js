@@ -207,9 +207,8 @@
     if(!$('view-home'))return;
     state.installed=true;
     window.SMARTY_BENTO_NATIVE_BASE=true;
-    // Assistant cambia dinámicamente la imagen y registra un onclick propio.
-    // Abrir una sola acción al pulsar Smarty, sin disparar consejo + chat juntos.
-    $('mascot-img')?.addEventListener('click',e=>{e.stopPropagation();Assistant.openSmartyChat();},true);
+    // El avatar abre el perfil de Smarty; el chat dispone de su propio botón.
+    // No interceptar aquí los clicks de la mascota.
     for(const id of ['home','lists','finance','settings']){const btn=$('nav-'+id);if(btn&&!btn.querySelector('.bento-nav-label')){const span=document.createElement('span');span.className='bento-nav-label';btn.appendChild(span);}}
     document.querySelectorAll('[data-bento-period]').forEach(btn=>btn.addEventListener('click',()=>{state.period=btn.dataset.bentoPeriod;render();}));
     const wrap=(obj,name,fn)=>{
