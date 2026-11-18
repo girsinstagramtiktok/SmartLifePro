@@ -82,6 +82,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Cache de dependencias Gradle entre compilaciones
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
       - name: Install ImageMagick, Compress to 5MB & Inject V21 Master Addons
         run: |
           sudo apt-get update -y && sudo apt-get install -y imagemagick
@@ -1241,7 +1246,27 @@ jobs:
           node tools/patch-release-signing.cjs
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          # Maven Central puede responder 429 por exceso temporal de solicitudes.
+          # Conservar los artefactos descargados y reintentar SOLO errores HTTP
+          # transitorios: no ocultar fallos reales de compilación Java/Gradle.
+          for intento in 1 2 3; do
+            echo "=== Gradle release: intento ${intento}/3 ==="
+            log_file="$RUNNER_TEMP/smarty-gradle-attempt-${intento}.log"
+            if ./gradlew assembleRelease --no-daemon --max-workers=2 --console=plain 2>&1 | tee "$log_file"; then
+              break
+            fi
+            if [ "$intento" -eq 3 ]; then
+              echo "::error::No se pudo compilar el APK tras 3 intentos."
+              exit 1
+            fi
+            if ! grep -Eiq 'Received status code (429|500|502|503|504)|Too Many Requests|HTTP 429|Connect timed out|Read timed out' "$log_file"; then
+              echo "::error::Error no transitorio de Gradle: consulta el registro anterior."
+              exit 1
+            fi
+            pausa=$((intento * 20))
+            echo "::warning::Repositorio Maven temporalmente limitado; reintento en ${pausa} segundos."
+            sleep "$pausa"
+          done
           cd ..
           cp android/app/build/outputs/apk/release/app-release.apk SmartLifePro.apk
           test -s SmartLifePro.apk
