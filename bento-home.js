@@ -159,6 +159,17 @@
     const month=new Intl.DateTimeFormat(dateLocale,{month:'long',year:'numeric'}).format(s.now);
     num('home-month-title',month.charAt(0).toLocaleUpperCase(dateLocale)+month.slice(1));
     num('home-budget-health',budget<=0?words().empty:spent>budget?words().over:percent>=85?words().warning:words().ok);
+    for(const [source,target] of [
+      ['budget-remaining','classic-budget-remaining'],
+      ['budget-spent','classic-budget-spent'],
+      ['budget-limit','classic-budget-limit'],
+      ['home-budget-percent','classic-home-budget-percent'],
+      ['bento-spent-today','classic-bento-spent-today'],
+      ['bento-days','classic-bento-days'],
+      ['bento-daily-amount','classic-bento-daily-amount'],
+      ['home-month-title','classic-home-month-title'],
+      ['home-budget-health','classic-home-budget-health']
+    ]){const src=$(source),dst=$(target);if(src&&dst)dst.textContent=src.textContent;}
     drawChart(s,spent,budget);topCategories(s);
     window.SmartyHomeRefresh?.renderProgress?.(percent,budget,rem);
   }
