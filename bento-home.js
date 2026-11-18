@@ -151,7 +151,7 @@
     const percent=budget>0?Math.round(100*spent/budget):0;
     const left=s.days-s.today+1;
     const num=(id,str)=>{const el=$(id);if(el)el.textContent=str;};
-    num('budget-remaining',money(rem));num('budget-spent',money(spent,0));
+    num('budget-remaining',money(Math.abs(rem)));num('budget-spent',money(spent,0));
     num('budget-limit',money(budget));num('home-budget-percent',budget>0?`${percent}%`:'—');
     num('bento-spent-today',money(s.spentToday,0));num('bento-days',String(left));
     num('bento-daily-amount',budget>0?money(Math.max(0,rem)/left):'—');
