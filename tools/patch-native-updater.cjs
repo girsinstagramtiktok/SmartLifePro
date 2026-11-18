@@ -1,5 +1,5 @@
-/* Añade únicamente la descarga verificable a Descargas/SmartLifePro.
-   Ya NO solicita permisos de instalación ni abre paquetes desde la app. */
+/* Añade descarga verificada a Descargas/SmartLifePro y apertura del instalador.
+   Android solicita consentimiento y permiso de origen desconocido si hace falta. */
 'use strict';
 const fs=require('node:fs');const path=require('node:path');
 const root='android/app/src/main';
@@ -14,4 +14,4 @@ if(!main.includes(marker)){
  main=main.replace(needle,needle+'\n'+marker);fs.writeFileSync(javaFile,main);
 }
 fs.copyFileSync(path.join(__dirname,'SmartyUpdateBridge.java.txt'),destFile);
-console.log('Descargador firmado integrado (MediaStore.Downloads, sin instalador embebido)');
+console.log('Descargador firmado e instalador Android integrados (MediaStore.Downloads, firma y SHA-256)');
