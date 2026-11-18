@@ -146,7 +146,7 @@
   }
   function render(){
     if(!data()?.store||!$('view-home'))return;
-    applyColors();translate();
+    applyColors();translate();window.SmartyHomeRefresh?.applyDesign?.();window.SmartyHomeRefresh?.renderDesignSetting?.();
     const s=stats(),budget=number(data().store.budget?.limit),spent=number(Finance.calculateMonthlySpent()),rem=budget-spent;
     const percent=budget>0?Math.round(100*spent/budget):0;
     const left=s.days-s.today+1;
