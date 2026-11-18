@@ -51,7 +51,8 @@
                     <button type="button" class="bento-round-icon slp-ref-alert" onclick="SmartyHomeRefresh.openAlerts()" aria-label="Configurar alertas" title="Configurar alertas">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
                     </button>
-                    <button type="button" class="bento-mascot" onclick="Assistant.openSmartyChat()" aria-label="Abrir Smarty">
+                    <button type="button" class="bento-round-icon slp-chat-action" onclick="Assistant.openSmartyChat()" aria-label="Conversar con Smarty" title="Chat con Smarty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5c-1.2 0-2.4-.3-3.4-.8L4 20l1.8-4.6A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.5 11.5h7"/></svg></button>
+                    <button type="button" class="bento-mascot" onclick="Main.openProfile()" aria-label="Abrir perfil, skins, logros y misiones" title="Perfil · skins · logros · misiones">
                         <img src="idle.png" id="mascot-img" alt="Smarty" onerror="this.style.display='none'">
                         <span id="mascot-bubble" class="bento-sr-only">Hola</span><span id="xp-fill" class="bento-sr-only" aria-hidden="true"></span>
                     </button>
@@ -65,7 +66,7 @@
                         <h1 data-bento-t="headline">Tu mes, de<br>un vistazo.</h1>
                         <p><span id="classic-home-month-title"></span> <span aria-hidden="true">·</span> <span id="classic-home-budget-health"></span></p>
                     </div>
-                    <span class="slp-classic-mini-mark" aria-hidden="true">smarty.</span>
+                    <button type="button" class="slp-classic-mini-mark" onclick="Main.openProfile()" aria-label="Ver skins, logros y misiones" title="Ver skins, logros y misiones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span>Perfil</span></button>
                 </section>
                 <section class="bento-metrics slp-classic-only" aria-label="Indicadores financieros Bento">
                     <button class="bento-tile bento-balance" onclick="Finance.openHomeMovements('expense')">
@@ -97,10 +98,6 @@
                 </button>
 
                 <section class="slp-ref-hero slp-circular-only" aria-label="Progreso del presupuesto mensual">
-                    <svg class="slp-ref-arc" viewBox="0 0 320 70" role="img" aria-label="Progreso circular del presupuesto">
-                        <defs><path id="slp-ref-arc-path" d="M 32,67 C 73,-18 247,-18 288,67"/></defs>
-                        <text class="slp-ref-arc-text"><textPath href="#slp-ref-arc-path" startOffset="50%" text-anchor="middle">Progreso del presupuesto</textPath></text>
-                    </svg>
                     <button type="button" class="slp-ref-ring" onclick="Finance.openBudgetModal()" aria-label="Ver o modificar presupuesto">
                         <svg class="slp-ref-ring-svg" viewBox="0 0 240 240" aria-hidden="true">
                             <circle class="slp-ref-ring-track" cx="120" cy="120" r="104"/>
@@ -132,6 +129,7 @@
                     </button>
                 </section>
                 <div class="bento-sr-only" aria-hidden="true">Hoy: <span id="bento-spent-today"></span> · <span id="bento-days"></span> días restantes</div>
+                <button type="button" class="slp-profile-shortcut" onclick="Main.openProfile()" aria-label="Abrir perfil: skins, logros y misiones diarias"><span class="slp-profile-symbol" aria-hidden="true">★</span><span class="slp-profile-shortcut-copy"><strong data-profile-shortcut-title>Misiones, skins y logros</strong><small data-profile-shortcut-subtitle>Ver progreso y personalizar a Smarty</small></span><span class="slp-profile-arrow" aria-hidden="true">›</span></button>
                 <section class="bento-wallet" aria-label="Acceso a cuentas y tarjetas">
                     <header class="bento-section-head">
                         <h2 id="bento-wallet-title">Mis bancos y tarjetas</h2>
