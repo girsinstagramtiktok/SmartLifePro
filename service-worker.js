@@ -4,7 +4,7 @@
    Autor: A_True_Alpha
    ========================================= */
 
-const CACHE_NAME = 'smart-life-pro-v23.5-bank-payment-source'; // Nombre actualizado para forzar limpieza
+const CACHE_NAME = 'smart-life-pro-v23.6-circular-home-preview'; // Nombre actualizado para forzar limpieza
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -32,6 +32,12 @@ const ASSETS_TO_CACHE = [
   './smarty-brand-assets.js',
   './smarty-fixed-billing.js',
   './smarty-wallet.css',
+  './bento-home.js',
+  './bento-home.css',
+  './bento-global.css',
+  './smarty-home-refresh.js',
+  './smarty-home-refresh.css',
+  './smarty-list-reminders.js',
 
   // --- IMÁGENES DE FONDO ---
   // --- IMÁGENES DE LA MASCOTA ---
