@@ -319,10 +319,11 @@
       #view-home.bento-home.slp-home-classic .slp-circular-only{display:none!important}
 
       /* Mantener la vista completa entre cabecera y dock, sin que las tarjetas queden debajo. */
-      #view-home.bento-home {
+      #view-home.bento-home.active {
         height:100%!important;min-height:0!important;box-sizing:border-box!important;
         display:flex!important;flex-direction:column!important;overflow:hidden!important;
       }
+      #app-root > #view-home.bento-home:not(.active){display:none!important}
       #view-home.bento-home .slp-ref-header {
         flex:0 0 61px!important;min-height:61px!important;height:61px!important;
         padding:calc(6px + env(safe-area-inset-top)) 12px 6px!important;
@@ -786,6 +787,381 @@
       }
       @media(prefers-reduced-motion:reduce){
         #view-settings.slp-settings-modern *{transition:none!important;animation:none!important}
+      }
+
+      /* ================================================================
+         SmartLifePro / v4 — corrección estructural del Inicio y Ajustes
+         Causa real: Inicio se mostraba con display:flex aun sin .active.
+         Nunca forzar display en vistas inactivas.
+         ================================================================ */
+      #app-root > #view-home.bento-home:not(.active){display:none!important}
+      #app-root > #view-settings:not(.active){display:none!important}
+      #app-root > #view-settings.active{
+        position:relative!important;inset:auto!important;
+        display:flex!important;flex:1 1 100%!important;
+        width:100%!important;height:100%!important;min-height:0!important;
+        padding:0!important;margin:0!important;overflow:hidden!important;
+        flex-direction:column!important;align-items:stretch!important;
+        justify-content:flex-start!important;transform:none!important;
+      }
+      #app-root > #view-settings.active > .top-bar{
+        flex:0 0 auto!important;align-self:stretch!important;
+        margin:calc(8px + env(safe-area-inset-top)) 13px 8px!important;
+        padding:12px 17px!important;min-height:54px!important;
+        border-radius:23px!important;
+      }
+      #app-root > #view-settings.active > .scroll-content{
+        display:block!important;position:relative!important;inset:auto!important;
+        flex:1 1 auto!important;align-self:stretch!important;
+        width:100%!important;min-height:0!important;
+        margin:0!important;overflow-x:hidden!important;overflow-y:auto!important;
+        padding:2px 13px calc(96px + env(safe-area-inset-bottom))!important;
+        scroll-padding-top:10px!important;
+      }
+      #app-root > #view-settings.active .settings-card.full-width{
+        display:block!important;width:100%!important;max-width:none!important;
+        margin:0!important;padding:0!important;min-height:0!important;
+        transform:none!important;box-shadow:none!important;border:0!important;
+        background:transparent!important;
+      }
+      /* El selector de diseño es una preferencia, no la pantalla entera. */
+      #view-settings.slp-settings-modern #slp-home-design-settings{
+        margin:0 0 12px!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-setting{
+        padding:15px!important;margin:2px 0 10px!important;
+        border-radius:22px!important;
+        background:var(--sp-surface)!important;
+        border:1px solid var(--sp-stroke)!important;
+        box-shadow:0 5px 16px rgba(22,55,44,.06)!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings h3{
+        font-size:15px!important;line-height:1.25!important;letter-spacing:-.2px;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings p{
+        margin:6px 0 11px!important;font-size:11.5px!important;
+        line-height:1.45!important;color:var(--sp-muted)!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-options{
+        gap:10px!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-options button{
+        min-height:96px!important;padding:10px 8px!important;
+        display:flex!important;flex-direction:column!important;gap:7px!important;
+        justify-content:center!important;
+        border:1.5px solid var(--sp-stroke)!important;
+        border-radius:18px!important;
+        background:var(--sp-surface-alt)!important;color:var(--sp-ink)!important;
+        box-shadow:none!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-options button[aria-pressed="true"]{
+        background:color-mix(in srgb,var(--b-accent) 11%,var(--sp-surface))!important;
+        border:2px solid var(--b-accent)!important;
+        box-shadow:0 0 0 3px color-mix(in srgb,var(--b-accent) 12%,transparent)!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-preview{
+        width:min(100%,90px)!important;height:48px!important;
+        border-radius:12px!important;padding:7px!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-preview-circle i{
+        width:37px!important;height:37px!important;border-width:6px!important;
+      }
+      #view-settings.slp-settings-modern #slp-home-design-settings .slp-design-options strong{
+        font-size:11px!important;font-weight:750!important;
+      }
+      /* Preferencias estilo iOS: celdas, tarjetas, tipografía y controles. */
+      #view-settings.slp-settings-modern .slp-settings-group{
+        margin:9px 0 12px!important;border-radius:22px!important;
+        background:var(--sp-surface)!important;
+        box-shadow:0 5px 16px rgba(18,54,43,.06)!important;
+      }
+      #view-settings.slp-settings-modern .slp-settings-group>summary{
+        min-height:55px!important;padding:10px 13px!important;
+        gap:11px!important;font-size:13.5px!important;
+      }
+      #view-settings.slp-settings-modern .slp-settings-group>summary::before{
+        content:'⚙'!important;display:grid!important;place-items:center!important;
+        width:35px!important;height:35px!important;flex:0 0 35px!important;
+        font:700 18px/1 system-ui,sans-serif!important;
+        border:0!important;border-radius:11px!important;
+        background:color-mix(in srgb,var(--b-accent) 18%,var(--sp-surface))!important;
+        color:var(--b-ink)!important;
+      }
+      #view-settings.slp-settings-modern .slp-settings-group[data-group="general-0"]>summary::before{content:'◉'!important;background:#e2edff!important;color:#316fce!important}
+      #view-settings.slp-settings-modern .slp-settings-group[data-group="general-1"]>summary::before{content:'Aa'!important;font-size:14px!important;background:#e8e1ff!important;color:#6654c6!important}
+      #view-settings.slp-settings-modern .slp-settings-group[data-group="general-2"]>summary::before{content:'✦'!important;background:#dff7e9!important;color:#1b8962!important}
+      #view-settings.slp-settings-modern .slp-settings-group[data-group="general-3"]>summary::before{content:'▣'!important;background:#fff0de!important;color:#ae6d16!important}
+      #view-settings.slp-settings-modern .slp-settings-group[data-group="android-pro-settings"]>summary::before{content:'✧'!important;background:#dceefd!important;color:#2878b8!important}
+      #view-settings.slp-settings-modern .slp-theme-group>summary::before{content:'◐'!important;background:#efe5ff!important;color:#7755b5!important}
+      #view-settings.slp-settings-modern .slp-settings-inside{
+        padding:3px 13px 13px!important;
+      }
+      #view-settings.slp-settings-modern .slp-settings-inside .setting-item{
+        gap:9px!important;padding:11px 3px!important;min-height:50px!important;
+        margin-top:0!important;font-size:12.5px!important;
+        border-bottom:1px solid var(--sp-stroke)!important;
+      }
+      #view-settings.slp-settings-modern .setting-item>span:first-child{
+        flex:1 1 auto;min-width:0;
+      }
+      #view-settings.slp-settings-modern :is(.lang-grid,.font-selector-grid){
+        display:grid!important;gap:7px!important;
+        margin:8px 0!important;
+      }
+      #view-settings.slp-settings-modern .lang-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+      #view-settings.slp-settings-modern .font-selector-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+      #view-settings.slp-settings-modern :is(.lang-btn-opt,.font-btn){
+        box-sizing:border-box!important;min-width:0!important;
+        display:flex!important;flex-direction:column!important;
+        align-items:center!important;justify-content:center!important;
+        padding:9px 4px!important;min-height:63px!important;
+        margin:0!important;gap:5px!important;
+        border:1px solid var(--sp-stroke)!important;
+        border-radius:15px!important;
+        background:var(--sp-surface-alt)!important;color:var(--sp-ink)!important;
+        box-shadow:none!important;transform:none!important;cursor:pointer;
+      }
+      #view-settings.slp-settings-modern :is(.lang-btn-opt.selected,.font-btn.active){
+        border:2px solid var(--b-accent)!important;
+        background:color-mix(in srgb,var(--b-accent) 11%,var(--sp-surface))!important;
+      }
+      #view-settings.slp-settings-modern .font-btn small,
+      #view-settings.slp-settings-modern .lang-btn-opt span{font-size:10px!important;font-weight:700!important}
+      #view-settings.slp-settings-modern :is(.btn-data-row){
+        display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:9px!important;
+      }
+      #view-settings.slp-settings-modern :is(.btn-data,.text-btn-small,.slp-action,.bento-preset,.bento-reset){
+        display:inline-flex;align-items:center;justify-content:center;gap:7px;
+        border-radius:13px!important;min-height:40px!important;
+        border:1px solid var(--sp-stroke)!important;
+        background:var(--sp-surface-alt)!important;
+        color:var(--sp-ink)!important;
+        box-shadow:none!important;
+        font-size:11px!important;font-weight:730!important;
+        text-decoration:none!important;
+      }
+      #view-settings.slp-settings-modern .btn-data{
+        min-width:0!important;padding:10px 8px!important;flex-direction:column!important;
+      }
+      #view-settings.slp-settings-modern .btn-data svg{width:19px!important;height:19px!important}
+      #view-settings.slp-settings-modern :is(.btn-full,.slp-primary){
+        border:0!important;background:var(--b-nav)!important;
+        color:var(--b-nav-ink,#ffffff)!important;border-radius:14px!important;
+        min-height:43px!important;font-size:12px!important;
+        box-shadow:0 4px 11px rgba(20,57,45,.12)!important;
+      }
+      #view-settings.slp-settings-modern :is(select,.setting-input,.setting-select){
+        box-sizing:border-box!important;min-width:0!important;max-width:100%!important;
+        border-radius:12px!important;border:1px solid var(--sp-stroke)!important;
+        background:var(--sp-surface-alt)!important;color:var(--sp-ink)!important;
+        min-height:38px!important;
+      }
+      #view-settings.slp-settings-modern .switch-wrap{
+        position:relative!important;width:48px!important;height:29px!important;flex:0 0 48px!important;
+      }
+      #view-settings.slp-settings-modern .switch-wrap .slider{
+        border-radius:999px!important;
+        background:color-mix(in srgb,var(--b-muted) 23%,var(--sp-surface))!important;
+        border:1px solid var(--sp-stroke)!important;
+      }
+      #view-settings.slp-settings-modern .switch-wrap .slider:before{
+        height:23px!important;width:23px!important;left:2px!important;bottom:2px!important;
+        border-radius:50%!important;background:#fff!important;
+        box-shadow:0 2px 5px rgba(0,0,0,.19)!important;
+      }
+      #view-settings.slp-settings-modern .switch-wrap input:checked+.slider{
+        background:var(--b-accent)!important;
+      }
+      #view-settings.slp-settings-modern .switch-wrap input:checked+.slider:before{
+        transform:translateX(19px)!important;
+      }
+      /* Restaurar el dock blanco en píldora y el '+' cuadrado redondeado. */
+      #app-root .bottom-dock,
+      #app-root:has(#view-home.active.bento-home) .bottom-dock{
+        position:absolute!important;left:12px!important;right:12px!important;
+        bottom:calc(9px + env(safe-area-inset-bottom))!important;
+        height:63px!important;min-height:63px!important;
+        border-radius:999px!important;padding:0 9px!important;
+        background:var(--b-chart,#ffffff)!important;
+        border:1px solid color-mix(in srgb,var(--b-ink) 7%,transparent)!important;
+        box-shadow:0 9px 23px rgba(13,54,39,.13)!important;
+      }
+      #app-root .bottom-dock .dock-btn,
+      #app-root:has(#view-home.active.bento-home) .bottom-dock .dock-btn{
+        padding:0!important;border-radius:0!important;
+        width:100%!important;height:53px!important;
+        background:transparent!important;
+        transform:none!important;color:var(--b-ink,#164234)!important;
+      }
+      #app-root .bottom-dock .dock-btn::before,
+      #app-root .bottom-dock .dock-btn::after{
+        display:none!important;content:none!important;
+      }
+      #app-root .bottom-dock #dock-plus-btn,
+      #app-root:has(#view-home.active.bento-home) .bottom-dock #dock-plus-btn{
+        display:grid!important;place-items:center!important;
+        width:55px!important;height:55px!important;min-width:55px!important;
+        margin:0!important;border-radius:19px!important;
+        background:#1728ee!important;color:#fff!important;
+        transform:none!important;
+        box-shadow:0 3px 10px rgba(18,32,190,.22),inset 0 1px 2px rgba(255,255,255,.42)!important;
+      }
+      #app-root .bottom-dock #dock-plus-btn svg,
+      #app-root:has(#view-home.active.bento-home) #dock-plus-btn svg{
+        width:29px!important;height:29px!important;stroke:#ffffff!important;
+      }
+      #app-root .bottom-dock #dock-plus-btn svg line{stroke:#ffffff!important}
+      #app-root .bottom-dock .dock-btn.active:not(#dock-plus-btn){
+        color:var(--b-nav,#174c39)!important;
+      }
+      /* Nueva cuadrícula de alturas: encabezado, tarjetas y categorías CABEN.
+         Respetar WebView con 360x768 CSS píxeles. */
+      #view-home.bento-home .slp-ref-content{
+        overflow-y:auto!important;overflow-x:hidden!important;
+        scroll-behavior:auto!important;
+        padding:2px 11px calc(78px + env(safe-area-inset-bottom))!important;
+        gap:5px!important;align-content:start!important;
+      }
+      #view-home.bento-home .bento-wallet,
+      #view-home.bento-home .bento-categories{
+        overflow:visible!important;min-height:0!important;min-width:0!important;
+        display:flex!important;flex-direction:column!important;
+      }
+      #view-home.bento-home .bento-wallet-items{
+        overflow-x:auto!important;overflow-y:hidden!important;
+        min-height:0!important;max-height:none!important;
+        height:auto!important;flex:1 1 0!important;padding:2px 2px 5px!important;
+      }
+      #view-home.bento-home .sw-home-card{
+        min-height:0!important;max-height:none!important;
+        height:100%!important;padding:9px 10px!important;
+      }
+      #view-home.bento-home .bento-categories .bento-category-grid{
+        min-height:0!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;
+        flex:1 1 0!important;
+      }
+      #view-home.bento-home .bento-categories .bento-category-pill{
+        min-height:0!important;padding:5px 8px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-content{
+        display:grid!important;
+        grid-template-columns:minmax(0,1fr)!important;
+        grid-template-rows:184px 90px 178px 148px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-hero{
+        min-height:0!important;max-height:none!important;height:184px!important;
+        padding:0!important;gap:0!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-ring{
+        width:141px!important;height:141px!important;min-width:141px!important;
+        min-height:141px!important;max-width:141px!important;
+        flex:0 0 141px!important;margin:0 auto!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-ring-center{
+        inset:17px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-percent{font-size:32px!important}
+      #view-home.bento-home.slp-home-circular .slp-ref-remaining{font-size:14px!important}
+      #view-home.bento-home.slp-home-circular .slp-ref-remaining-caption{
+        margin-top:5px!important;font-size:8.5px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-total{
+        height:22px!important;min-height:22px!important;margin:4px 0 0!important;
+        padding:3px 9px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-month{margin:3px 0 0!important}
+      #view-home.bento-home.slp-home-circular .slp-ref-stats{
+        align-items:flex-start!important;justify-content:space-evenly!important;
+        transform:translateY(-4px)!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-stat{
+        height:85px!important;width:85px!important;min-height:85px!important;
+        max-height:85px!important;flex:0 0 85px!important;
+        border-radius:50%!important;padding:5px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-stat svg{
+        width:15px!important;height:15px!important;
+      }
+      #view-home.bento-home.slp-home-circular .slp-ref-stat strong{
+        font-size:14px!important;letter-spacing:-.3px!important;
+      }
+      #view-home.bento-home.slp-home-circular .bento-wallet{
+        height:178px!important;min-height:0!important;
+      }
+      #view-home.bento-home.slp-home-circular .bento-wallet-items,
+      #view-home.bento-home.slp-home-circular .sw-home-card{
+        min-height:0!important;max-height:none!important;height:auto!important;
+      }
+      #view-home.bento-home.slp-home-circular .sw-home-card{
+        height:100%!important;min-width:154px!important;
+      }
+      #view-home.bento-home.slp-home-circular .bento-categories{
+        min-height:0!important;height:148px!important;
+      }
+      #view-home.bento-home.slp-home-circular .bento-categories .bento-category-pill{
+        min-height:0!important;
+      }
+      #view-home.bento-home.slp-home-classic .slp-ref-content{
+        display:grid!important;
+        grid-template-columns:minmax(0,1fr)!important;
+        grid-template-rows:64px 182px 27px 173px 150px!important;
+      }
+      #view-home.bento-home.slp-home-classic .bento-intro{
+        min-height:0!important;max-height:none!important;height:64px!important;
+      }
+      #view-home.bento-home.slp-home-classic .bento-metrics{
+        min-height:0!important;max-height:182px!important;height:182px!important;
+      }
+      #view-home.bento-home.slp-home-classic .bento-wallet{
+        min-height:0!important;height:173px!important;
+      }
+      #view-home.bento-home.slp-home-classic .bento-wallet-items{
+        min-height:0!important;max-height:none!important;height:auto!important;
+      }
+      #view-home.bento-home.slp-home-classic .sw-home-card{
+        min-height:0!important;max-height:none!important;height:100%!important;
+      }
+      #view-home.bento-home.slp-home-classic .bento-categories{
+        min-height:0!important;height:150px!important;
+      }
+      /* Ajustar pantallas más bajas sin cortar datos; permitir scroll SOLO si no caben. */
+      @media(max-height:740px){
+        #view-home.bento-home .slp-ref-header{height:55px!important;min-height:55px!important;flex-basis:55px!important}
+        #view-home.bento-home .slp-ref-content{
+          padding-bottom:calc(69px + env(safe-area-inset-bottom))!important;gap:4px!important;
+        }
+        #view-home.bento-home.slp-home-circular .slp-ref-content{
+          grid-template-rows:160px 78px 151px 123px!important;
+        }
+        #view-home.bento-home.slp-home-circular .slp-ref-hero{height:160px!important}
+        #view-home.bento-home.slp-home-circular .slp-ref-ring{
+          width:123px!important;height:123px!important;min-height:123px!important;
+          min-width:123px!important;max-width:123px!important;flex-basis:123px!important;
+        }
+        #view-home.bento-home.slp-home-circular .slp-ref-percent{font-size:28px!important}
+        #view-home.bento-home.slp-home-circular .slp-ref-remaining{font-size:12px!important}
+        #view-home.bento-home.slp-home-circular .slp-ref-stats{transform:translateY(-2px)!important}
+        #view-home.bento-home.slp-home-circular .slp-ref-stat{
+          width:73px!important;height:73px!important;min-height:73px!important;
+          max-height:73px!important;flex-basis:73px!important;
+        }
+        #view-home.bento-home.slp-home-circular .slp-ref-stat strong{font-size:12px!important}
+        #view-home.bento-home.slp-home-circular .bento-wallet{height:151px!important}
+        #view-home.bento-home.slp-home-circular .bento-categories{height:123px!important}
+        #view-home.bento-home.slp-home-classic .slp-ref-content{
+          grid-template-rows:54px 160px 25px 152px 126px!important;
+        }
+        #view-home.bento-home.slp-home-classic .bento-intro{height:54px!important}
+        #view-home.bento-home.slp-home-classic .bento-metrics{height:160px!important;max-height:160px!important}
+        #view-home.bento-home.slp-home-classic .bento-wallet{height:152px!important}
+        #view-home.bento-home.slp-home-classic .bento-categories{height:126px!important}
+      }
+      @media(max-height:630px){
+        #view-home.bento-home .slp-ref-content{overflow-y:auto!important}
+      }
+      @media(prefers-reduced-motion:reduce){
+        #app-root .bottom-dock *,#view-settings.slp-settings-modern *{transition:none!important;animation:none!important}
       }
     `;
     doc.head.appendChild(style);
