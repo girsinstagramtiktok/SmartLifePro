@@ -37,10 +37,12 @@ function setup(handler, installed = 114701) {
   });
   elements['smarty-native-update-state'] = element('smarty-native-update-state');
   const downloads = [];
+  const installations = [];
   const urls = [];
   const native = {
     getInstalledVersionCode: () => installed,
-    downloadAndSave: (...args) => downloads.push(args)
+    downloadAndSave: (...args) => downloads.push(args),
+    installSaved: (...args) => installations.push(args)
   };
   const win = {
     SmartyAppUpdateNative: native,
@@ -61,7 +63,7 @@ function setup(handler, installed = 114701) {
     Date, Number, String, Error, AbortController, setTimeout, clearTimeout
   };
   vm.runInNewContext(code, ctx, { filename: 'smarty-app-updater.js' });
-  return { win, elements, downloads, urls, text: () => elements['smarty-native-update-state'].textContent };
+  return { win, elements, downloads, installations, urls, text: () => elements['smarty-native-update-state'].textContent };
 }
 
 (async () => {
@@ -76,8 +78,18 @@ function setup(handler, installed = 114701) {
   a.elements['smarty-update-download'].onclick();
   assert.deepEqual(a.downloads[0], [manifest.apkUrl, sha, '114801']);
   a.win.SmartyAppUpdater.nativeEvent('saved', 'Descargas/SmartLifePro/SmartLifePro_v114801.apk');
-  assert.match(a.text(), /Mis archivos/);
+  assert.match(a.text(), /Instalar actualización/);
+  assert.equal(a.installations.length, 1, 'opens native installer automatically after verified download');
   assert.equal(a.elements['smarty-update-download'].hidden, true);
+  assert.equal(a.elements['smarty-update-install'].hidden, false, 'offers install retry');
+  a.elements['smarty-update-install'].onclick();
+  assert.equal(a.installations.length, 2, 'retry calls native installSaved');
+  a.win.SmartyAppUpdater.nativeEvent('permission', 'needs permission');
+  assert.match(a.text(), /Autoriza la instalación/);
+  a.win.SmartyAppUpdater.nativeEvent('installer', 'launched');
+  assert.match(a.text(), /Instalador de Android/);
+  a.win.SmartyAppUpdater.nativeEvent('install-error', 'intent error');
+  assert.match(a.text(), /No se pudo abrir el instalador/);
 
   // 2. Antes de que exista el índice, usar API como alternativa.
   const b = setup(url => url.includes('raw.githubusercontent.com')
@@ -131,15 +143,21 @@ function setup(handler, installed = 114701) {
   assert.match(workflow, /releases\/latest/);
   assert.doesNotMatch(workflow, /assembleRelease|SMARTY_KEYSTORE|android\/app\/build/);
 
-  // 9. No perder la descarga a MediaStore ni cambiar el instalador.
+  // 9. Conservar MediaStore, validación criptográfica y apertura segura del instalador.
   const bridgePath = path.join(__dirname, 'tools/SmartyUpdateBridge.java.txt');
   if (fs.existsSync(bridgePath)) {
     const java = fs.readFileSync(bridgePath, 'utf8');
     assert.match(java, /MediaStore\.Downloads/);
     assert.match(java, /MessageDigest/);
     assert.match(java, /verify\(tmp,expected\)/);
-    assert.doesNotMatch(java, /startActivity\(/);
+    assert.match(java, /getPackageArchiveInfo/);
+    assert.match(java, /canRequestPackageInstalls/);
+    assert.match(java, /ACTION_MANAGE_UNKNOWN_APP_SOURCES/);
+    assert.match(java, /FLAG_GRANT_READ_URI_PERMISSION/);
+    assert.match(java, /Intent.ACTION_VIEW/);
+    assert.match(java, /startActivity\(install\)/);
+    assert.match(java, /installSaved\(/);
     assert.doesNotMatch(java, /downloadAndInstall/);
   }
-  console.log('OK: índice GitHub raw, API fallback, HTTP 403/429/5xx, red, SHA-256, versiones y descarga manual.');
+  console.log('OK: índice público, SHA-256, firmas, MediaStore, instalador nativo seguro, permisos y reintento.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
