@@ -3,6 +3,8 @@ package com.smartlife.pro;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.ClipData;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -11,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,7 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.json.JSONObject;
 
-/** Descarga segura de APK a Descargas/SmartLifePro. NO inicia el instalador. */
+/** Descarga verificada y apertura del instalador oficial (con consentimiento Android). */
 public final class SmartyUpdateBridge {
     private final MainActivity host;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
@@ -66,7 +69,7 @@ public final class SmartyUpdateBridge {
         }
         throw new SecurityException("Demasiadas redirecciones");
     }
-    private String publish(File source,long version)throws Exception{
+    private String publish(File source,long version,String hash)throws Exception{
         if(Build.VERSION.SDK_INT<29)throw new UnsupportedOperationException("Guardar en Descargas requiere Android 10 o superior en esta versión");
         ContentResolver cr=host.getContentResolver();
         String name="SmartLifePro_v"+version+".apk";
@@ -83,7 +86,7 @@ public final class SmartyUpdateBridge {
         }finally{if(!ok)cr.delete(dest,null,null);}
         ContentValues done=new ContentValues();done.put(MediaStore.Downloads.IS_PENDING,0);cr.update(dest,done,null,null);
         String path="Descargas/SmartLifePro/"+name;
-        prefs().edit().putString("file",path).putLong("version",version).apply();
+        prefs().edit().putString("file",path).putString("uri",dest.toString()).putString("sha256",hash.toLowerCase(Locale.ROOT)).putLong("version",version).apply();
         return path;
     }
     @JavascriptInterface public synchronized void downloadAndSave(String link,String sha256,String versionString){
@@ -110,12 +113,64 @@ public final class SmartyUpdateBridge {
                 }finally{c.disconnect();}
                 if(!hex(md.digest()).equalsIgnoreCase(sha256))throw new SecurityException("SHA-256 del APK no coincide");
                 verify(tmp,expected);
-                emit("saved",publish(tmp,expected));
+                emit("saved",publish(tmp,expected,sha256));
             }catch(Exception e){emit("error",e.getClass().getSimpleName()+": "+e.getMessage());}
             finally{tmp.delete();busy=false;}
         });
     }
+    /**
+     * Invocado sólo por la acción visible del usuario o al completar una descarga iniciada
+     * por él. Revalida el archivo guardado y abre el instalador oficial de Android.
+     * No instala silenciosamente ni intenta saltar las políticas del dispositivo.
+     */
+    @JavascriptInterface public void installSaved(){
+        worker.execute(()->{
+            File check=new File(host.getCacheDir(),"smarty-install-check.apk");
+            try{
+                SharedPreferences p=prefs();
+                long target=p.getLong("version",0);
+                String raw=p.getString("uri","");
+                String hash=p.getString("sha256","");
+                if(target<=getInstalledVersionCode()||raw==null||raw.isEmpty()||hash==null||!hash.matches("(?i)[0-9a-f]{64}")){
+                    throw new SecurityException("No existe una actualización verificada pendiente");
+                }
+                Uri uri=Uri.parse(raw);
+                if(!"content".equals(uri.getScheme())||!"media".equals(uri.getAuthority()))throw new SecurityException("URI del APK no autorizada");
+                MessageDigest md=MessageDigest.getInstance("SHA-256");
+                long total=0;
+                try(InputStream in=host.getContentResolver().openInputStream(uri);OutputStream out=new FileOutputStream(check)){
+                    if(in==null)throw new Exception("El APK ya no está disponible en Descargas");
+                    byte[] b=new byte[32768];int n;
+                    while((n=in.read(b))!=-1){
+                        total+=n;if(total>MAX_APK)throw new SecurityException("APK demasiado grande");
+                        md.update(b,0,n);out.write(b,0,n);
+                    }
+                    out.flush();
+                }
+                if(total==0||!hex(md.digest()).equalsIgnoreCase(hash))throw new SecurityException("El APK guardado fue modificado");
+                verify(check,target);
+                host.runOnUiThread(()->launchInstaller(uri));
+            }catch(Exception e){emit("install-error",e.getClass().getSimpleName()+": "+e.getMessage());}
+            finally{check.delete();}
+        });
+    }
+    private void launchInstaller(Uri uri){
+        try{
+            if(Build.VERSION.SDK_INT>=26&&!host.getPackageManager().canRequestPackageInstalls()){
+                emit("permission","Autoriza instalar aplicaciones desde SmartLifePro y vuelve a tocar Instalar actualización.");
+                Intent settings=new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+host.getPackageName()));
+                host.startActivity(settings);
+                return;
+            }
+            Intent install=new Intent(Intent.ACTION_VIEW);
+            install.setDataAndType(uri,"application/vnd.android.package-archive");
+            install.setClipData(ClipData.newUri(host.getContentResolver(),"SmartLifePro verificado",uri));
+            install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            host.startActivity(install);
+            emit("installer","Se abrió el instalador de Android. Confirma la actualización en la pantalla del sistema.");
+        }catch(Exception e){emit("install-error",e.getClass().getSimpleName()+": "+e.getMessage());}
+    }
     @JavascriptInterface public String getDownloadDiagnostics(){
-        JSONObject json=new JSONObject();try{json.put("androidSdk",Build.VERSION.SDK_INT);json.put("lastDownload",prefs().getString("file",""));json.put("lastVersion",prefs().getLong("version",0));json.put("installedVersion",getInstalledVersionCode());json.put("storage","MediaStore.Downloads");}catch(Exception ignored){}return json.toString();
+        JSONObject json=new JSONObject();try{json.put("androidSdk",Build.VERSION.SDK_INT);json.put("lastDownload",prefs().getString("file",""));json.put("lastVersion",prefs().getLong("version",0));json.put("installedVersion",getInstalledVersionCode());json.put("storage","MediaStore.Downloads");json.put("canInstall",Build.VERSION.SDK_INT<26||host.getPackageManager().canRequestPackageInstalls());json.put("hasVerifiedApk",!prefs().getString("uri","").isEmpty()&&!prefs().getString("sha256","").isEmpty());}catch(Exception ignored){}return json.toString();
     }
 }
