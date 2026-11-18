@@ -11,7 +11,8 @@
 
   function translate(){
     const mappings=[
-      ['.slp-ref-arc-text textPath',t('Progreso del presupuesto','Progresso do orçamento','Budget progress')],
+      ['[data-profile-shortcut-title]',t('Misiones, skins y logros','Missões, skins e conquistas','Quests, skins and achievements')],
+      ['[data-profile-shortcut-subtitle]',t('Ver progreso y personalizar a Smarty','Ver progresso e personalizar o Smarty','View progress and customize Smarty')],
       ['.slp-ref-percent-caption',t('del presupuesto gastado','do orçamento gasto','of budget spent')],
       ['.slp-ref-total-caption',t('Presupuesto total','Orçamento total','Total budget')],
       ['.slp-ref-stat-spent .slp-ref-stat-label',t('Has gastado','Você gastou','You spent')],
